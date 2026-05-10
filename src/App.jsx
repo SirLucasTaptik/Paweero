@@ -1330,9 +1330,7 @@ export default function App() {
 
             {/* ── Reports list — active first, then helped, then resolved ── */}
             <div className="r-list" style={{ marginBottom:24 }}>
-  .sitter-bio    { font-size:12px; color:var(--muted); line-height:1.55; margin-bottom:8px; }
-  .svc-wrap { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:8px; }
-  .svc-tag  { background:var(--off); border:1px solid var(--border); color:var(--body); font-size:10px; font-weight:500; padding:2px 8px; border-radius:999px; }
+
   .sitter-foot { display:flex; gap:8px; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:10px; margin-top:2px; }
   .sitter-yard { font-size:11px; color:var(--muted); }
 
