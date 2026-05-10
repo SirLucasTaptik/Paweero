@@ -636,24 +636,6 @@ const CSS = `
   .lf-contact { font-size:11px; font-weight:600; color:var(--dark); }
   .reward-pill { font-size:10px; font-weight:700; background:rgba(212,134,43,0.12); color:var(--amber); padding:2px 8px; border-radius:4px; }
 
-  /* ─ SITTER CARDS ─ */
-  .sitter-list { display:flex; flex-direction:column; gap:10px; }
-  .sitter-card { background:var(--white); border:1px solid var(--border); border-radius:var(--r); padding:16px; transition:all 0.12s; cursor:pointer; }
-  .sitter-card:active { opacity:0.8; }
-  @media (hover:hover) { .sitter-card:hover { border-color:#ccc; box-shadow:0 3px 12px rgba(0,0,0,0.07); } }
-  .sitter-top    { display:flex; gap:12px; align-items:flex-start; margin-bottom:8px; }
-  .sitter-avatar { font-size:26px; width:48px; height:48px; border-radius:50%; background:var(--off); border:1.5px solid var(--border); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-  .sitter-name   { font-size:14px; font-weight:600; color:var(--dark); margin-bottom:2px; }
-  .sitter-loc    { font-size:11px; color:var(--muted); margin-bottom:3px; }
-  .sitter-stars  { font-size:11px; color:var(--amber); }
-  .sitter-price  { font-size:13px; font-weight:700; color:var(--dark); margin-left:auto; text-align:right; white-space:nowrap; }
-  .sitter-avail  { font-size:10px; color:var(--muted); text-align:right; margin-top:1px; }
-  .sitter-bio    { font-size:12px; color:var(--muted); line-height:1.55; margin-bottom:8px; }
-  .svc-wrap { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:8px; }
-  .svc-tag  { background:var(--off); border:1px solid var(--border); color:var(--body); font-size:10px; font-weight:500; padding:2px 8px; border-radius:999px; }
-  .sitter-foot { display:flex; gap:8px; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:10px; margin-top:2px; }
-  .sitter-yard { font-size:11px; color:var(--muted); }
-
   /* ─ ADOPTER CARDS ─ */
   .p-list { display:flex; flex-direction:column; gap:1px; background:var(--border); border-radius:var(--r); overflow:hidden; border:1px solid var(--border); }
   .pcard  { background:var(--white); padding:14px 16px; display:flex; gap:12px; align-items:flex-start; }
