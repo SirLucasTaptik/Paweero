@@ -1,2029 +1,494 @@
-import { useState, useRef, useEffect } from "react";
-import { createClient } from "@supabase/supabase-js";
-
-// ─── SUPABASE ─────────────────────────────────────────────────────────────────
-const SUPABASE_URL = "https://uyuqcpttdbejaakbwzyl.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5dXFjcHR0ZGJlamFha2J3enlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0Mjk2NTgsImV4cCI6MjA5NDAwNTY1OH0.y8dJOe0yyWeKeaUU9PfPxnGn6b-2yHyG84LBdqaNH9k";
-const db = createClient(SUPABASE_URL, SUPABASE_KEY);
-
-// ─────────────────────────────────────────────────────────────────────────────
-// DATA
-// ─────────────────────────────────────────────────────────────────────────────
-
-const ANIMALS = [
-  { id:1, name:"Luna",   emoji:"🐕", species:{en:"Dog",    tr:"Köpek"},   breed:{en:"Golden Retriever Mix",    tr:"Golden Retriever Mix"},    age:{en:"2 yrs",    tr:"2 yaş"},    gender:{en:"Female",tr:"Dişi"}, country:"Türkiye",      province:"İstanbul",   city:"Beşiktaş", tags:{en:["Vaccinated","Spayed","Kid-friendly"],    tr:["Aşılı","Kısırlaştırıldı","Çocuk dostu"]}, urgent:false, isNew:true,  canFoster:true,  desc:{en:"Luna is a gentle, playful girl who loves everyone she meets. Great with children and other dogs.",                              tr:"Luna sakin, sevecen bir köpek. Çocuklarla ve diğer köpeklerle çok iyi geçiniyor."} },
-  { id:2, name:"Mochi",  emoji:"🐈", species:{en:"Cat",    tr:"Kedi"},    breed:{en:"Domestic Shorthair",      tr:"Tekir"},                    age:{en:"4 mos",    tr:"4 aylık"}, gender:{en:"Male",  tr:"Erkek"}, country:"Türkiye",      province:"İzmir",      city:"Konak",    tags:{en:["Vaccinated","Playful","Indoor"],          tr:["Aşılı","Oyuncu","İç mekan"]},             urgent:true,  isNew:false, canFoster:true,  desc:{en:"Mochi is a tiny bundle of energy! Found as a stray kitten, now healthy and ready for his forever family.",                   tr:"Mochi sokaktan kurtarılmış minik bir yavru. Sağlığına kavuştu, sıcak bir yuva bekliyor."} },
-  { id:3, name:"Rocky",  emoji:"🐇", species:{en:"Rabbit", tr:"Tavşan"},  breed:{en:"Holland Lop",             tr:"Hollanda Lop"},             age:{en:"1 yr",     tr:"1 yaş"},    gender:{en:"Male",  tr:"Erkek"}, country:"Türkiye",      province:"Ankara",     city:"Çankaya",  tags:{en:["Neutered","Litter-trained","Gentle"],     tr:["Kısırlaştırıldı","Evcil","Sakin"]},       urgent:false, isNew:false, canFoster:false, desc:{en:"Rocky is a calm and gentle rabbit. Perfect for a quiet household.",                                                          tr:"Rocky sakin, uysal bir tavşan. Sessiz bir eve çok uygun."} },
-  { id:4, name:"Bella",  emoji:"🐕", species:{en:"Dog",    tr:"Köpek"},   breed:{en:"German Shepherd",         tr:"Alman Çoban Köpeği"},       age:{en:"3 yrs",    tr:"3 yaş"},    gender:{en:"Female",tr:"Dişi"}, country:"BAE",          province:"Dubai",      city:"Jumeirah", tags:{en:["Trained","Vaccinated","Active"],          tr:["Eğitimli","Aşılı","Aktif"]},              urgent:false, isNew:true,  canFoster:false, desc:{en:"Bella is smart and loyal. Needs an active family with outdoor space.",                                                       tr:"Bella zeki ve sadık bir köpek. Dış alanı olan aktif bir aile için ideal."} },
-  { id:5, name:"Cleo",   emoji:"🐈", species:{en:"Cat",    tr:"Kedi"},    breed:{en:"Siamese Mix",             tr:"Siyam Mix"},                age:{en:"6 yrs",    tr:"6 yaş"},    gender:{en:"Female",tr:"Dişi"}, country:"Kuzey Kıbrıs", province:"Girne",      city:"Girne",    tags:{en:["Senior","Calm","Vaccinated"],             tr:["Yaşlı","Sakin","Aşılı"]},                 urgent:true,  isNew:false, canFoster:true,  desc:{en:"Cleo is a senior cat who loves peaceful spots. She deserves a forever home.",                                                tr:"Cleo huzurlu bir köşe seven yaşlı bir kedi. Kalıcı bir yuva hak ediyor."} },
-  { id:6, name:"Peanut", emoji:"🐹", species:{en:"Hamster",tr:"Hamster"}, breed:{en:"Syrian Hamster",          tr:"Suriye Hamster"},           age:{en:"6 mos",    tr:"6 aylık"}, gender:{en:"Male",  tr:"Erkek"}, country:"BAE",          province:"Abu Dhabi",  city:"Al Reem",  tags:{en:["Healthy","Friendly"],                    tr:["Sağlıklı","Uysal"]},                      urgent:false, isNew:false, canFoster:true,  desc:{en:"Peanut comes with cage and accessories. Easy to care for.",                                                                  tr:"Peanut kafesi ve aksesuarlarıyla birlikte verilecek."} },
-  { id:7, name:"Atlas",  emoji:"🐕", species:{en:"Dog",    tr:"Köpek"},   breed:{en:"Kangal Mix",              tr:"Kangal Mix"},               age:{en:"4 yrs",    tr:"4 yaş"},    gender:{en:"Male",  tr:"Erkek"}, country:"Türkiye",      province:"Ankara",     city:"Keçiören", tags:{en:["Vaccinated","Stray","Large breed"],       tr:["Aşılı","Sahipsiz","Büyük cüsse"]},        urgent:true,  isNew:false, canFoster:true,  desc:{en:"Atlas was rescued from the street. Big and gentle, needs a home with a large garden.",                                       tr:"Atlas sokaktan alındı. Büyük ve sevecen, geniş bahçeli bir eve ihtiyacı var."} },
-  { id:8, name:"Zara",   emoji:"🐈", species:{en:"Cat",    tr:"Kedi"},    breed:{en:"Van Cat",                 tr:"Van Kedisi"},               age:{en:"2 yrs",    tr:"2 yaş"},    gender:{en:"Female",tr:"Dişi"}, country:"Türkiye",      province:"Van",        city:"İpekyolu", tags:{en:["Vaccinated","Spayed","Active"],           tr:["Aşılı","Kısırlaştırıldı","Aktif"]},       urgent:false, isNew:true,  canFoster:true,  desc:{en:"Zara is a Van Cat, Turkey's iconic breed. Loves water and has an energetic personality.",                                    tr:"Zara Türkiye'nin simgesi Van kedisi. Suyu seven, enerjik bir karakter."} },
-  { id:9, name:"Max",    emoji:"🐕", species:{en:"Dog",    tr:"Köpek"},   breed:{en:"Labrador Mix",            tr:"Labrador Mix"},             age:{en:"1 yr",     tr:"1 yaş"},    gender:{en:"Male",  tr:"Erkek"}, country:"Kuzey Kıbrıs", province:"Lefkoşa",    city:"Lefkoşa",  tags:{en:["Vaccinated","Playful","Young"],           tr:["Aşılı","Oyuncu","Genç"]},                 urgent:false, isNew:true,  canFoster:true,  desc:{en:"Max is an energetic and affectionate young dog. Loves running in open spaces.",                                              tr:"Max enerjik ve sevecen genç bir köpek. Açık alanda koşmayı çok seviyor."} },
-];
-
-const COUNTRIES = ["All Countries","Türkiye","Kuzey Kıbrıs","BAE"];
-const PROVINCES = {
-  "All Countries":  ["All Provinces"],
-  "Türkiye":        ["All Provinces","İstanbul","Ankara","İzmir","Antalya","Bursa","Adana","Gaziantep","Van","Mersin","Muğla"],
-  "Kuzey Kıbrıs":  ["All Provinces","Lefkoşa","Gazimağusa","Girne","Güzelyurt","İskele"],
-  "BAE":            ["All Provinces","Dubai","Abu Dhabi","Sharjah","Ajman","Ras Al Khaimah","Fujairah"],
-};
-const CITIES = {
-  "All Provinces":    ["All Cities"],
-  "İstanbul":         ["All Cities","Beşiktaş","Kadıköy","Üsküdar","Şişli","Beyoğlu","Sarıyer","Bakırköy","Maltepe","Pendik","Ataşehir"],
-  "Ankara":           ["All Cities","Çankaya","Keçiören","Mamak","Sincan","Etimesgut","Yenimahalle","Altındağ"],
-  "İzmir":            ["All Cities","Konak","Karşıyaka","Bornova","Buca","Çiğli","Gaziemir","Bayraklı"],
-  "Antalya":          ["All Cities","Muratpaşa","Kepez","Konyaaltı","Alanya","Manavgat","Serik"],
-  "Bursa":            ["All Cities","Osmangazi","Nilüfer","Yıldırım","Gemlik","İnegöl"],
-  "Adana":            ["All Cities","Seyhan","Çukurova","Yüreğir","Sarıçam"],
-  "Gaziantep":        ["All Cities","Şehitkamil","Şahinbey","Nizip"],
-  "Van":              ["All Cities","İpekyolu","Tuşba","Edremit"],
-  "Mersin":           ["All Cities","Yenişehir","Mezitli","Toroslar","Akdeniz"],
-  "Muğla":            ["All Cities","Bodrum","Fethiye","Marmaris","Milas","Datça"],
-  "Lefkoşa":          ["All Cities","Lefkoşa","Alayköy","Haspolat"],
-  "Gazimağusa":       ["All Cities","Gazimağusa","İskele","Yeniboğaziçi"],
-  "Girne":            ["All Cities","Girne","Alsancak","Lapta","Karaoğlanoğlu"],
-  "Güzelyurt":        ["All Cities","Güzelyurt","Gemikonağı","Serhatköy"],
-  "İskele":           ["All Cities","İskele","Yeni Erenköy","Dipkarpaz"],
-  "Dubai":            ["All Cities","Jumeirah","Deira","Bur Dubai","Dubai Marina","JLT","Business Bay","Downtown Dubai","Al Quoz","Mirdif"],
-  "Abu Dhabi":        ["All Cities","Al Reem","Yas Island","Khalifa City","Al Raha","Saadiyat","Mussafah","Al Ain"],
-  "Sharjah":          ["All Cities","Al Nahda","Al Majaz","Muwaileh","Al Khan"],
-  "Ajman":            ["All Cities","Ajman City","Al Nuaimiyah","Al Rashidiya"],
-  "Ras Al Khaimah":   ["All Cities","RAK City","Al Hamra","Khuzam"],
-  "Fujairah":         ["All Cities","Fujairah City","Dibba"],
-};
-
-const ADOPTERS = [
-  { id:101, name:"Yılmaz Family",  emoji:"👨‍👩‍👧", looking:{en:"Dog",         tr:"Köpek"},        city:"İstanbul", tags:{en:["Has yard","Experienced","Kid-friendly"], tr:["Bahçe var","Deneyimli","Çocuk dostu"]}, desc:{en:"Family of 4 with a large garden. Looking for a medium to large breed dog.",            tr:"Büyük bahçeli, 4 kişilik bir aile. Orta-büyük ırk köpek arıyoruz."} },
-  { id:102, name:"Elif K.",        emoji:"👩",     looking:{en:"Cat",          tr:"Kedi"},         city:"Ankara",   tags:{en:["Works from home","Apartment","First pet"], tr:["Evden çalışıyor","Daire","İlk pet"]},  desc:{en:"Young professional working from home. Looking for an affectionate cat.",              tr:"Evden çalışan genç profesyonel. Sevecen bir kedi arıyor."} },
-  { id:103, name:"Ahmed & Sara",   emoji:"👫",     looking:{en:"Any",          tr:"Her türlü"},    city:"Dubai",    tags:{en:["Retired","Quiet home","Experienced"],    tr:["Emekli","Sakin ev","Deneyimli"]},      desc:{en:"Retired couple living in Dubai. Looking for a quiet companion.",                      tr:"Dubai'de yaşayan emekli çift. Sessiz bir dost arıyorlar."} },
-  { id:104, name:"Mehmet Y.",      emoji:"👨",     looking:{en:"Small animal", tr:"Küçük hayvan"}, city:"Girne",    tags:{en:["Single","Apartment","Calm"],             tr:["Tek kişi","Daire","Sakin"]},            desc:{en:"Software developer in Cyprus. Looking for an easy-to-care-for small companion.",      tr:"Kıbrıs'ta yaşayan yazılımcı. Bakımı kolay küçük bir dost arıyor."} },
-];
-
-const SITTERS_SEED = [
-  { id:401, name:"Zeynep A.", emoji:"👩", city:"İstanbul", area:"Kadıköy",      rating:4.9, reviews:42, price:{en:"350 TL/day", tr:"350 TL/gün"},   services:{en:["Dog sitting","Cat sitting","Boarding"],              tr:["Köpek bakımı","Kedi bakımı","Pansiyon"]},              accepts:["Dog","Cat"],          hasYard:true,  maxPets:2, availability:{en:"Mon–Sat",     tr:"Pzt–Cmt"},    bio:{en:"Experienced animal carer with a secure garden. 5 years experience. Very loving environment.",   tr:"5 yıllık deneyimli hayvan bakıcısı. Güvenli bahçeli evde sevgi dolu bakım."} },
-  { id:402, name:"Emre T.",   emoji:"👨", city:"İstanbul", area:"Beşiktaş",     rating:4.7, reviews:18, price:{en:"280 TL/day", tr:"280 TL/gün"},   services:{en:["Dog sitting","Dog walking","Boarding"],              tr:["Köpek bakımı","Köpek gezisi","Pansiyon"]},             accepts:["Dog"],                hasYard:false, maxPets:1, availability:{en:"Weekends",    tr:"Hafta sonu"}, bio:{en:"Dog owner for 10 years. Offer daily walks and overnight stays in my apartment.",              tr:"10 yıldır köpek sahibiyim. Günlük geziler ve geceleme imkânı."} },
-  { id:403, name:"Sara M.",   emoji:"👩", city:"Dubai",    area:"Jumeirah",     rating:5.0, reviews:31, price:{en:"AED 150/day",tr:"AED 150/gün"},  services:{en:["Cat sitting","Small pet sitting","Boarding"],         tr:["Kedi bakımı","Küçük hayvan bakımı","Pansiyon"]},       accepts:["Cat","Rabbit","Bird"], hasYard:false, maxPets:3, availability:{en:"Mon–Sun",     tr:"Pzt–Paz"},    bio:{en:"Specialist in cats and small animals. Quiet, pet-friendly apartment in Jumeirah.",            tr:"Kedi ve küçük hayvan uzmanı. Jumeirah'da sakin, evcil hayvan dostu daire."} },
-  { id:404, name:"Hasan K.",  emoji:"👨", city:"Ankara",   area:"Çankaya",      rating:4.6, reviews:11, price:{en:"300 TL/day", tr:"300 TL/gün"},   services:{en:["Dog sitting","Boarding"],                            tr:["Köpek bakımı","Pansiyon"]},                            accepts:["Dog"],                hasYard:true,  maxPets:2, availability:{en:"Mon–Fri",     tr:"Pzt–Cum"},    bio:{en:"Garden villa with two friendly resident dogs. A great environment for your pet.",             tr:"Bahçeli villa. İki misafirperver köpeğimizle harika bir ortam."} },
-  { id:405, name:"Nadia R.",  emoji:"👩", city:"Dubai",    area:"Dubai Marina",  rating:4.8, reviews:56, price:{en:"AED 200/day",tr:"AED 200/gün"},  services:{en:["Dog sitting","Cat sitting","Boarding","Dog walking"],  tr:["Köpek bakımı","Kedi bakımı","Pansiyon","Köpek gezisi"]},accepts:["Dog","Cat"],          hasYard:false, maxPets:3, availability:{en:"Mon–Sun",     tr:"Pzt–Paz"},    bio:{en:"Professional pet sitter with vet nursing background. Senior & anxious animal specialist.",    tr:"Veteriner hemşireliği geçmişiyle profesyonel bakıcı. Yaşlı ve kaygılı hayvan uzmanı."} },
-  { id:406, name:"Ayşe D.",   emoji:"👩", city:"Girne",    area:"Alsancak",     rating:4.9, reviews:14, price:{en:"400 TL/day", tr:"400 TL/gün"},   services:{en:["Dog sitting","Cat sitting","Small pet sitting"],      tr:["Köpek bakımı","Kedi bakımı","Küçük hayvan bakımı"]},   accepts:["Dog","Cat","Rabbit"],  hasYard:true,  maxPets:3, availability:{en:"Mon–Sun",     tr:"Pzt–Paz"},    bio:{en:"Peaceful care in a spacious garden home in the fresh air of Cyprus.",                         tr:"Kıbrıs'ın temiz havasında geniş bahçeli evde huzurlu bakım."} },
-];
-
-const LF_SEED = [
-  { id:501, type:"lost",  emoji:"🐕", name:"Karamel",    species:{en:"Dog",   tr:"Köpek"},  breed:{en:"Golden Mix",   tr:"Golden Mix"},   color:{en:"Yellow",      tr:"Sarı"},        area:"Kadıköy",  city:"İstanbul", date:{en:"2 days ago",  tr:"2 gün önce"},  contact:"0532 345 67 89", reward:{en:"2,000 TL", tr:"2.000 TL"}, desc:{en:"Male, neutered, blue collar with tag. Responds to his name. Last seen near Kadıköy Moda beach.",          tr:"Erkek, kısırlaştırıldı, mavi tasmalı. İsmine geliyor. Kadıköy Moda sahilinde kayboldu."},           status:"open"     },
-  { id:502, type:"found", emoji:"🐈", name:"Unknown",     species:{en:"Cat",   tr:"Kedi"},   breed:{en:"Tabby",        tr:"Tekir"},        color:{en:"Orange",      tr:"Turuncu"},     area:"Alsancak", city:"Girne",    date:{en:"Today",       tr:"Bugün"},       contact:"0542 765 43 21", reward:{en:"",        tr:""},         desc:{en:"Female tabby, injured front paw. Friendly and approachable. Currently cared for by finder.",             tr:"Ön pençesinde yaralı, dişi tekir. Uysal ve yaklaşılabilir. Şu an bulucunun yanında."},              status:"open"     },
-  { id:503, type:"lost",  emoji:"🐕", name:"Kar",         species:{en:"Dog",   tr:"Köpek"},  breed:{en:"Spitz",        tr:"Spitz"},        color:{en:"White",       tr:"Beyaz"},       area:"Beşiktaş", city:"İstanbul", date:{en:"5 days ago",  tr:"5 gün önce"},  contact:"0533 111 22 33", reward:{en:"1,500 TL",tr:"1.500 TL"}, desc:{en:"Female, spayed, microchipped. Small white Spitz, very shy around strangers.",                            tr:"Dişi, kısırlaştırıldı, mikroçipli. Küçük beyaz Spitz, yabancılara çekingen."},                      status:"reunited" },
-  { id:504, type:"lost",  emoji:"🐇", name:"Pamuk",       species:{en:"Rabbit",tr:"Tavşan"}, breed:{en:"Holland Lop",  tr:"Hollanda Lop"}, color:{en:"White-Brown", tr:"Beyaz-Kahve"}, area:"Çankaya",  city:"Ankara",   date:{en:"Yesterday",   tr:"Dün"},         contact:"0544 987 65 43", reward:{en:"",        tr:""},         desc:{en:"Indoor rabbit, brown and white. Escaped through an open gate. Very tame, comes to his name.",            tr:"İç mekan tavşanı, kahverengi-beyaz. Açık kalan kapıdan kaçtı. Çok uysal, ismine geliyor."},         status:"open"     },
-  { id:505, type:"found", emoji:"🐕", name:"Unknown",     species:{en:"Dog",   tr:"Köpek"},  breed:{en:"Mixed breed",  tr:"Melez"},        color:{en:"Brown",       tr:"Kahverengi"},  area:"Jumeirah", city:"Dubai",    date:{en:"3 days ago",  tr:"3 gün önce"},  contact:"055 234 5678",   reward:{en:"",        tr:""},         desc:{en:"Male dog, no collar. Limping slightly. Calm temperament. Currently at my house.",                        tr:"Erkek köpek, tasmasız. Hafif topallıyor. Sakin mizaçlı. Şu an evimde bakılıyor."},                  status:"open"     },
-];
-
-const REPORTS_SEED = [
-  { id:201, emoji:"🐕", title:{en:"Injured dog — Bağdat Avenue",       tr:"Yaralı köpek — Bağdat Caddesi"},    desc:{en:"Appears to have a broken hind leg, cannot move. Has been there since last night.",         tr:"Sol arka bacağı kırık görünüyor, hareket edemiyor. Dün akşamdan beri orada."},   location:"Bağdat Cad., Kadıköy, İstanbul",  time:{en:"2 hours ago", tr:"2 saat önce"}, status:"active", reporter:"Ahmet K.",  volunteers:[] },
-  { id:202, emoji:"🐈", title:{en:"Stray kittens under bridge",         tr:"Yavru kediler köprü altında"},       desc:{en:"4 kittens approximately 3 weeks old. Mother has not been seen.",                          tr:"4 yavru kedi, ~3 haftalık. Anne görülmüyor."},                                  location:"Unkapanı Köprüsü, İstanbul",        time:{en:"5 hours ago", tr:"5 saat önce"}, status:"active", reporter:"Fatma A.",  volunteers:[{name:"Deniz M.", eta:"On my way now", etaOrder:0},{name:"Selin K.", eta:"1 hour", etaOrder:1}] },
-  { id:203, emoji:"🐦", title:{en:"Injured bird — cannot fly",          tr:"Yaralı kuş — uçamıyor"},             desc:{en:"Wing injury, sitting on the pavement and unable to fly.",                                 tr:"Kanat yaralanması var, kaldırımda oturuyor."},                                  location:"Alsancak, Girne, KKTC",             time:{en:"1 day ago",   tr:"1 gün önce"},  status:"helped", reporter:"Mehmet Y.", volunteers:[{name:"Ayşe D.", eta:"On my way now", etaOrder:0}] },
-];
-
-const SPECIES   = [{l:"All",e:"🐾"},{l:"Dog",e:"🐕"},{l:"Cat",e:"🐈"},{l:"Rabbit",e:"🐇"},{l:"Hamster",e:"🐹"},{l:"Bird",e:"🐦"}];
-const SVC_TYPES = ["All Services","Dog sitting","Cat sitting","Dog walking","Boarding","Small pet sitting"];
-
-// ─── NAVIGATION — 4 clear top-level tabs ─────────────────────────────────────
-// Animals  = adopt + foster (user goal: find a pet)
-// Lost & Found = lost reports + found reports (user goal: reunite pets)
-// Owners   = rehome + sitting + find families + post profile
-// Help     = emergency rescue reports
-const TABS = [
-  { id:"home",     icon:"⌂",  label:"Home"        },
-  { id:"animals",  icon:"🐾", label:"Animals"      },
-  { id:"lostfound",icon:"🔍", label:"Lost & Found" },
-  { id:"owners",   icon:"🏠", label:"Owners"       },
-  { id:"help",     icon:"🚨", label:"Help"         },
-];
-
-const APP_STEPS = [{id:1,title:"Personal"},{id:2,title:"Home"},{id:3,title:"Lifestyle"},{id:4,title:"Experience"},{id:5,title:"Review"}];
-const EMPTY_APP = { firstName:"",lastName:"",email:"",phone:"",age:"",occupation:"",homeType:"",ownRent:"",hasYard:"",hasChildren:"",childrenAges:"",householdSize:"",hoursHome:"",activityLevel:"",travelFreq:"",petCare:"",allergies:"",hadPetsBefore:"",currentPetDetails:"",currentPets:"",vetReference:"",whyAdopt:"",longTermPlan:"",agree:false };
-const genRef    = () => "PWR-" + Math.random().toString(36).slice(2,7).toUpperCase();
-
-// ─── ETA OPTIONS ─────────────────────────────────────────────────────────────
-// etaOrder drives sort (0 = fastest). "Coordinating" is non-physical so goes last.
-const ETA_OPTIONS = [
-  { label:"On my way now",    labelTR:"Şu an yola çıkıyorum",    sub:"Already heading there",                         subTR:"Zaten yola çıktım",                              icon:"🚀", order:0  },
-  { label:"1 hour",           labelTR:"1 saat",                   sub:"Will arrive within the hour",                   subTR:"Bir saat içinde orada olacağım",                 icon:"⏱️", order:1  },
-  { label:"2 hours",          labelTR:"2 saat",                   sub:"On my way later today",                         subTR:"Bugün daha sonra yola çıkacağım",                icon:"🕑", order:2  },
-  { label:"4 hours",          labelTR:"4 saat",                   sub:"Can help this afternoon",                       subTR:"Bu öğleden sonra yardım edebilirim",             icon:"🕓", order:3  },
-  { label:"Today",            labelTR:"Bugün",                    sub:"Will be there sometime today",                  subTR:"Bugün bir ara orada olacağım",                   icon:"📅", order:4  },
-  { label:"Tomorrow morning", labelTR:"Yarın sabah",              sub:"First thing tomorrow",                          subTR:"Yarın sabahın ilk saatlerinde",                  icon:"🌅", order:5  },
-  { label:"Coordinating",     labelTR:"Koordinasyon yapıyorum",   sub:"Arranging transport, clinic, food or support",  subTR:"Ulaşım, klinik, yiyecek veya destek ayarlıyorum", icon:"💬", order:99 },
-];
-
-// ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
-const T = {
-  en: {
-    // app shell
-    appName:"Pawero", tagline:"Turkey · Northern Cyprus · UAE", lang:"EN",
-    home:"Home", animals:"Animals", lostFound:"Lost & Found", owners:"Owners", help:"Help",
-    // hero
-    heroH1:"Every animal deserves", heroH1Em:"a loving home.",
-    heroP:"Adopt, foster, find a pet sitter, post a lost & found, or report animals in distress.",
-    browseAnimals:"Browse Animals", reportAnimal:"Report Animal in Need",
-    // stats
-    adopted:"Adopted", waiting:"Waiting", rescues:"Rescues", shelters:"Shelters",
-    // home quick links
-    browseByGoal:"Browse by goal",
-    adoptTitle:"Adopt a Pet",              adoptDesc:"Browse rescued animals and submit an adoption application.",
-    fosterTitle:"Foster an Animal",        fosterDesc:"Provide a temporary home. We cover all vet costs.",
-    lostFoundTitle:"Lost & Found",         lostFoundDesc:"Report a lost pet or view found animals.",
-    sittingTitle:"Pet Sitting & Boarding", sittingDesc:"Find trusted sitters near you, or register as one.",
-    rehomeTitle:"Rehome Your Pet",         rehomeDesc:"List your pet so loving families can find them.",
-    helpTitle:"Help an Animal",            helpDesc:"Spotted an injured or abandoned animal? Report it fast.",
-    recentlyAdded:"Recently added",
-    // animals tab
-    adopt:"Adopt", foster:"Foster", postProfile:"📋 Post Adoption Profile",
-    findPet:"Find a pet to adopt or foster.",
-    fosterWhat:"What is fostering?",
-    fosterNote:"You temporarily care for an animal (2–8 weeks) while we find a permanent home. Pawero covers all vet costs.",
-    searchPlaceholder:"Search by name or breed…",
-    noAnimalsFound:"No animals found.",
-    applyAdopt:"Apply to Adopt", applyFoster:"Apply to Foster",
-    animalProfile:"Animal Profile",
-    // lost & found tab
-    lostFoundSub:"Reuniting pets with their owners.",
-    browse:"Browse", postListing:"+ Post a Listing",
-    openListings:"open", allListings:"All listings", lostFilter:"🔴 Lost", foundFilter:"🟢 Found",
-    postLostFoundNote:"Post a listing whether you've lost a pet or found one. Include a clear description and your contact details.",
-    listingType:"Type of listing *", iLostMyPet:"I lost my pet 🔴", iFoundAnAnimal:"I found an animal 🟢",
-    petName:"Pet name *", species:"Species", breed:"Breed", colour:"Colour", cityField:"City *",
-    areaField:"Area / Neighbourhood *", yourContact:"Your contact *", contactPlaceholder:"Phone number or email",
-    reward:"Reward (optional)", descriptionField:"Description *",
-    descLostPlaceholder:"Distinctive features, collar, where and when last seen…",
-    descFoundPlaceholder:"Description of the animal, where you found it, current status…",
-    postLost:"Post Lost Pet Listing", postFound:"Post Found Animal Listing",
-    contactCopied:"Contact info copied!", contactInfo:"📞 Contact:",
-    lostPetSheet:"Lost Pet", foundAnimalSheet:"Found Animal",
-    reunited:"Reunited",
-    // owners tab
-    forOwners:"For Pet Owners", forOwnersSub:"Find sitters, rehome your pet, or connect with adopting families.",
-    petSitting:"🛋️ Pet Sitting", becomeSitter:"+ Become a Sitter", rehomeTab:"🔄 Rehome a Pet",
-    findFamilies:"👨‍👩‍👧 Find Families",
-    cityLabel:"City:", serviceLabel:"Service:", sittersFound:"sitter(s) found",
-    noSittersFound:"No sitters found for this filter.",
-    book:"Book", sitterProfile:"Sitter Profile", sendRequest:"Send Booking Request",
-    bookingRequestSent:"Booking request sent to",
-    hasYard:"✓ Has yard", noYard:"✕ No yard", maxPets:"Max",
-    sitterRegNote:"Join our sitter network. Set your own rates and hours. Pet owners in your area will find and book you through Pawero.",
-    yourName:"Your name *", cityInput:"City *", neighbourhood:"Neighbourhood",
-    pricePerDay:"Price per day", servicesOffered:"Services offered *", animalsAccepted:"Animals accepted *",
-    availability:"Availability", availPlaceholder:"e.g. Mon–Fri, weekends only",
-    aboutYou:"About you", aboutYouPlaceholder:"Your experience, home environment, how you'll care for pets…",
-    registerSitter:"Register as Sitter",
-    rehomeTitle2:"List Your Pet for Rehoming",
-    rehomeNote:"Fill in your pet's details. We'll make the listing visible to adopting families.",
-    ageField:"Age", reasonField:"Reason for Rehoming",
-    reasonPlaceholder:"Help potential adopters understand the situation…",
-    submitListing:"Submit Listing",
-    lookingForFamilies:"People Looking to Adopt",
-    lookingFor:"Looking for:", contactRequest:"Contact request sent",
-    adoptionProfile:"Create an Adoption Profile",
-    adoptionProfileNote:"Tell pet owners about your home so they feel confident placing their animal with you.",
-    freeToPost:"✓ Free to post",
-    lookingForLabel:"Looking for",
-    aboutHome:"About your home", aboutHomePlaceholder:"Living situation, experience with animals, family setup…",
-    postProfileBtn:"Post Profile",
-    // help tab
-    emergencyBar:"Emergency: Turkey 156 (Jandarma) · KKTC 0392 444 0 156 · UAE 800 ADDA (2332)",
-    helpAnimals:"Help Animals in Need",
-    helpSub:"Spotted an injured or abandoned animal? Report it and rescuers will be notified immediately.",
-    activeReports:"Active Reports", needingHelp:"needing help",
-    volunteersResponding:"volunteer(s) responding",
-    iCanHelp:"I can help →", youAreResponding:"✓ You're responding",
-    markAsHelped:"Mark as Helped", animalHasBeenHelped:"✓ Animal has been helped",
-    notListedAbove:"Spotted an animal in distress not listed above?",
-    submitNewReport:"🚨 Submit a New Report",
-    submitReportTitle:"Submit a Report", cancel:"Cancel",
-    animalType:"Animal Type", situation:"Situation", titleField:"Title *", locationField:"Location *",
-    photo:"Photo", uploadPhoto:"Tap to upload a photo", photoHint:"JPG or PNG, up to 10 MB",
-    submitReport:"Submit Report",
-    reportedBy:"Reported by",
-    locationDetected:"Location detected",
-    fillTitleLocation:"Please fill title and location",
-    photoUploaded2:"Photo uploaded",
-    reportSubmitted:"Report submitted — responders notified",
-    // ETA sheet
-    iCanHelpSheet:"I can help",
-    chooseEta:"Choose when you expect to arrive. This will be shown on the report so others know help is on the way.",
-    // Helped proof sheet
-    proofRequired:"Proof required.",
-    proofNote:"To mark this animal as helped, please upload a current photo so the reporter and our team can confirm.",
-    photoUploaded:"✓ Photo uploaded — ready to submit",
-    confirmHelped:"Confirm — Mark as Helped", replacePhoto:"Replace Photo",
-    uploadProof:"Upload a photo of the animal",
-    proofHint:"Must show the animal's current condition",
-    noPhotoNoHelp:"You cannot mark this as helped without uploading a photo.",
-    markedAsHelped:"✓ Marked as helped — thank you!",
-    // adoption application
-    applyTitle:"Adoption Application", fosterAppTitle:"Foster Application",
-    personalInfo:"Personal Information", personalInfoSub:"All details are kept confidential.",
-    firstName:"First Name *", lastName:"Last Name *", email:"Email *", phoneField:"Phone *",
-    ageField2:"Age *", occupationField:"Occupation *",
-    homeTitle:"Home & Living", homeSub:"We need to make sure every animal goes to a safe environment.",
-    homeType:"Type of Home *",
-    apartment:"Apartment / Flat", apartmentHint:"No private outdoor space",
-    house:"House with garden", houseHint:"Private outdoor space",
-    farmhouse:"Farm / Farmhouse", farmhouseHint:"Rural",
-    other:"Other",
-    ownRentQ:"Own or Rent? *", own:"I own my home",
-    rent:"I rent", rentHint:"Landlord permission may be required",
-    outdoorQ:"Outdoor Space? *", fenced:"Yes — fenced", unfenced:"Yes — not fenced", noOutdoor:"No outdoor space",
-    childrenQ:"Children in Household? *", noChildren:"No children", yesLive:"Yes, live here", yesVisit:"Visit regularly",
-    childAges:"Ages of children", householdSize:"People in Household *",
-    lifestyleTitle:"Lifestyle", lifestyleSub:"Understanding your routine helps us find the right match.",
-    hoursQ:"Hours someone is home per day? *",
-    h04:"0–4 hours", h04hint:"Often away",
-    h48:"4–8 hours", h48hint:"Moderate",
-    h812:"8–12 hours", h812hint:"Often home",
-    h12:"12+ hours", h12hint:"Almost always home",
-    activityQ:"Activity Level? *",
-    relaxed:"Relaxed", relaxedHint:"Quiet home",
-    moderate:"Moderate", moderateHint:"Regular walks",
-    veryActive:"Very Active", veryActiveHint:"Daily exercise",
-    travelQ:"How Often Do You Travel? *",
-    rarely:"Rarely", monthly:"Monthly", weeklyMore:"Weekly or more",
-    petCareQ:"Who cares for the animal when you travel?",
-    petCarePlaceholder:"Family member, pet sitter…",
-    allergiesQ:"Any Allergies to Animals?", allergiesPlaceholder:"None, or describe",
-    experienceTitle:"Animal Experience",
-    experienceSub_adopt:"Tell us about your history with animals and your plans for",
-    hadPetsQ:"Have You Owned a Pet Before? *",
-    yesCurrent:"Yes — I currently have pets",
-    yesPast:"Yes — I've had pets before",
-    noFirst:"No — this would be my first",
-    currentPetsDesc:"Describe your current pets",
-    currentPetsPlaceholder:"Species, temperament, how they interact with new animals",
-    pastPetsDesc:"Tell us about previous pets",
-    pastPetsPlaceholder:"What happened to them? How long did you have them?",
-    vetRef:"Vet Reference (optional)", vetPlaceholder:"Vet name and location",
-    whyAdopt_adopt:"Why do you want to adopt",
-    whyAdopt_foster:"Why do you want to foster",
-    whyPlaceholder:"What drew you to this animal? Why are you a good match?",
-    longTermQ:"Long-term care plan? *", longTermPlaceholder:"How will you care for them over the years, if circumstances change?",
-    declaration:"I confirm all information is truthful. Pawero may conduct a home visit and may reject any application without providing a reason.",
-    reviewTitle:"Review Your Application", reviewSub:"Tap any completed step to go back and edit.",
-    confirmNote_pre:"Confirmation will be sent to", confirmNote_post:"We'll respond within 3–5 business days.",
-    personalSection:"Personal", homeSection:"Home", lifestyleSection:"Lifestyle", experienceSection:"Experience",
-    nameLabel:"Name", emailLabel:"Email", phoneLabel:"Phone", ageLabel:"Age", occupationLabel:"Occupation",
-    homeTypeLabel:"Home type", ownRentLabel:"Own/Rent", outdoorLabel:"Outdoor", childrenLabel:"Children", householdLabel:"Household",
-    hoursLabel:"Hours home", activityLabel:"Activity", travelLabel:"Travel",
-    hadPetsLabel:"Had pets", whyLabel:"Why", stepBack:"Back", stepContinue:"Continue", stepSubmit:"Submit",
-    stepOf:"of",
-    appSubmitted:"Application Submitted",
-    appSubmittedDesc_pre:"Thank you,", appSubmittedDesc_adopt:"Your application to adopt", appSubmittedDesc_foster:"Your application to foster", appSubmittedDesc_post:"has been received.",
-    refLabel:"Reference",
-    appStep1:"Application received", appStep1d:"Your submission is in our system.",
-    appStep2:"Team review", appStep2d:"We assess your profile.",
-    appStep3:"Decision emailed", appStep3d_pre:"You'll hear back at", appStep3d_post:"within 3–5 days.",
-    appStep4_adopt:"Home visit", appStep4d_adopt:"A visit may be arranged before approval.",
-    appStep4_foster:"Foster briefing", appStep4d_foster:"We'll brief you on care requirements.",
-    done:"Done",
-    // contact
-    close:"Close", contact:"Contact", savedFavourites:"Saved to favourites",
-    accepts:"Accepts:", noneToPost:"Nothing to show yet.",
-  },
-  tr: {
-    // uygulama kabuğu
-    appName:"Pawero", tagline:"Türkiye · Kuzey Kıbrıs · BAE", lang:"TR",
-    home:"Ana Sayfa", animals:"Hayvanlar", lostFound:"Kayıp & Bulunan", owners:"Sahipler", help:"Yardım",
-    // hero
-    heroH1:"Her hayvan hak ediyor", heroH1Em:"sevgi dolu bir yuva.",
-    heroP:"Sahiplen, geçici bakım ver, bakıcı bul, kayıp ilanı ver ya da tehlikedeki hayvanları bildir.",
-    browseAnimals:"Hayvanlara Göz At", reportAnimal:"Tehlikedeki Hayvan Bildir",
-    // istatistikler
-    adopted:"Sahiplenilen", waiting:"Bekleyen", rescues:"Kurtarma", shelters:"Barınak",
-    // hızlı bağlantılar
-    browseByGoal:"Ne yapmak istiyorsun?",
-    adoptTitle:"Hayvan Sahiplen",          adoptDesc:"Kurtarılmış hayvanlara göz at ve sahiplenme başvurusu gönder.",
-    fosterTitle:"Geçici Bakım Ver",        fosterDesc:"Geçici bir yuva sun. Veteriner masraflarını biz karşılıyoruz.",
-    lostFoundTitle:"Kayıp & Bulunan",      lostFoundDesc:"Kayıp ilanı ver ya da bulunan hayvanları görüntüle.",
-    sittingTitle:"Petsitter & Pansiyonat", sittingDesc:"Yakınındaki güvenilir bakıcıları bul ya da bakıcı olarak kayıt ol.",
-    rehomeTitle:"Hayvanını Yeni Yuvaya",   rehomeDesc:"Hayvanını listele, ona sevgi dolu bir aile bulsun.",
-    helpTitle:"Hayvana Yardım Et",         helpDesc:"Yaralı ya da terk edilmiş bir hayvan mı gördün? Hemen bildir.",
-    recentlyAdded:"Son eklenenler",
-    // hayvanlar sekmesi
-    adopt:"Sahiplen", foster:"Geçici Bakım", postProfile:"📋 Sahiplenme Profili Oluştur",
-    findPet:"Sahiplenmek veya geçici bakım için hayvan bul.",
-    fosterWhat:"Geçici bakım nedir?",
-    fosterNote:"Kalıcı yuva bulana kadar 2–8 hafta boyunca hayvana geçici bakım verirsin. Tüm veteriner masrafları Pawero'a aittir.",
-    searchPlaceholder:"İsim veya ırk ile ara…",
-    noAnimalsFound:"Hayvan bulunamadı.",
-    applyAdopt:"Sahiplenme Başvurusu", applyFoster:"Geçici Bakım Başvurusu",
-    animalProfile:"Hayvan Profili",
-    // kayıp & bulunan sekmesi
-    lostFoundSub:"Hayvanları sahipleriyle buluşturuyoruz.",
-    browse:"İlanlar", postListing:"+ İlan Ver",
-    openListings:"açık", allListings:"Tüm ilanlar", lostFilter:"🔴 Kayıp", foundFilter:"🟢 Bulunan",
-    postLostFoundNote:"Kayıp ilanı veya bulunan hayvan ilanı ver. Net bir açıklama ve iletişim bilgilerini ekle.",
-    listingType:"İlan türü *", iLostMyPet:"Hayvanımı kaybettim 🔴", iFoundAnAnimal:"Bir hayvan buldum 🟢",
-    petName:"Hayvanın adı *", species:"Tür", breed:"Irk", colour:"Renk", cityField:"Şehir *",
-    areaField:"Semt / Mahalle *", yourContact:"İletişim bilgisi *", contactPlaceholder:"Telefon veya e-posta",
-    reward:"Ödül (isteğe bağlı)", descriptionField:"Açıklama *",
-    descLostPlaceholder:"Belirgin özellikleri, tasmayı, nerede ve ne zaman kaybolduğunu yaz…",
-    descFoundPlaceholder:"Hayvanın tanımı, nerede bulunduğu, şu anki durumu…",
-    postLost:"Kayıp İlanı Ver", postFound:"Bulunan Hayvan İlanı Ver",
-    contactCopied:"İletişim bilgisi kopyalandı!", contactInfo:"📞 İletişim:",
-    lostPetSheet:"Kayıp Hayvan", foundAnimalSheet:"Bulunan Hayvan",
-    reunited:"Kavuştu",
-    // sahipler sekmesi
-    forOwners:"Hayvan Sahipleri İçin", forOwnersSub:"Bakıcı bul, hayvanını yeni yuvaya ver ya da ailelerle bağlantı kur.",
-    petSitting:"🛋️ Petsitter", becomeSitter:"+ Bakıcı Ol", rehomeTab:"🔄 Yeni Yuvaya Ver",
-    findFamilies:"👨‍👩‍👧 Aile Bul",
-    cityLabel:"Şehir:", serviceLabel:"Hizmet:", sittersFound:"bakıcı bulundu",
-    noSittersFound:"Bu filtreye uygun bakıcı bulunamadı.",
-    book:"Rezervasyon", sitterProfile:"Bakıcı Profili", sendRequest:"Rezervasyon İsteği Gönder",
-    bookingRequestSent:"Rezervasyon isteği gönderildi:",
-    hasYard:"✓ Bahçe/dış alan var", noYard:"✕ Dış alan yok", maxPets:"Maks.",
-    sitterRegNote:"Bakıcı ağımıza katıl. Kendi saatlerini ve ücretini belirle. Yakınındaki hayvan sahipleri seni Pawero üzerinden bulup rezervasyon yapacak.",
-    yourName:"Adın *", cityInput:"Şehir *", neighbourhood:"Semt / Mahalle",
-    pricePerDay:"Günlük ücret", servicesOffered:"Sunduğun hizmetler *", animalsAccepted:"Bakabileceğin hayvanlar *",
-    availability:"Müsaitlik", availPlaceholder:"örn. Pzt–Cum, yalnızca hafta sonu",
-    aboutYou:"Hakkında", aboutYouPlaceholder:"Deneyimin, ev ortamın, evcil hayvanlara nasıl bakacağın…",
-    registerSitter:"Bakıcı Olarak Kayıt Ol",
-    rehomeTitle2:"Hayvanını Yeni Yuvaya Ver",
-    rehomeNote:"Hayvanının bilgilerini gir. İlanını sahiplenmek isteyen ailelere göstereceğiz.",
-    ageField:"Yaş", reasonField:"Yeni Yuvaya Verme Sebebi",
-    reasonPlaceholder:"Potansiyel sahipler için durumu açıkla…",
-    submitListing:"İlanı Yayınla",
-    lookingForFamilies:"Sahiplenmek İsteyen Aileler",
-    lookingFor:"Arıyor:", contactRequest:"İletişim isteği gönderildi",
-    adoptionProfile:"Sahiplenme Profili Oluştur",
-    adoptionProfileNote:"Hayvan sahiplerine eviniz hakkında bilgi ver; hayvanlarını emanet etmek konusunda kendilerini güvende hissetsinler.",
-    freeToPost:"✓ Ücretsiz yayınla",
-    lookingForLabel:"Ne arıyor",
-    aboutHome:"Eviniz hakkında", aboutHomePlaceholder:"Yaşam koşulları, hayvanlarla deneyim, aile yapısı…",
-    postProfileBtn:"Profili Yayınla",
-    // yardım sekmesi
-    emergencyBar:"Acil: Türkiye 156 (Jandarma) · KKTC 0392 444 0 156 · BAE 800 ADDA (2332)",
-    helpAnimals:"Tehlikedeki Hayvanlara Yardım",
-    helpSub:"Yaralı ya da terk edilmiş bir hayvan gördün mü? Bildir, kurtarma ekibi hemen haberdar edilsin.",
-    activeReports:"Aktif İhbarlar", needingHelp:"yardım bekliyor",
-    volunteersResponding:"gönüllü yanıt veriyor",
-    iCanHelp:"Yardım edebilirim →", youAreResponding:"✓ Yanıt veriyorsun",
-    markAsHelped:"Yardım Edildi Olarak İşaretle", animalHasBeenHelped:"✓ Hayvana yardım edildi",
-    notListedAbove:"Yukarıda listelenmeyen tehlikedeki bir hayvan mı gördün?",
-    submitNewReport:"🚨 Yeni İhbar Gönder",
-    submitReportTitle:"İhbar Gönder", cancel:"İptal",
-    animalType:"Hayvan Türü", situation:"Durum", titleField:"Başlık *", locationField:"Konum *",
-    photo:"Fotoğraf", uploadPhoto:"Fotoğraf yüklemek için dokun", photoHint:"JPG veya PNG, en fazla 10 MB",
-    submitReport:"İhbarı Gönder",
-    reportedBy:"Bildiren:",
-    locationDetected:"📍 Konum algılandı",
-    fillTitleLocation:"Lütfen başlık ve konum girin",
-    photoUploaded2:"Fotoğraf yüklendi",
-    reportSubmitted:"İhbar gönderildi — kurtarma ekibi bildirildi",
-    // ETA sayfası
-    iCanHelpSheet:"Yardım edebilirim",
-    chooseEta:"Ne zaman ulaşabileceğini seç. Bu bilgi ihbar kartında görünecek, böylece diğerleri yardımın yolda olduğunu bilecek.",
-    // Yardım edildi kanıt sayfası
-    proofRequired:"Kanıt gerekli.",
-    proofNote:"Hayvanın yardım edildi olarak işaretlenebilmesi için güncel bir fotoğraf yükle.",
-    photoUploaded:"✓ Fotoğraf yüklendi — göndermeye hazır",
-    confirmHelped:"Onayla — Yardım Edildi İşaretle", replacePhoto:"Fotoğrafı Değiştir",
-    uploadProof:"Hayvanın fotoğrafını yükle",
-    proofHint:"Hayvanın mevcut durumunu göstermelidir",
-    noPhotoNoHelp:"Fotoğraf yüklemeden bu işareti koyamazsın.",
-    markedAsHelped:"✓ Yardım edildi olarak işaretlendi — teşekkürler!",
-    // sahiplenme başvurusu
-    applyTitle:"Sahiplenme Başvurusu", fosterAppTitle:"Geçici Bakım Başvurusu",
-    personalInfo:"Kişisel Bilgiler", personalInfoSub:"Tüm bilgiler gizli tutulur.",
-    firstName:"Ad *", lastName:"Soyad *", email:"E-posta *", phoneField:"Telefon *",
-    ageField2:"Yaş *", occupationField:"Meslek *",
-    homeTitle:"Ev & Yaşam Koşulları", homeSub:"Her hayvanın güvenli bir ortama gitmesini sağlamak istiyoruz.",
-    homeType:"Konut türü *",
-    apartment:"Daire / Apartman", apartmentHint:"Özel dış alan yok",
-    house:"Bahçeli ev", houseHint:"Özel dış alan var",
-    farmhouse:"Çiftlik evi", farmhouseHint:"Kırsal alan",
-    other:"Diğer",
-    ownRentQ:"Kiralık mı, kendinize ait mi? *", own:"Evin sahibiyim",
-    rent:"Kiracıyım", rentHint:"Ev sahibinin izni gerekebilir",
-    outdoorQ:"Dış alan var mı? *", fenced:"Evet — çevrili / güvenli", unfenced:"Evet — çevrili değil", noOutdoor:"Dış alan yok",
-    childrenQ:"Evde çocuk var mı? *", noChildren:"Çocuk yok", yesLive:"Evet, evde kalıyor", yesVisit:"Düzenli olarak ziyaret ediyor",
-    childAges:"Çocukların yaşları", householdSize:"Evdeki kişi sayısı *",
-    lifestyleTitle:"Yaşam Tarzı", lifestyleSub:"Günlük rutinini öğrenmek doğru eşleşmeyi bulmamıza yardımcı olur.",
-    hoursQ:"Evde günde kaç saat biri bulunur? *",
-    h04:"0–4 saat", h04hint:"Çoğunlukla dışarıda",
-    h48:"4–8 saat", h48hint:"Orta düzeyde",
-    h812:"8–12 saat", h812hint:"Çoğunlukla evde",
-    h12:"12+ saat", h12hint:"Neredeyse hep evde",
-    activityQ:"Aktivite düzeyin nedir? *",
-    relaxed:"Sakin", relaxedHint:"Sessiz bir ev",
-    moderate:"Orta", moderateHint:"Düzenli yürüyüşler",
-    veryActive:"Çok aktif", veryActiveHint:"Günlük spor, doğa yürüyüşü",
-    travelQ:"Ne sıklıkla seyahat edersin? *",
-    rarely:"Nadiren", monthly:"Aylık", weeklyMore:"Haftalık veya daha sık",
-    petCareQ:"Seyahatte hayvana kim bakacak?",
-    petCarePlaceholder:"Aile üyesi, petsitter…",
-    allergiesQ:"Hayvanlara alerjin var mı?", allergiesPlaceholder:"Yok veya açıkla",
-    experienceTitle:"Hayvanlarla Deneyim",
-    experienceSub_adopt:"Hayvanlarla geçmişin ve planların hakkında bilgi ver:",
-    hadPetsQ:"Daha önce evcil hayvanın oldu mu? *",
-    yesCurrent:"Evet — şu an evcil hayvanım var",
-    yesPast:"Evet — daha önce evcil hayvan besledim",
-    noFirst:"Hayır — bu benim ilk evcil hayvanım olur",
-    currentPetsDesc:"Mevcut hayvanlarını açıkla",
-    currentPetsPlaceholder:"Tür, mizaç, yeni hayvanlarla nasıl geçindikleri",
-    pastPetsDesc:"Önceki evcil hayvanların hakkında anlat",
-    pastPetsPlaceholder:"Onlara ne oldu? Ne kadar süre besledin?",
-    vetRef:"Veteriner referansı (isteğe bağlı)", vetPlaceholder:"Veteriner adı ve konumu",
-    whyAdopt_adopt:"Bu hayvanı neden sahiplenmek istiyorsun?",
-    whyAdopt_foster:"Bu hayvana neden geçici bakım vermek istiyorsun?",
-    whyPlaceholder:"Bu hayvanı seçme sebebin? Neden iyi bir eşleşmesiniz?",
-    longTermQ:"Uzun vadeli bakım planın? *", longTermPlaceholder:"Koşullar değişse bile yıllar içinde hayvana nasıl bakacaksın?",
-    declaration:"Tüm bilgilerin doğru olduğunu onaylıyorum. Pawero ev ziyareti yapabilir ve herhangi bir başvuruyu gerekçe göstermeksizin reddedebilir.",
-    reviewTitle:"Başvurunu Gözden Geçir", reviewSub:"Düzenlemek için tamamlanmış adımlara dokun.",
-    confirmNote_pre:"Onay e-postası", confirmNote_post:"adresine gönderilecek. 3–5 iş günü içinde yanıt alırsın.",
-    personalSection:"Kişisel", homeSection:"Ev", lifestyleSection:"Yaşam", experienceSection:"Deneyim",
-    nameLabel:"Ad Soyad", emailLabel:"E-posta", phoneLabel:"Telefon", ageLabel:"Yaş", occupationLabel:"Meslek",
-    homeTypeLabel:"Konut", ownRentLabel:"Mülkiyet", outdoorLabel:"Dış alan", childrenLabel:"Çocuk", householdLabel:"Kişi sayısı",
-    hoursLabel:"Evde saat", activityLabel:"Aktivite", travelLabel:"Seyahat",
-    hadPetsLabel:"Hayvan geçmişi", whyLabel:"Neden", stepBack:"Geri", stepContinue:"Devam", stepSubmit:"Gönder",
-    stepOf:"/ ",
-    appSubmitted:"Başvuru Gönderildi",
-    appSubmittedDesc_pre:"Teşekkürler,", appSubmittedDesc_adopt:"sahiplenme başvurunu aldık:", appSubmittedDesc_foster:"geçici bakım başvurunu aldık:", appSubmittedDesc_post:"",
-    refLabel:"Referans",
-    appStep1:"Başvuru alındı", appStep1d:"Başvurun sistemimizde.",
-    appStep2:"Ekip incelemesi", appStep2d:"Profilini değerlendiriyoruz.",
-    appStep3:"Karar e-postayla bildirilecek", appStep3d_pre:"3–5 iş günü içinde", appStep3d_post:"adresine yanıt gönderilecek.",
-    appStep4_adopt:"Ev ziyareti", appStep4d_adopt:"Onaydan önce kısa bir ziyaret ayarlanabilir.",
-    appStep4_foster:"Bakım brifing", appStep4d_foster:"Bakım gereksinimleri hakkında seni bilgilendireceğiz.",
-    done:"Tamam",
-    // genel
-    close:"Kapat", contact:"İletişim", savedFavourites:"Favorilere eklendi",
-    accepts:"Kabul ediyor:", noneToPost:"Henüz gösterilecek bir şey yok.",
-  },
-};
-// ─────────────────────────────────────────────────────────────────────────────
-// CSS
-// ─────────────────────────────────────────────────────────────────────────────
-const CSS = `
-  /* Aptos Display — Microsoft's modern humanist sans-serif.
-     Available natively on Windows 11 / Office 365 systems.
-     We load a close web substitute (Plus Jakarta Sans) as fallback for other platforms. */
-  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
-
-  /* Force font inheritance on ALL elements including native form controls */
-  *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; font-family:inherit; }
-  input, button, select, textarea, optgroup { font-family:inherit; }
-  :root {
-    --white:#fff; --off:#f9f9f9; --border:#ebebeb; --light:#f3f3f3;
-    --muted:#999; --body:#333; --dark:#111;
-    --amber:#d4862b; --red:#c0392b; --green:#2d7a4f; --blue:#2563eb;
-    /* Aptos Display first, then system fallbacks, then web fallback */
-    --font:'Aptos Display','Aptos','Plus Jakarta Sans','Segoe UI Variable Display','Segoe UI',system-ui,-apple-system,sans-serif;
-    --pad:16px; --nav-h:62px; --top-h:52px; --r:10px;
-  }
-  html { scroll-behavior:smooth; }
-  body { font-family:var(--font); background:var(--white); color:var(--body); font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased; overflow-x:hidden; }
-
-  /* ─ TOPBAR ─ */
-  .topbar { position:sticky; top:0; z-index:100; height:var(--top-h); background:var(--white); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 var(--pad); }
-  .logo { font-family:var(--font); font-size:17px; font-weight:700; color:var(--dark); display:flex; align-items:center; gap:7px; letter-spacing:-0.3px; }
-  .logo-dot { width:8px; height:8px; border-radius:50%; background:var(--amber); flex-shrink:0; }
-  .desk-nav { display:none; gap:2px; }
-  @media (min-width:768px) { .desk-nav { display:flex; } }
-  .dnav { font-size:13px; font-weight:500; color:var(--muted); background:none; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; transition:all 0.12s; }
-  .dnav:hover { color:var(--dark); background:var(--light); }
-  .dnav.on { color:var(--dark); font-weight:600; background:var(--light); }
-  .dnav.red { color:var(--muted); }
-  .dnav.red.on { color:var(--red); background:rgba(192,57,43,0.07); }
-  /* language selector */
-  .lang-sel { display:flex; align-items:center; gap:2px; background:var(--light); border:1px solid var(--border); border-radius:6px; padding:2px; flex-shrink:0; }
-  .lang-btn { font-family:var(--font); font-size:12px; font-weight:600; color:var(--muted); background:none; border:none; padding:4px 8px; border-radius:5px; cursor:pointer; transition:all 0.12s; letter-spacing:0.3px; }
-  .lang-btn.on { background:var(--white); color:var(--dark); box-shadow:0 1px 3px rgba(0,0,0,0.1); }
-
-  /* ─ BOTTOM NAV ─ */
-  .bottom-nav { position:fixed; bottom:0; left:0; right:0; z-index:100; height:var(--nav-h); background:var(--white); border-top:1px solid var(--border); display:flex; justify-content:space-around; align-items:center; padding-bottom:env(safe-area-inset-bottom,0); }
-  @media (min-width:768px) { .bottom-nav { display:none; } }
-  .tab-btn { display:flex; flex-direction:column; align-items:center; gap:3px; background:none; border:none; cursor:pointer; flex:1; padding:8px 4px; color:var(--muted); transition:color 0.12s; }
-  .tab-btn.on { color:var(--dark); }
-  .tab-btn.red.on { color:var(--red); }
-  .tab-icon  { font-size:20px; line-height:1; }
-  .tab-label { font-size:10px; font-weight:600; letter-spacing:0.2px; }
-  .tab-bar   { width:18px; height:2px; border-radius:1px; background:var(--amber); margin-top:2px; opacity:0; transition:opacity 0.12s; }
-  .tab-btn.on .tab-bar { opacity:1; }
-  .tab-btn.red.on .tab-bar { background:var(--red); }
-
-  /* ─ LAYOUT ─ */
-  .app  { min-height:calc(100vh - var(--top-h)); padding-bottom:var(--nav-h); }
-  @media (min-width:768px) { .app { padding-bottom:0; } }
-  .wrap { max-width:960px; margin:0 auto; padding:0 var(--pad) 48px; }
-
-  /* ─ PAGE HEADER ─ */
-  .ph { background:var(--white); border-bottom:1px solid var(--border); padding:14px var(--pad) 0; position:sticky; top:var(--top-h); z-index:50; }
-  .ph-title { font-size:20px; font-weight:700; color:var(--dark); letter-spacing:-0.3px; }
-  .ph-sub   { font-size:12px; color:var(--muted); margin-top:2px; margin-bottom:12px; }
-
-  /* ─ SUB-TABS ─ */
-  .stabs { display:flex; gap:0; border-bottom:1px solid var(--border); overflow-x:auto; scrollbar-width:none; margin-bottom:-1px; }
-  .stabs::-webkit-scrollbar { display:none; }
-  .stab { font-size:13px; font-weight:500; color:var(--muted); background:none; border:none; border-bottom:2px solid transparent; padding:10px 16px; cursor:pointer; white-space:nowrap; margin-bottom:0; transition:all 0.12s; min-height:44px; }
-  .stab:hover { color:var(--dark); }
-  .stab.on { color:var(--dark); border-bottom-color:var(--dark); font-weight:600; }
-
-  /* ─ HERO ─ */
-  .hero { padding:36px var(--pad) 32px; border-bottom:1px solid var(--border); }
-  .hero-label { font-size:11px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-bottom:10px; }
-  .hero-h1 { font-size:clamp(24px,5vw,36px); font-weight:700; color:var(--dark); line-height:1.15; margin-bottom:10px; letter-spacing:-0.5px; }
-  .hero-h1 em { color:var(--amber); font-style:italic; }
-  .hero-p  { font-size:13px; color:var(--muted); max-width:420px; line-height:1.7; margin-bottom:22px; }
-  .hero-cta { display:flex; gap:10px; flex-wrap:wrap; }
-
-  /* ─ STATS ─ */
-  .stats { display:grid; grid-template-columns:repeat(4,1fr); border-bottom:1px solid var(--border); }
-  .stat  { padding:12px 0; text-align:center; border-right:1px solid var(--border); }
-  .stat:last-child { border-right:none; }
-  .stat-n { font-size:19px; font-weight:700; color:var(--dark); letter-spacing:-0.5px; }
-  .stat-l { font-size:10px; font-weight:600; color:var(--muted); letter-spacing:0.5px; text-transform:uppercase; margin-top:2px; }
-
-  /* ─ HOME QUICK LINKS ─ */
-  .sec-label { font-size:11px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin:24px 0 12px; }
-  .ql-list { display:flex; flex-direction:column; }
-  .ql-item { display:flex; align-items:center; gap:14px; padding:14px 0; border-bottom:1px solid var(--border); cursor:pointer; transition:opacity 0.12s; }
-  .ql-item:first-child { border-top:1px solid var(--border); }
-  .ql-item:active { opacity:0.6; }
-  @media (hover:hover) { .ql-item:hover { opacity:0.7; } }
-  .ql-icon  { font-size:20px; width:42px; height:42px; border-radius:9px; background:var(--light); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-  .ql-body  { flex:1; min-width:0; }
-  .ql-title { font-size:14px; font-weight:600; color:var(--dark); margin-bottom:1px; }
-  .ql-desc  { font-size:12px; color:var(--muted); line-height:1.4; }
-  .ql-chev  { font-size:16px; color:var(--border); flex-shrink:0; }
-
-  /* ─ FILTERS ─ */
-  .filter-bar { background:var(--white); border-bottom:1px solid var(--border); padding:10px var(--pad); display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
-  .loc-select { background:var(--off); border:1px solid var(--border); border-radius:7px; padding:7px 24px 7px 10px; font-family:var(--font); font-size:12px; font-weight:500; color:var(--dark); outline:none; cursor:pointer; -webkit-appearance:none; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 8px center; min-height:34px; transition:border-color 0.12s; }
-  .loc-select:focus { border-color:var(--dark); }
-  .loc-select.on { border-color:var(--dark); background-color:var(--white); font-weight:600; }
-
-  /* ─ CHIPS ─ */
-  .chips-wrap { overflow-x:auto; scrollbar-width:none; margin:0 calc(-1 * var(--pad)); padding:0 var(--pad) 12px; }
-  .chips-wrap::-webkit-scrollbar { display:none; }
-  .chip-row { display:flex; gap:7px; min-width:max-content; }
-  .chip { display:flex; align-items:center; gap:5px; background:var(--off); border:1px solid var(--border); border-radius:999px; padding:6px 12px; font-size:12px; font-weight:500; color:var(--body); cursor:pointer; transition:all 0.12s; min-height:34px; white-space:nowrap; }
-  .chip:active { opacity:0.7; }
-  .chip.on { background:var(--dark); border-color:var(--dark); color:#fff; }
-  .chip-n  { font-size:10px; opacity:0.6; }
-  .chip.on .chip-n { opacity:0.7; }
-
-  /* ─ SEARCH ─ */
-  .search-wrap { position:relative; margin-bottom:12px; }
-  .search-icon { position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:13px; pointer-events:none; }
-  .search-wrap input { width:100%; background:var(--off); border:1px solid var(--border); border-radius:var(--r); padding:10px 12px 10px 32px; font-family:var(--font); font-size:16px; color:var(--dark); outline:none; transition:border-color 0.12s; -webkit-appearance:none; }
-  .search-wrap input:focus { border-color:var(--dark); background:var(--white); }
-  .search-wrap input::placeholder { color:var(--muted); font-size:13px; }
-
-  /* ─ TAGS ─ */
-  .tags { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:7px; }
-  .tag  { background:var(--light); color:var(--muted); font-size:10px; font-weight:600; padding:2px 7px; border-radius:4px; }
-
-  /* ─ BUTTONS ─ */
-  .btn { font-family:var(--font); font-size:14px; font-weight:600; border-radius:var(--r); padding:11px 20px; cursor:pointer; transition:all 0.12s; border:1px solid transparent; display:inline-flex; align-items:center; gap:6px; white-space:nowrap; line-height:1; min-height:44px; -webkit-tap-highlight-color:transparent; letter-spacing:-0.1px; }
-  .btn:active { opacity:0.8; transform:scale(0.98); }
-  .btn-dark   { background:var(--dark);  color:#fff;         border-color:var(--dark);   }
-  .btn-outline { background:var(--white); color:var(--dark); border-color:var(--border); }
-  .btn-red    { background:var(--red);   color:#fff;         border-color:var(--red);    }
-  .btn-green  { background:var(--green); color:#fff;         border-color:var(--green);  }
-  .btn-blue   { background:var(--blue);  color:#fff;         border-color:var(--blue);   }
-  .btn-sm  { padding:7px 13px; font-size:12px; min-height:36px; border-radius:7px; }
-  .btn-full { width:100%; justify-content:center; }
-
-  /* ─ ANIMAL CARDS ─ */
-  .a-list { display:flex; flex-direction:column; gap:10px; }
-  .acard  { background:var(--white); border:1px solid var(--border); border-radius:var(--r); overflow:hidden; cursor:pointer; transition:all 0.15s; display:flex; flex-direction:row; align-items:stretch; }
-  .acard:active { opacity:0.8; transform:scale(0.99); }
-  @media (hover:hover) { .acard:hover { border-color:#ccc; box-shadow:0 3px 12px rgba(0,0,0,0.07); } }
-  .acard-img { width:88px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:40px; position:relative; background:var(--off); }
-  .acard-body { padding:12px 14px; flex:1; display:flex; flex-direction:column; justify-content:center; min-width:0; }
-  .acard-name { font-size:14px; font-weight:600; color:var(--dark); margin-bottom:2px; letter-spacing:-0.1px; }
-  .acard-meta { font-size:11px; color:var(--muted); margin-bottom:6px; }
-  .acard-foot { display:flex; justify-content:space-between; align-items:center; margin-top:auto; padding-top:4px; }
-  .acard-loc  { font-size:10px; color:var(--muted); }
-  .abadge { position:absolute; font-size:9px; font-weight:600; padding:2px 6px; border-radius:3px; }
-  .ab-red  { top:6px; right:6px; background:var(--red);   color:#fff; }
-  .ab-grn  { top:6px; right:6px; background:var(--green); color:#fff; }
-  .ab-sp   { top:6px; left:6px;  background:rgba(0,0,0,0.55); color:#fff; }
-  .ab-fo   { bottom:6px; left:6px; background:rgba(45,122,79,0.85); color:#fff; }
-
-  /* home mini card */
-  .mini-row { display:flex; gap:10px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none; margin:0 calc(-1 * var(--pad)); padding-left:var(--pad); padding-right:var(--pad); }
-  .mini-row::-webkit-scrollbar { display:none; }
-  .mini-card { flex-shrink:0; width:132px; background:var(--white); border:1px solid var(--border); border-radius:var(--r); overflow:hidden; cursor:pointer; transition:all 0.12s; }
-  .mini-card:active { opacity:0.75; }
-
-  /* ─ LOST & FOUND ─ */
-  .lf-list { display:flex; flex-direction:column; gap:10px; }
-  .lf-card { background:var(--white); border:1px solid var(--border); border-radius:var(--r); padding:14px 16px; cursor:pointer; transition:all 0.12s; }
-  .lf-card:active { opacity:0.8; }
-  @media (hover:hover) { .lf-card:hover { border-color:#ccc; box-shadow:0 3px 12px rgba(0,0,0,0.07); } }
-  .lf-card.reunited { opacity:0.5; }
-  .lf-top  { display:flex; align-items:flex-start; gap:12px; margin-bottom:8px; }
-  .lf-emo  { font-size:32px; width:52px; height:52px; border-radius:10px; background:var(--off); display:flex; align-items:center; justify-content:center; flex-shrink:0; position:relative; }
-  .lf-type { position:absolute; bottom:-5px; right:-5px; font-size:9px; font-weight:700; padding:2px 6px; border-radius:4px; text-transform:uppercase; white-space:nowrap; }
-  .lf-lost { background:#fdecea; color:var(--red); }
-  .lf-found { background:#e8f5e9; color:var(--green); }
-  .lf-reunited { background:#e8f0ff; color:var(--blue); }
-  .lf-name { font-size:14px; font-weight:600; color:var(--dark); margin-bottom:2px; }
-  .lf-meta { font-size:11px; color:var(--muted); margin-bottom:3px; }
-  .lf-desc { font-size:12px; color:var(--muted); line-height:1.55; margin-bottom:8px; }
-  .lf-foot { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; }
-  .lf-loc  { font-size:11px; color:var(--muted); }
-  .lf-contact { font-size:11px; font-weight:600; color:var(--dark); }
-  .reward-pill { font-size:10px; font-weight:700; background:rgba(212,134,43,0.12); color:var(--amber); padding:2px 8px; border-radius:4px; }
-
-  /* ─ ADOPTER CARDS ─ */
-  .p-list { display:flex; flex-direction:column; gap:1px; background:var(--border); border-radius:var(--r); overflow:hidden; border:1px solid var(--border); }
-  .pcard  { background:var(--white); padding:14px 16px; display:flex; gap:12px; align-items:flex-start; }
-  .pav    { font-size:24px; width:42px; height:42px; border-radius:8px; background:var(--off); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-  .pname  { font-size:14px; font-weight:600; color:var(--dark); margin-bottom:2px; }
-  .plook  { font-size:11px; color:var(--muted); margin-bottom:5px; }
-  .plook strong { color:var(--dark); }
-  .pdesc  { font-size:12px; color:var(--muted); line-height:1.5; margin-bottom:6px; }
-
-  /* ─ REPORT CARDS ─ */
-  .r-list { display:flex; flex-direction:column; gap:10px; }
-  .rcard  { background:var(--white); border:1px solid var(--border); border-left:3px solid var(--red); border-radius:var(--r); padding:14px 16px; }
-  .rcard.helped   { border-left-color:var(--blue); }
-  .rcard.resolved { border-left-color:var(--green); opacity:0.55; }
-  .r-icon  { font-size:28px; flex-shrink:0; }
-  .r-title { font-size:13px; font-weight:600; color:var(--dark); margin-bottom:2px; letter-spacing:-0.1px; }
-  .r-desc  { font-size:12px; color:var(--muted); line-height:1.5; margin-bottom:6px; }
-  .r-meta  { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:6px; }
-  .r-mi    { font-size:10px; color:var(--muted); }
-
-  /* volunteer list on report card */
-  .r-volunteers { display:flex; flex-direction:column; gap:4px; margin-top:6px; }
-  .r-vol-item { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--dark); }
-  .r-vol-dot  { width:6px; height:6px; border-radius:50%; background:var(--blue); flex-shrink:0; }
-  .r-vol-eta  { color:var(--muted); }
-
-  /* report card action row */
-  .r-actions { display:flex; gap:8px; align-items:center; justify-content:space-between; margin-top:10px; padding-top:10px; border-top:1px solid var(--border); flex-wrap:wrap; }
-  .r-status-badge { display:inline-flex; align-items:center; gap:5px; }
-
-  .spill { font-size:10px; font-weight:600; padding:2px 8px; border-radius:4px; }
-  .sp-a  { background:rgba(192,57,43,0.1);  color:var(--red);   }
-  .sp-p  { background:rgba(212,134,43,0.12); color:var(--amber); }
-  .sp-h  { background:rgba(37,99,235,0.1);  color:var(--blue);  }
-  .sp-r  { background:rgba(45,122,79,0.1);  color:var(--green); }
-
-  /* ─ FORMS ─ */
-  .fg { margin-bottom:14px; }
-  .flabel { display:block; font-size:11px; font-weight:600; color:var(--muted); letter-spacing:0.5px; text-transform:uppercase; margin-bottom:5px; }
-  .fi,.fs,.fta { width:100%; background:var(--off); border:1px solid var(--border); border-radius:var(--r); padding:10px 12px; font-family:var(--font); font-size:16px; color:var(--dark); outline:none; transition:border-color 0.12s; -webkit-appearance:none; appearance:none; }
-  .fi:focus,.fs:focus,.fta:focus { border-color:var(--dark); background:var(--white); }
-  .fta { resize:vertical; min-height:84px; font-size:14px; }
-  .frow { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-  @media (max-width:480px) { .frow { grid-template-columns:1fr; } }
-  .opt-group { display:flex; flex-direction:column; gap:7px; }
-  .opt-item  { display:flex; align-items:center; gap:10px; background:var(--off); border:1px solid var(--border); border-radius:var(--r); padding:11px 13px; cursor:pointer; min-height:46px; transition:all 0.12s; }
-  .opt-item:active { opacity:0.7; }
-  .opt-item.on { border-color:var(--dark); background:var(--white); }
-  .opt-item input { accent-color:var(--dark); width:15px; height:15px; flex-shrink:0; }
-  .opt-label { font-size:13px; font-weight:500; color:var(--dark); }
-  .opt-hint  { font-size:11px; color:var(--muted); margin-top:1px; }
-  .loc-row   { display:flex; gap:8px; }
-  .loc-row .fi { flex:1; }
-  .loc-btn   { background:var(--dark); color:#fff; border:none; border-radius:var(--r); padding:10px 12px; font-size:17px; cursor:pointer; flex-shrink:0; min-height:44px; }
-  .type-row  { display:flex; gap:7px; flex-wrap:wrap; }
-  .tbtn { font-size:20px; padding:8px 10px; border:1px solid var(--border); border-radius:8px; background:var(--off); cursor:pointer; min-height:44px; min-width:44px; transition:all 0.12s; }
-  .tbtn.on { border-color:var(--dark); background:var(--dark); }
-  .photo-drop { border:1.5px dashed var(--border); border-radius:var(--r); padding:22px; text-align:center; cursor:pointer; background:var(--off); }
-  .photo-drop:active { border-color:var(--dark); }
-  .photo-prev { height:80px; border-radius:8px; border:1px solid var(--border); background:var(--off); display:flex; align-items:center; justify-content:center; font-size:40px; margin-bottom:10px; }
-  .err       { font-size:11px; color:var(--red); margin-top:3px; font-weight:600; }
-  .info-pill { display:inline-flex; align-items:center; gap:5px; background:rgba(45,122,79,0.08); color:var(--green); font-size:12px; font-weight:600; padding:4px 10px; border-radius:999px; margin-bottom:14px; }
-  .divider   { height:1px; background:var(--border); margin:20px 0; }
-  .toggle-btn { padding:6px 12px; border-radius:999px; border:1px solid var(--border); font-size:12px; font-weight:500; cursor:pointer; background:var(--off); color:var(--body); transition:all 0.12s; font-family:var(--font); }
-  .toggle-btn.on { background:var(--dark); border-color:var(--dark); color:#fff; }
-
-  /* ─ SHEET MODAL ─ */
-  .sheet-overlay { position:fixed; inset:0; z-index:200; background:rgba(0,0,0,0.3); display:flex; align-items:flex-end; }
-  @media (min-width:640px) { .sheet-overlay { align-items:center; justify-content:center; } }
-  .sheet { background:var(--white); border-radius:16px 16px 0 0; width:100%; max-height:92vh; display:flex; flex-direction:column; overflow:hidden; animation:slideUp 0.25s cubic-bezier(0.32,0.72,0,1); }
-  @media (min-width:640px) { .sheet { border-radius:14px; max-width:580px; max-height:88vh; animation:fadeScale 0.18s ease; } }
-  @keyframes loadbar { 0%{transform:scaleX(0);transform-origin:left} 50%{transform:scaleX(1);transform-origin:left} 51%{transform:scaleX(1);transform-origin:right} 100%{transform:scaleX(0);transform-origin:right} }
-  @keyframes slideUp   { from{transform:translateY(100%)} to{transform:translateY(0)} }
-  @keyframes fadeScale { from{opacity:0;transform:scale(0.97)} to{opacity:1;transform:scale(1)} }
-  .sh-handle { width:36px; height:4px; background:var(--border); border-radius:2px; margin:10px auto; flex-shrink:0; }
-  @media (min-width:640px) { .sh-handle { display:none; } }
-  .sh-hd    { display:flex; align-items:center; justify-content:space-between; padding:0 16px 12px; border-bottom:1px solid var(--border); flex-shrink:0; }
-  .sh-title { font-size:15px; font-weight:600; color:var(--dark); letter-spacing:-0.2px; }
-  .sh-close { background:var(--light); border:none; border-radius:6px; width:28px; height:28px; font-size:13px; color:var(--muted); display:flex; align-items:center; justify-content:center; cursor:pointer; }
-  .sh-body  { flex:1; overflow-y:auto; padding:16px; -webkit-overflow-scrolling:touch; }
-  .sh-foot  { padding:12px 16px; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; flex-shrink:0; padding-bottom:max(12px,env(safe-area-inset-bottom)); background:var(--white); }
-  .app-strip { display:flex; align-items:center; gap:10px; padding:10px 16px; border-bottom:1px solid var(--border); flex-shrink:0; flex-wrap:wrap; }
-  .app-strip-emoji { font-size:26px; width:42px; height:42px; border-radius:8px; background:var(--off); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-  .app-strip-name  { font-size:13px; font-weight:600; color:var(--dark); }
-  .app-strip-meta  { font-size:11px; color:var(--muted); }
-  .app-strip-note  { font-size:11px; color:var(--muted); background:var(--off); border-radius:6px; padding:5px 9px; margin-left:auto; max-width:170px; line-height:1.5; }
-  .step-bar   { padding:10px 16px; border-bottom:1px solid var(--border); flex-shrink:0; }
-  .step-track { display:flex; align-items:center; }
-  .s-item  { display:flex; flex-direction:column; align-items:center; gap:3px; flex:1; }
-  .s-item.click { cursor:pointer; }
-  .s-circle { width:22px; height:22px; border-radius:50%; border:1.5px solid var(--border); background:var(--white); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:600; color:var(--muted); position:relative; z-index:1; transition:all 0.15s; }
-  .s-item.done   .s-circle { background:var(--dark); border-color:var(--dark); color:#fff; }
-  .s-item.active .s-circle { background:var(--dark); border-color:var(--dark); color:#fff; }
-  .s-lbl  { font-size:9px; font-weight:600; color:var(--muted); }
-  .s-item.active .s-lbl { color:var(--dark); }
-  .s-line { flex:1; height:1.5px; background:var(--border); margin-top:-14px; z-index:0; }
-  .s-line.done { background:var(--dark); }
-  .step-count { font-size:11px; color:var(--muted); }
-  .rev-sec { background:var(--off); border-radius:8px; padding:12px; margin-bottom:10px; }
-  .rev-ttl { font-size:10px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px; }
-  .rev-row { display:flex; justify-content:space-between; gap:8px; margin-bottom:4px; }
-  .rev-row:last-child { margin-bottom:0; }
-  .rk { font-size:12px; color:var(--muted); flex-shrink:0; }
-  .rv { font-size:12px; font-weight:500; color:var(--dark); text-align:right; max-width:200px; }
-  .success { text-align:center; padding:24px 12px; }
-  .suc-i { font-size:44px; margin-bottom:10px; }
-  .suc-t { font-size:20px; font-weight:700; color:var(--dark); margin-bottom:8px; letter-spacing:-0.3px; }
-  .suc-d { font-size:13px; color:var(--muted); line-height:1.7; margin:0 auto 14px; max-width:300px; }
-  .suc-ref { background:var(--off); border:1px solid var(--border); border-radius:8px; padding:9px 15px; display:inline-block; margin-bottom:18px; }
-  .suc-ref-l { font-size:10px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px; }
-  .suc-ref-c { font-size:18px; font-weight:700; color:var(--dark); letter-spacing:-0.3px; }
-  .suc-steps { display:flex; flex-direction:column; gap:8px; text-align:left; margin:0 auto 18px; max-width:290px; }
-  .suc-step  { display:flex; align-items:flex-start; gap:8px; font-size:12px; color:var(--muted); line-height:1.5; }
-  .suc-step-n { background:var(--dark); color:#fff; font-weight:700; font-size:10px; width:17px; height:17px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; }
-  .d-thumb { border-radius:10px; height:140px; display:flex; align-items:center; justify-content:center; font-size:64px; margin-bottom:12px; background:var(--off); }
-  .d-name  { font-size:20px; font-weight:700; color:var(--dark); margin-bottom:2px; letter-spacing:-0.3px; }
-  .d-sub   { font-size:12px; color:var(--muted); margin-bottom:10px; }
-  .d-pills { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
-  .d-pill  { background:var(--off); border:1px solid var(--border); font-size:11px; font-weight:500; color:var(--body); padding:4px 10px; border-radius:6px; }
-  .d-desc  { font-size:13px; color:var(--muted); line-height:1.7; margin:10px 0 16px; }
-  .d-acts  { display:flex; flex-direction:column; gap:8px; }
-  .emerg-bar { background:var(--red); color:#fff; padding:9px var(--pad); font-size:12px; font-weight:600; text-align:center; line-height:1.5; }
-  .inote { font-size:12px; color:var(--muted); background:var(--off); border-radius:8px; padding:10px 13px; margin-bottom:16px; line-height:1.6; border:1px solid var(--border); }
-  .inote strong { color:var(--dark); }
-  .toast { position:fixed; bottom:calc(var(--nav-h) + 10px); left:50%; transform:translateX(-50%) translateY(18px); z-index:500; background:var(--dark); color:#fff; padding:9px 16px; border-radius:8px; font-size:13px; font-weight:500; pointer-events:none; opacity:0; transition:all 0.2s ease; white-space:nowrap; box-shadow:0 4px 14px rgba(0,0,0,0.2); }
-  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
-  @media (min-width:768px) { .toast { bottom:auto; top:62px; } }
-
-  /* ─ ETA OPTION BUTTONS ─ */
-  .eta-grid { display:flex; flex-direction:column; gap:8px; }
-  .eta-btn { display:flex; align-items:center; gap:12px; background:var(--off); border:1px solid var(--border); border-radius:var(--r); padding:13px 16px; cursor:pointer; transition:all 0.12s; text-align:left; font-family:var(--font); min-height:52px; }
-  .eta-btn:hover { border-color:var(--dark); background:var(--white); }
-  .eta-btn:active { opacity:0.8; }
-  .eta-icon { font-size:22px; flex-shrink:0; }
-  .eta-label { font-size:14px; font-weight:600; color:var(--dark); }
-  .eta-sub   { font-size:11px; color:var(--muted); margin-top:1px; }
-
-  /* helped upload */
-  .helped-note { font-size:12px; color:var(--muted); background:var(--off); border:1px solid var(--border); border-radius:8px; padding:10px 13px; margin-bottom:16px; line-height:1.6; }
-  .helped-note strong { color:var(--dark); }
-`;
-
-// ─────────────────────────────────────────────────────────────────────────────
-// ROOT
-// ─────────────────────────────────────────────────────────────────────────────
-export default function App() {
-  // ── language ──
-  const [lang, setLang] = useState("en");
-  const t = T[lang];  // translation shortcut
-
-  // ── navigation ──
-  const [tab, setTab]         = useState("home");
-  const [animalSub, setASub]  = useState("adopt");    // adopt | foster | profile
-  const [lfSub, setLFSub]     = useState("board");    // board | post
-  const [lfTypeFilter, setLFType] = useState("all");  // all | lost | found
-  const [ownerSub, setOSub]   = useState("sitting");  // sitting | register | rehome | families | profile
-
-  // ── filters ──
-  const [species, setSpecies]     = useState("All");
-  const [search, setSearch]       = useState("");
-  const [fCountry, setFC]         = useState("All Countries");
-  const [fProvince, setFP]        = useState("All Provinces");
-  const [fCity, setFCi]           = useState("All Cities");
-  const [svcFilter, setSvcF]      = useState("All Services");
-  const [sitterCity, setSitterCity] = useState("All");
-
-  // ── modal state ──
-  const [detailAnimal, setDetailA]  = useState(null);
-  const [detailSitter, setDetailS]  = useState(null);
-  const [detailLF, setDetailLF]     = useState(null);
-  const [applyFor, setApplyFor]     = useState(null);
-  const [fosterFor, setFosterFor]   = useState(null);
-
-  // ── data state ──
-  const [reports, setReports] = useState(REPORTS_SEED);
-  const [lfItems, setLFItems] = useState(LF_SEED);
-  const [sitters, setSitters] = useState(SITTERS_SEED);
-  const [animals, setAnimals] = useState(ANIMALS);
-  const [dbLoading, setDbLoading] = useState(true);
-  const [photo, setPhoto]     = useState(null);
-  const [lfPhoto, setLFPhoto] = useState(null);
-  const [rf, setRf]           = useState({ title:"", location:"", desc:"", type:"Injured", animal:"" });
-  const [lfForm, setLFForm]   = useState({ type:"lost", name:"", species:"Dog", breed:"", color:"", area:"", city:"", contact:"", reward:"", desc:"" });
-
-  // ── Supabase: veri çek ──
-  useEffect(() => {
-    const load = async () => {
-      setDbLoading(true);
-      try {
-        // Raporları çek
-        const { data: rData } = await db.from("reports").select(`*, volunteers(*)`).order("created_at", { ascending:false });
-        if (rData && rData.length > 0) {
-          const mapped = rData.map(r => ({
-            id: r.id,
-            emoji: r.emoji || "🐾",
-            title: { en: r.title, tr: r.title },
-            desc:  { en: r.description || "", tr: r.description || "" },
-            location: r.location,
-            time: { en: new Date(r.created_at).toLocaleDateString("en"), tr: new Date(r.created_at).toLocaleDateString("tr") },
-            status: r.status,
-            reporter: r.reporter_name || "Anonymous",
-            volunteers: (r.volunteers || []).map(v => ({ name: v.name, eta: v.eta, etaOrder: v.eta_order })),
-          }));
-          setReports(mapped);
-        }
-
-        // Kayıp & bulunan ilanlarını çek
-        const { data: lfData } = await db.from("lf_listings").select("*").order("created_at", { ascending:false });
-        if (lfData && lfData.length > 0) {
-          const mapped = lfData.map(item => ({
-            id: item.id,
-            type: item.type,
-            emoji: item.species === "Dog" ? "🐕" : item.species === "Cat" ? "🐈" : item.species === "Rabbit" ? "🐇" : "🐾",
-            name: item.name || "Unknown",
-            species: { en: item.species, tr: item.species },
-            breed:   { en: item.breed || "", tr: item.breed || "" },
-            color:   { en: item.color || "", tr: item.color || "" },
-            area: item.area,
-            city: item.city,
-            date: { en: new Date(item.created_at).toLocaleDateString("en"), tr: new Date(item.created_at).toLocaleDateString("tr") },
-            contact: item.contact,
-            reward: { en: item.reward || "", tr: item.reward || "" },
-            desc: { en: item.desc_en || "", tr: item.desc_tr || "" },
-            status: item.status,
-          }));
-          setLFItems(prev => [...mapped, ...LF_SEED]);
-        }
-
-        // Sitterleri çek
-        const { data: sData } = await db.from("sitters").select("*").order("created_at", { ascending:false });
-        if (sData && sData.length > 0) {
-          const mapped = sData.map(s => ({
-            id: s.id,
-            name: s.name,
-            emoji: "👤",
-            city: s.city,
-            area: s.area,
-            rating: s.rating || 0,
-            reviews: s.review_count || 0,
-            price: { en: s.price, tr: s.price },
-            services: { en: s.services || [], tr: s.services || [] },
-            accepts: s.accepts || [],
-            hasYard: s.has_yard,
-            maxPets: s.max_pets,
-            availability: { en: s.availability, tr: s.availability },
-            bio: { en: s.bio, tr: s.bio },
-          }));
-          setSitters(prev => [...mapped, ...SITTERS_SEED]);
-        }
-      } catch (err) {
-        console.error("Supabase yükleme hatası:", err);
-      }
-      setDbLoading(false);
-    };
-    load();
-  }, []);
-
-  const [toast, setToast] = useState({ show:false, msg:"" });
-
-  const [helpedFor, setHelpedFor] = useState(null);
-  const [helpProof, setHelpProof] = useState(null);
-  const [etaFor, setEtaFor]       = useState(null);   // report to volunteer for
-  const [myName]                  = useState("You");   // in real app: logged-in user
-  const [showReportForm, setShowReportForm] = useState(false);
-
-  const fileRef   = useRef();
-  const lfFileRef = useRef();
-  const helpProofRef = useRef();
-
-  const say   = (msg) => { setToast({ show:true, msg }); setTimeout(() => setToast({ show:false, msg:"" }), 2800); };
-  const goTab = (t)   => { setTab(t); setSearch(""); setSpecies("All"); setFC("All Countries"); setFP("All Provinces"); setFCi("All Cities"); };
-
-  // filtered animals
-  const filtered = animals.filter(a => {
-    const okS  = species === "All" || a.species.en === species;
-    const okQ  = !search || a.name.toLowerCase().includes(search.toLowerCase()) || (a.breed?.en||"").toLowerCase().includes(search.toLowerCase());
-    const okC  = fCountry  === "All Countries"  || a.country  === fCountry;
-    const okP  = fProvince === "All Provinces"  || a.province === fProvince;
-    const okCi = fCity     === "All Cities"     || a.city     === fCity;
-    return okS && okQ && okC && okP && okCi;
-  });
-
-  const filteredSitters = sitters.filter(s =>
-    (sitterCity === "All" || s.city === sitterCity) &&
-    (svcFilter === "All Services" || (s.services?.en || s.services || []).includes(svcFilter))
-  );
-
-  const filteredLF = lfItems.filter(item =>
-    lfTypeFilter === "all" || item.type === lfTypeFilter
-  );
-
-  const sitterCities = ["All", ...Array.from(new Set(sitters.map(s => s.city)))];
-
-  // location filter bar (reused in Adopt & Foster)
-  const LocFilters = () => (
-    <div className="filter-bar">
-      <select className={`loc-select ${fCountry !== "All Countries" ? "on" : ""}`} value={fCountry} onChange={e => { setFC(e.target.value); setFP("All Provinces"); setFCi("All Cities"); }}>
-        {COUNTRIES.map(c => <option key={c}>{c}</option>)}
-      </select>
-      <select className={`loc-select ${fProvince !== "All Provinces" ? "on" : ""}`} value={fProvince} onChange={e => { setFP(e.target.value); setFCi("All Cities"); }}>
-        {(PROVINCES[fCountry] || ["All Provinces"]).map(p => <option key={p}>{p}</option>)}
-      </select>
-      <select className={`loc-select ${fCity !== "All Cities" ? "on" : ""}`} value={fCity} onChange={e => setFCi(e.target.value)}>
-        {(CITIES[fProvince] || ["All Cities"]).map(c => <option key={c}>{c}</option>)}
-      </select>
-    </div>
-  );
-
-  return (
-    <>
-      <style>{CSS}</style>
-
-      {/* TOPBAR */}
-      <header className="topbar">
-        <div className="logo"><div className="logo-dot" />{t.appName}</div>
-        <nav className="desk-nav">
-          {TABS.map(tb => (
-            <button key={tb.id} className={`dnav ${tab === tb.id ? "on" : ""} ${tb.id === "help" ? "red" : ""}`} onClick={() => goTab(tb.id)}>
-              {t[tb.id === "lostfound" ? "lostFound" : tb.id] || tb.label}
-            </button>
-          ))}
-        </nav>
-        <div className="lang-sel">
-          <button className={`lang-btn ${lang==="en"?"on":""}`} onClick={()=>setLang("en")}>EN</button>
-          <button className={`lang-btn ${lang==="tr"?"on":""}`} onClick={()=>setLang("tr")}>TR</button>
-        </div>
-      </header>
-
-      <div className="app">
-        {dbLoading && (
-          <div style={{ position:"fixed", top:0, left:0, right:0, height:3, background:"var(--amber)", zIndex:999, animation:"loadbar 1.5s ease-in-out infinite" }} />
-        )}
-
-        {/* ══════════════════════════════ HOME ══════════════════════════════ */}
-        {tab === "home" && <>
-          <div className="hero">
-            <div className="hero-label">{t.tagline}</div>
-            <h1 className="hero-h1">{t.heroH1}<br /><em>{t.heroH1Em}</em></h1>
-            <p className="hero-p">{t.heroP}</p>
-            <div className="hero-cta">
-              <button className="btn btn-dark" onClick={() => goTab("animals")}>{t.browseAnimals}</button>
-              <button className="btn btn-outline" onClick={() => goTab("help")}>🚨 {t.reportAnimal}</button>
-            </div>
-          </div>
-
-          <div className="stats">
-            {[[247,t.adopted],[58,t.waiting],[32,t.rescues],[14,t.shelters]].map(([n,l]) => (
-              <div key={l} className="stat"><div className="stat-n">{n}</div><div className="stat-l">{l}</div></div>
-            ))}
-          </div>
-
-          <div className="wrap">
-            <div className="sec-label">{t.browseByGoal}</div>
-            <div className="ql-list">
-              {[
-                { icon:"🏡", title:t.adoptTitle,    desc:t.adoptDesc,    tab:"animals",   sub:() => setASub("adopt")   },
-                { icon:"🤝", title:t.fosterTitle,   desc:t.fosterDesc,   tab:"animals",   sub:() => setASub("foster")  },
-                { icon:"🔍", title:t.lostFoundTitle, desc:t.lostFoundDesc,tab:"lostfound", sub:() => {}                },
-                { icon:"🛋️", title:t.sittingTitle,  desc:t.sittingDesc,  tab:"owners",    sub:() => setOSub("sitting") },
-                { icon:"🔄", title:t.rehomeTitle,   desc:t.rehomeDesc,   tab:"owners",    sub:() => setOSub("rehome")  },
-                { icon:"🚨", title:t.helpTitle,     desc:t.helpDesc,     tab:"help",      sub:() => {}                 },
-              ].map((f,i) => (
-                <div key={i} className="ql-item" onClick={() => { f.sub(); goTab(f.tab); }}>
-                  <div className="ql-icon">{f.icon}</div>
-                  <div className="ql-body"><div className="ql-title">{f.title}</div><div className="ql-desc">{f.desc}</div></div>
-                  <div className="ql-chev">›</div>
-                </div>
-              ))}
-            </div>
-
-            <div className="divider" />
-            <div className="sec-label">{t.recentlyAdded}</div>
-            <div className="mini-row">
-              {animals.map(a => <MiniCard key={a.id} a={a} lang={lang} onClick={() => setDetailA(a)} />)}
-            </div>
-          </div>
-        </>}
-
-        {/* ══════════════════════════════ ANIMALS ═══════════════════════════ */}
-        {tab === "animals" && <>
-          <div className="ph">
-            <div className="ph-title">{t.animals}</div>
-            <div className="ph-sub">{lang==="tr" ? "Sahiplenmek veya geçici bakım için hayvan bul." : "Find a pet to adopt or foster."}</div>
-            <div className="stabs">
-              <button className={`stab ${animalSub === "adopt"   ? "on" : ""}`} onClick={() => setASub("adopt")}>{t.adopt}</button>
-              <button className={`stab ${animalSub === "foster"  ? "on" : ""}`} onClick={() => setASub("foster")}>{t.foster}</button>
-              <button className={`stab ${animalSub === "profile" ? "on" : ""}`} onClick={() => setASub("profile")}>{t.postProfile}</button>
-            </div>
-          </div>
-
-          {/* Shared: species chips + location filters — only for adopt/foster */}
-          {animalSub !== "profile" && (
-          <div style={{ background:"#fff", borderBottom:"1px solid #ebebeb", padding:"10px 16px 0" }}>
-            <div className="chips-wrap" style={{ margin:0, padding:"0 0 10px" }}>
-              <div className="chip-row">
-                {SPECIES.map(s => {
-                  const pool = animalSub === "foster" ? ANIMALS.filter(a => a.canFoster) : ANIMALS;
-                  const cnt  = s.l === "All" ? pool.length : pool.filter(a => a.species.en === s.l).length;
-                  return (
-                    <button key={s.l} className={`chip ${species === s.l ? "on" : ""}`} onClick={() => setSpecies(s.l)}>
-                      {s.e} {s.l} <span className="chip-n">{cnt}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-          )}
-          {animalSub !== "profile" && <LocFilters />}
-
-          <div className="wrap" style={{ paddingTop:14 }}>
-            {animalSub === "profile" && (
-              <ProfileForm lang={lang} t={t} onSubmit={n => say(`✓ ${n} ${lang==="tr"?"profili yayınlandı":"profile posted"}`)} />
-            )}
-            {animalSub !== "profile" && (<>
-            {animalSub === "foster" && (
-              <div className="inote"><strong>{lang==="tr"?"Geçici bakım nedir?":"What is fostering?"}</strong> {t.fosterNote}</div>
-            )}
-            <div className="search-wrap">
-              <span className="search-icon">🔍</span>
-              <input placeholder={t.searchPlaceholder} value={search} onChange={e => setSearch(e.target.value)} />
-            </div>
-            {(() => {
-              const list = animalSub === "foster"
-                ? filtered.filter(a => a.canFoster)
-                : filtered;
-              return list.length > 0
-                ? <div className="a-list">{list.map(a => <ACard key={a.id} a={a} mode={animalSub} lang={lang} onClick={() => setDetailA(a)} />)}</div>
-                : <div style={{ textAlign:"center", padding:"40px 0", color:"var(--muted)", fontSize:13 }}>No animals found.</div>;
-            })()}
-            </>)}
-          </div>
-        </>}
-
-        {/* ══════════════════════════════ LOST & FOUND ══════════════════════ */}
-        {tab === "lostfound" && <>
-          <div className="ph">
-            <div className="ph-title">{t.lostFound}</div>
-            <div className="ph-sub">{t.lostFoundSub}</div>
-            <div className="stabs">
-              <button className={`stab ${lfSub === "board" ? "on" : ""}`} onClick={() => setLFSub("board")}>
-                {t.browse} <span style={{ fontSize:11, color:"var(--muted)", marginLeft:4 }}>({lfItems.filter(i=>i.status==="open").length} {t.openListings})</span>
-              </button>
-              <button className={`stab ${lfSub === "post" ? "on" : ""}`} onClick={() => setLFSub("post")}>
-                {t.postListing}
-              </button>
-            </div>
-          </div>
-
-          {lfSub === "board" && (
-            <div className="wrap" style={{ paddingTop:16 }}>
-              <div style={{ display:"flex", gap:8, marginBottom:14 }}>
-                {[["all", t.allListings],["lost", t.lostFilter],["found", t.foundFilter]].map(([v,l]) => (
-                  <button key={v} className={`chip ${lfTypeFilter === v ? "on" : ""}`} onClick={() => setLFType(v)}>{l}</button>
-                ))}
-              </div>
-
-              <div className="lf-list">
-                {filteredLF.map(item => (
-                  <div key={item.id} className={`lf-card ${item.status === "reunited" ? "reunited" : ""}`} onClick={() => setDetailLF(item)}>
-                    <div className="lf-top">
-                      <div className="lf-emo">
-                        {item.emoji}
-                        <span className={`lf-type ${item.status === "reunited" ? "lf-reunited" : item.type === "lost" ? "lf-lost" : "lf-found"}`}>
-                          {item.status === "reunited" ? t.reunited : item.type === "lost" ? (lang==="tr"?"Kayıp":"Lost") : (lang==="tr"?"Bulunan":"Found")}
-                        </span>
-                      </div>
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <div className="lf-name">{item.name === "Unknown" ? (lang==="tr"?`Bulunan ${item.species.tr}`:`Found ${item.species.en}`) : item.name}</div>
-                        <div className="lf-meta">{item.species[lang]} · {item.breed[lang]} · {item.color[lang]}</div>
-                        <div className="lf-meta">📍 {item.area}, {item.city} · {item.date[lang]}</div>
-                      </div>
-                      {item.reward[lang] && <span className="reward-pill">{lang==="tr"?"Ödül":"Reward"}: {item.reward[lang]}</span>}
-                    </div>
-                    <div className="lf-desc">{item.desc[lang]}</div>
-                    <div className="lf-foot">
-                      <span className="lf-contact">📞 {item.contact}</span>
-                      {item.status !== "reunited" && (
-                        <button className="btn btn-sm btn-outline" onClick={e => { e.stopPropagation(); say(t.contactCopied); }}>{t.contact}</button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {lfSub === "post" && (
-            <div className="wrap" style={{ paddingTop:16 }}>
-              <div className="inote">{t.postLostFoundNote}</div>
-
-              <div className="fg">
-                <label className="flabel">{t.listingType}</label>
-                <div style={{ display:"flex", gap:8 }}>
-                  {[["lost", t.iLostMyPet],["found", t.iFoundAnAnimal]].map(([v,l]) => (
-                    <label key={v} className={`opt-item ${lfForm.type === v ? "on" : ""}`} style={{ flex:1 }}>
-                      <input type="radio" name="lftype" checked={lfForm.type === v} onChange={() => setLFForm(f => ({ ...f, type:v }))} />
-                      <div className="opt-label" style={{ fontSize:12 }}>{l}</div>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {lfForm.type === "lost" && (
-                <div className="fg"><label className="flabel">{t.petName}</label><input className="fi" placeholder={lang==="tr"?"örn. Max":"e.g. Max"} value={lfForm.name} onChange={e => setLFForm(f => ({ ...f, name:e.target.value }))} /></div>
-              )}
-
-              <div className="frow">
-                <div className="fg"><label className="flabel">{t.species} *</label>
-                  <select className="fs" value={lfForm.species} onChange={e => setLFForm(f => ({ ...f, species:e.target.value }))}>
-                    {lang==="tr"
-                      ? <><option>Köpek</option><option>Kedi</option><option>Tavşan</option><option>Kuş</option><option>Hamster</option><option>Diğer</option></>
-                      : <><option>Dog</option><option>Cat</option><option>Rabbit</option><option>Bird</option><option>Hamster</option><option>Other</option></>}
-                  </select>
-                </div>
-                <div className="fg"><label className="flabel">{t.breed}</label><input className="fi" placeholder={lang==="tr"?"örn. Labrador":"e.g. Labrador"} value={lfForm.breed} onChange={e => setLFForm(f => ({ ...f, breed:e.target.value }))} /></div>
-              </div>
-
-              <div className="frow">
-                <div className="fg"><label className="flabel">{t.colour}</label><input className="fi" placeholder={lang==="tr"?"örn. Siyah & beyaz":"e.g. Black & white"} value={lfForm.color} onChange={e => setLFForm(f => ({ ...f, color:e.target.value }))} /></div>
-                <div className="fg"><label className="flabel">{t.cityField}</label><input className="fi" placeholder={lang==="tr"?"örn. İstanbul":"e.g. Nairobi"} value={lfForm.city} onChange={e => setLFForm(f => ({ ...f, city:e.target.value }))} /></div>
-              </div>
-
-              <div className="fg"><label className="flabel">{t.areaField}</label>
-                <div className="loc-row">
-                  <input className="fi" placeholder={lang==="tr"?"örn. Beşiktaş":"e.g. Westlands"} value={lfForm.area} onChange={e => setLFForm(f => ({ ...f, area:e.target.value }))} />
-                  <button className="loc-btn" onClick={() => { setLFForm(f => ({ ...f, area:"Westlands", city:"Nairobi" })); say(t.locationDetected); }}>📍</button>
-                </div>
-              </div>
-
-              <div className="fg"><label className="flabel">{t.yourContact}</label><input className="fi" placeholder={t.contactPlaceholder} value={lfForm.contact} onChange={e => setLFForm(f => ({ ...f, contact:e.target.value }))} /></div>
-
-              {lfForm.type === "lost" && (
-                <div className="fg"><label className="flabel">{t.reward}</label><input className="fi" placeholder={lang==="tr"?"örn. 1.000 TL":"e.g. KES 5,000"} value={lfForm.reward} onChange={e => setLFForm(f => ({ ...f, reward:e.target.value }))} /></div>
-              )}
-
-              <div className="fg"><label className="flabel">{t.descriptionField}</label>
-                <textarea className="fta" placeholder={lfForm.type === "lost" ? t.descLostPlaceholder : t.descFoundPlaceholder} value={lfForm.desc} onChange={e => setLFForm(f => ({ ...f, desc:e.target.value }))} />
-              </div>
-
-              <div className="fg">
-                <label className="flabel">{t.photo}</label>
-                {lfPhoto && <div className="photo-prev">{lfPhoto}</div>}
-                <div className="photo-drop" onClick={() => lfFileRef.current.click()}>
-                  <div style={{ fontSize:22, marginBottom:5 }}>📷</div>
-                  <div style={{ fontSize:12, fontWeight:500, color:"var(--muted)" }}>{t.uploadPhoto}</div>
-                  <div style={{ fontSize:11, color:"var(--muted)", marginTop:2 }}>{t.photoHint}</div>
-                </div>
-                <input ref={lfFileRef} type="file" accept="image/*" style={{ display:"none" }} onChange={e => { if(e.target.files[0]) { const em=["🐕","🐈","🐾","🐦","🐇"]; setLFPhoto(em[Math.floor(Math.random()*em.length)]); say(t.photoUploaded2); }}} />
-              </div>
-
-              <button className="btn btn-dark btn-full" onClick={async () => {
-                if(!lfForm.area || !lfForm.city || !lfForm.contact || !lfForm.desc) { say(lang==="tr"?"Lütfen tüm zorunlu alanları doldurun":"Please fill all required fields"); return; }
-                const emoji = lfForm.species==="Dog"||lfForm.species==="Köpek"?"🐕":lfForm.species==="Cat"||lfForm.species==="Kedi"?"🐈":lfForm.species==="Rabbit"||lfForm.species==="Tavşan"?"🐇":"🐾";
-                const { data } = await db.from("lf_listings").insert([{
-                  type: lfForm.type,
-                  name: lfForm.name || null,
-                  species: lfForm.species,
-                  breed: lfForm.breed || null,
-                  color: lfForm.color || null,
-                  area: lfForm.area,
-                  city: lfForm.city,
-                  contact: lfForm.contact,
-                  reward: lfForm.reward || null,
-                  desc_en: lfForm.desc,
-                  desc_tr: lfForm.desc,
-                  status: "open",
-                }]).select().single();
-                const newItem = { id:data?.id||Date.now(), type:lfForm.type, emoji, name:lfForm.name||"Unknown", species:{en:lfForm.species,tr:lfForm.species}, breed:{en:lfForm.breed||"",tr:lfForm.breed||""}, color:{en:lfForm.color||"",tr:lfForm.color||""}, area:lfForm.area, city:lfForm.city, date:{en:"Just now",tr:"Az önce"}, contact:lfForm.contact, reward:{en:lfForm.reward||"",tr:lfForm.reward||""}, desc:{en:lfForm.desc,tr:lfForm.desc}, status:"open" };
-                setLFItems(prev => [newItem, ...prev]);
-                setLFForm({ type:"lost", name:"", species:"Dog", breed:"", color:"", area:"", city:"", contact:"", reward:"", desc:"" });
-                setLFPhoto(null); setLFSub("board");
-                say(lfForm.type === "lost" ? t.postLost : t.postFound);
-              }}>
-                {lfForm.type === "lost" ? t.postLost : t.postFound}
-              </button>
-            </div>
-          )}
-        </>}
-
-        {/* ══════════════════════════════ OWNERS ════════════════════════════ */}
-        {tab === "owners" && <>
-          <div className="ph">
-            <div className="ph-title">{t.forOwners}</div>
-            <div className="ph-sub">{t.forOwnersSub}</div>
-            <div className="stabs">
-              <button className={`stab ${ownerSub === "sitting"  ? "on" : ""}`} onClick={() => setOSub("sitting")}>{t.petSitting}</button>
-              <button className={`stab ${ownerSub === "register" ? "on" : ""}`} onClick={() => setOSub("register")}>{t.becomeSitter}</button>
-              <button className={`stab ${ownerSub === "rehome"   ? "on" : ""}`} onClick={() => setOSub("rehome")}>{t.rehomeTab}</button>
-              <button className={`stab ${ownerSub === "families" ? "on" : ""}`} onClick={() => setOSub("families")}>{t.findFamilies}</button>
-            </div>
-          </div>
-
-          <div className="wrap" style={{ paddingTop:18 }}>
-
-            {ownerSub === "sitting" && <>
-              <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:10 }}>
-                <span style={{ fontSize:11, fontWeight:600, color:"var(--muted)", textTransform:"uppercase", letterSpacing:"0.5px", alignSelf:"center" }}>{t.cityLabel}</span>
-                {sitterCities.map(c => <button key={c} className={`chip ${sitterCity === c ? "on" : ""}`} onClick={() => setSitterCity(c)} style={{ minHeight:32, padding:"5px 12px", fontSize:11 }}>{c === "All" ? (lang==="tr"?"Tümü":"All") : c}</button>)}
-              </div>
-              <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:16 }}>
-                <span style={{ fontSize:11, fontWeight:600, color:"var(--muted)", textTransform:"uppercase", letterSpacing:"0.5px", alignSelf:"center" }}>{t.serviceLabel}</span>
-                {SVC_TYPES.map(s => <button key={s} className={`chip ${svcFilter === s ? "on" : ""}`} onClick={() => setSvcF(s)} style={{ minHeight:32, padding:"5px 12px", fontSize:11 }}>{s}</button>)}
-              </div>
-              <div style={{ fontSize:11, color:"var(--muted)", fontWeight:500, marginBottom:12 }}>{filteredSitters.length} {t.sittersFound}</div>
-              {filteredSitters.length > 0 ? (
-                <div className="sitter-list">
-                  {filteredSitters.map(s => (
-                    <div key={s.id} className="sitter-card" onClick={() => setDetailS(s)}>
-                      <div className="sitter-top">
-                        <div className="sitter-avatar">{s.emoji}</div>
-                        <div style={{ flex:1 }}>
-                          <div className="sitter-name">{s.name}</div>
-                          <div className="sitter-loc">📍 {s.area}, {s.city}</div>
-                          <div style={{ display:"flex", alignItems:"center", gap:5 }}>
-                            <span className="sitter-stars">{"★".repeat(Math.round(s.rating))}</span>
-                            <span style={{ fontSize:12, fontWeight:600 }}>{s.rating}</span>
-                            <span style={{ fontSize:11, color:"var(--muted)" }}>({s.reviews})</span>
-                          </div>
-                        </div>
-                        <div>
-                          <div className="sitter-price">{s.price[lang]}</div>
-                          <div className="sitter-avail">{s.availability[lang]}</div>
-                        </div>
-                      </div>
-                      <div className="sitter-bio">{s.bio[lang]}</div>
-                      <div className="svc-wrap">{s.services[lang].map(sv => <span key={sv} className="svc-tag">{sv}</span>)}</div>
-                      <div className="sitter-foot">
-                        <div>
-                          <div style={{ fontSize:11, color:"var(--muted)", marginBottom:2 }}>{t.accepts} <strong style={{ color:"var(--dark)" }}>{s.accepts.join(", ")}</strong></div>
-                          <div className="sitter-yard">{s.hasYard ? t.hasYard : t.noYard} · {t.maxPets} {s.maxPets}</div>
-                        </div>
-                        <button className="btn btn-dark btn-sm" onClick={e => { e.stopPropagation(); say(`📨 ${t.bookingRequestSent} ${s.name}!`); }}>{t.book}</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div style={{ textAlign:"center", padding:"40px 0", color:"var(--muted)", fontSize:13 }}>{t.noSittersFound}</div>
-              )}
-            </>}
-
-            {ownerSub === "register" && (
-              <RegisterSitterForm lang={lang} t={t} onSubmit={name => { say(`✓ ${name} ${lang==="tr"?"bakıcı olarak kaydedildi!":"registered as a sitter!"}`); setOSub("sitting"); }} />
-            )}
-
-            {ownerSub === "rehome" && (
-              <RehomeForm lang={lang} t={t} onSubmit={n => say(`✓ ${n} ${lang==="tr"?"yeni yuva ilanı yayınlandı":"listed for rehoming"}`)} />
-            )}
-
-            {ownerSub === "families" && (
-              <div className="p-list">
-                {ADOPTERS.map(p => (
-                  <div key={p.id} className="pcard">
-                    <div className="pav">{p.emoji}</div>
-                    <div style={{ flex:1 }}>
-                      <div style={{ display:"flex", justifyContent:"space-between", flexWrap:"wrap", gap:8 }}>
-                        <div>
-                          <div className="pname">{p.name}</div>
-                          <div className="plook">{t.lookingFor} <strong>{p.looking[lang]}</strong> · 📍 {p.city}</div>
-                        </div>
-                        <button className="btn btn-outline btn-sm" onClick={() => say(t.contactRequest)}>{t.contact}</button>
-                      </div>
-                      <div className="pdesc">{p.desc[lang]}</div>
-                      <div className="tags">{p.tags[lang].map(tg => <span key={tg} className="tag">{tg}</span>)}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-          </div>
-        </>}
-
-        {/* ══════════════════════════════ HELP ══════════════════════════════ */}
-        {tab === "help" && <>
-          <div className="emerg-bar">{t.emergencyBar}</div>
-          <div className="ph" style={{ position:"sticky" }}>
-            <div className="ph-title">{t.helpAnimals}</div>
-            <div className="ph-sub" style={{ marginBottom:0, paddingBottom:12 }}>{t.helpSub}</div>
-          </div>
-
-          <div className="wrap" style={{ paddingTop:16 }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-              <div style={{ fontSize:13, fontWeight:600, color:"var(--dark)" }}>
-                {t.activeReports}
-                <span style={{ fontWeight:400, color:"var(--muted)", marginLeft:6 }}>
-                  ({reports.filter(r => r.status === "active").length} {t.needingHelp})
-                </span>
-              </div>
-            </div>
-
-            {/* ── Reports list — active first, then helped, then resolved ── */}
-            <div className="r-list" style={{ marginBottom:24 }}>
-
-  /* ─ ADOPTER CARDS ─ */
-  .p-list { display:flex; flex-direction:column; gap:1px; background:var(--border); border-radius:var(--r); overflow:hidden; border:1px solid var(--border); }
-  .pcard  { background:var(--white); padding:14px 16px; display:flex; gap:12px; align-items:flex-start; }
-  .pav    { font-size:24px; width:42px; height:42px; border-radius:8px; background:var(--off); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-  .pname  { font-size:14px; font-weight:600; color:var(--dark); margin-bottom:2px; }
-  .plook  { font-size:11px; color:var(--muted); margin-bottom:5px; }
-  .plook strong { color:var(--dark); }
-  .pdesc  { font-size:12px; color:var(--muted); line-height:1.5; margin-bottom:6px; }
-
-  /* ─ REPORT CARDS ─ */
-  .r-list { display:flex; flex-direction:column; gap:10px; }
-  .rcard  { background:var(--white); border:1px solid var(--border); border-left:3px solid var(--red); border-radius:var(--r); padding:14px 16px; }
-  .rcard.helped   { border-left-color:var(--blue); }
-  .rcard.resolved { border-left-color:var(--green); opacity:0.55; }
-  .r-icon  { font-size:28px; flex-shrink:0; }
-  .r-title { font-size:13px; font-weight:600; color:var(--dark); margin-bottom:2px; letter-spacing:-0.1px; }
-  .r-desc  { font-size:12px; color:var(--muted); line-height:1.5; margin-bottom:6px; }
-  .r-meta  { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:6px; }
-  .r-mi    { font-size:10px; color:var(--muted); }
-
-  /* volunteer list on report card */
-  .r-volunteers { display:flex; flex-direction:column; gap:4px; margin-top:6px; }
-  .r-vol-item { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--dark); }
-  .r-vol-dot  { width:6px; height:6px; border-radius:50%; background:var(--blue); flex-shrink:0; }
-  .r-vol-eta  { color:var(--muted); }
-
-  /* report card action row */
-  .r-actions { display:flex; gap:8px; align-items:center; justify-content:space-between; margin-top:10px; padding-top:10px; border-top:1px solid var(--border); flex-wrap:wrap; }
-  .r-status-badge { display:inline-flex; align-items:center; gap:5px; }
-
-  .spill { font-size:10px; font-weight:600; padding:2px 8px; border-radius:4px; }
-  .sp-a  { background:rgba(192,57,43,0.1);  color:var(--red);   }
-  .sp-p  { background:rgba(212,134,43,0.12); color:var(--amber); }
-  .sp-h  { background:rgba(37,99,235,0.1);  color:var(--blue);  }
-  .sp-r  { background:rgba(45,122,79,0.1);  color:var(--green); }
-
-  /* ─ FORMS ─ */
-  .fg { margin-bottom:14px; }
-  .flabel { display:block; font-size:11px; font-weight:600; color:var(--muted); letter-spacing:0.5px; text-transform:uppercase; margin-bottom:5px; }
-  .fi,.fs,.fta { width:100%; background:var(--off); border:1px solid var(--border); border-radius:var(--r); padding:10px 12px; font-family:var(--font); font-size:16px; color:var(--dark); outline:none; transition:border-color 0.12s; -webkit-appearance:none; appearance:none; }
-  .fi:focus,.fs:focus,.fta:focus { border-color:var(--dark); background:var(--white); }
-  .fta { resize:vertical; min-height:84px; font-size:14px; }
-  .frow { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-  @media (max-width:480px) { .frow { grid-template-columns:1fr; } }
-  .opt-group { display:flex; flex-direction:column; gap:7px; }
-  .opt-item  { display:flex; align-items:center; gap:10px; background:var(--off); border:1px solid var(--border); border-radius:var(--r); padding:11px 13px; cursor:pointer; min-height:46px; transition:all 0.12s; }
-  .opt-item:active { opacity:0.7; }
-  .opt-item.on { border-color:var(--dark); background:var(--white); }
-  .opt-item input { accent-color:var(--dark); width:15px; height:15px; flex-shrink:0; }
-  .opt-label { font-size:13px; font-weight:500; color:var(--dark); }
-  .opt-hint  { font-size:11px; color:var(--muted); margin-top:1px; }
-  .loc-row   { display:flex; gap:8px; }
-  .loc-row .fi { flex:1; }
-  .loc-btn   { background:var(--dark); color:#fff; border:none; border-radius:var(--r); padding:10px 12px; font-size:17px; cursor:pointer; flex-shrink:0; min-height:44px; }
-  .type-row  { display:flex; gap:7px; flex-wrap:wrap; }
-  .tbtn { font-size:20px; padding:8px 10px; border:1px solid var(--border); border-radius:8px; background:var(--off); cursor:pointer; min-height:44px; min-width:44px; transition:all 0.12s; }
-  .tbtn.on { border-color:var(--dark); background:var(--dark); }
-  .photo-drop { border:1.5px dashed var(--border); border-radius:var(--r); padding:22px; text-align:center; cursor:pointer; background:var(--off); }
-  .photo-drop:active { border-color:var(--dark); }
-  .photo-prev { height:80px; border-radius:8px; border:1px solid var(--border); background:var(--off); display:flex; align-items:center; justify-content:center; font-size:40px; margin-bottom:10px; }
-  .err       { font-size:11px; color:var(--red); margin-top:3px; font-weight:600; }
-  .info-pill { display:inline-flex; align-items:center; gap:5px; background:rgba(45,122,79,0.08); color:var(--green); font-size:12px; font-weight:600; padding:4px 10px; border-radius:999px; margin-bottom:14px; }
-  .divider   { height:1px; background:var(--border); margin:20px 0; }
-  .toggle-btn { padding:6px 12px; border-radius:999px; border:1px solid var(--border); font-size:12px; font-weight:500; cursor:pointer; background:var(--off); color:var(--body); transition:all 0.12s; font-family:var(--font); }
-  .toggle-btn.on { background:var(--dark); border-color:var(--dark); color:#fff; }
-
-  /* ─ SHEET MODAL ─ */
-  .sheet-overlay { position:fixed; inset:0; z-index:200; background:rgba(0,0,0,0.3); display:flex; align-items:flex-end; }
-  @media (min-width:640px) { .sheet-overlay { align-items:center; justify-content:center; } }
-  .sheet { background:var(--white); border-radius:16px 16px 0 0; width:100%; max-height:92vh; display:flex; flex-direction:column; overflow:hidden; animation:slideUp 0.25s cubic-bezier(0.32,0.72,0,1); }
-  @media (min-width:640px) { .sheet { border-radius:14px; max-width:580px; max-height:88vh; animation:fadeScale 0.18s ease; } }
-  @keyframes loadbar { 0%{transform:scaleX(0);transform-origin:left} 50%{transform:scaleX(1);transform-origin:left} 51%{transform:scaleX(1);transform-origin:right} 100%{transform:scaleX(0);transform-origin:right} }
-  @keyframes slideUp   { from{transform:translateY(100%)} to{transform:translateY(0)} }
-  @keyframes fadeScale { from{opacity:0;transform:scale(0.97)} to{opacity:1;transform:scale(1)} }
-  .sh-handle { width:36px; height:4px; background:var(--border); border-radius:2px; margin:10px auto; flex-shrink:0; }
-  @media (min-width:640px) { .sh-handle { display:none; } }
-  .sh-hd    { display:flex; align-items:center; justify-content:space-between; padding:0 16px 12px; border-bottom:1px solid var(--border); flex-shrink:0; }
-  .sh-title { font-size:15px; font-weight:600; color:var(--dark); letter-spacing:-0.2px; }
-  .sh-close { background:var(--light); border:none; border-radius:6px; width:28px; height:28px; font-size:13px; color:var(--muted); display:flex; align-items:center; justify-content:center; cursor:pointer; }
-  .sh-body  { flex:1; overflow-y:auto; padding:16px; -webkit-overflow-scrolling:touch; }
-  .sh-foot  { padding:12px 16px; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; flex-shrink:0; padding-bottom:max(12px,env(safe-area-inset-bottom)); background:var(--white); }
-  .app-strip { display:flex; align-items:center; gap:10px; padding:10px 16px; border-bottom:1px solid var(--border); flex-shrink:0; flex-wrap:wrap; }
-  .app-strip-emoji { font-size:26px; width:42px; height:42px; border-radius:8px; background:var(--off); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-  .app-strip-name  { font-size:13px; font-weight:600; color:var(--dark); }
-  .app-strip-meta  { font-size:11px; color:var(--muted); }
-  .app-strip-note  { font-size:11px; color:var(--muted); background:var(--off); border-radius:6px; padding:5px 9px; margin-left:auto; max-width:170px; line-height:1.5; }
-  .step-bar   { padding:10px 16px; border-bottom:1px solid var(--border); flex-shrink:0; }
-  .step-track { display:flex; align-items:center; }
-  .s-item  { display:flex; flex-direction:column; align-items:center; gap:3px; flex:1; }
-  .s-item.click { cursor:pointer; }
-  .s-circle { width:22px; height:22px; border-radius:50%; border:1.5px solid var(--border); background:var(--white); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:600; color:var(--muted); position:relative; z-index:1; transition:all 0.15s; }
-  .s-item.done   .s-circle { background:var(--dark); border-color:var(--dark); color:#fff; }
-  .s-item.active .s-circle { background:var(--dark); border-color:var(--dark); color:#fff; }
-  .s-lbl  { font-size:9px; font-weight:600; color:var(--muted); }
-  .s-item.active .s-lbl { color:var(--dark); }
-  .s-line { flex:1; height:1.5px; background:var(--border); margin-top:-14px; z-index:0; }
-  .s-line.done { background:var(--dark); }
-  .step-count { font-size:11px; color:var(--muted); }
-  .rev-sec { background:var(--off); border-radius:8px; padding:12px; margin-bottom:10px; }
-  .rev-ttl { font-size:10px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px; }
-  .rev-row { display:flex; justify-content:space-between; gap:8px; margin-bottom:4px; }
-  .rev-row:last-child { margin-bottom:0; }
-  .rk { font-size:12px; color:var(--muted); flex-shrink:0; }
-  .rv { font-size:12px; font-weight:500; color:var(--dark); text-align:right; max-width:200px; }
-  .success { text-align:center; padding:24px 12px; }
-  .suc-i { font-size:44px; margin-bottom:10px; }
-  .suc-t { font-size:20px; font-weight:700; color:var(--dark); margin-bottom:8px; letter-spacing:-0.3px; }
-  .suc-d { font-size:13px; color:var(--muted); line-height:1.7; margin:0 auto 14px; max-width:300px; }
-  .suc-ref { background:var(--off); border:1px solid var(--border); border-radius:8px; padding:9px 15px; display:inline-block; margin-bottom:18px; }
-  .suc-ref-l { font-size:10px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px; }
-  .suc-ref-c { font-size:18px; font-weight:700; color:var(--dark); letter-spacing:-0.3px; }
-  .suc-steps { display:flex; flex-direction:column; gap:8px; text-align:left; margin:0 auto 18px; max-width:290px; }
-  .suc-step  { display:flex; align-items:flex-start; gap:8px; font-size:12px; color:var(--muted); line-height:1.5; }
-  .suc-step-n { background:var(--dark); color:#fff; font-weight:700; font-size:10px; width:17px; height:17px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; }
-  .d-thumb { border-radius:10px; height:140px; display:flex; align-items:center; justify-content:center; font-size:64px; margin-bottom:12px; background:var(--off); }
-  .d-name  { font-size:20px; font-weight:700; color:var(--dark); margin-bottom:2px; letter-spacing:-0.3px; }
-  .d-sub   { font-size:12px; color:var(--muted); margin-bottom:10px; }
-  .d-pills { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
-  .d-pill  { background:var(--off); border:1px solid var(--border); font-size:11px; font-weight:500; color:var(--body); padding:4px 10px; border-radius:6px; }
-  .d-desc  { font-size:13px; color:var(--muted); line-height:1.7; margin:10px 0 16px; }
-  .d-acts  { display:flex; flex-direction:column; gap:8px; }
-  .emerg-bar { background:var(--red); color:#fff; padding:9px var(--pad); font-size:12px; font-weight:600; text-align:center; line-height:1.5; }
-  .inote { font-size:12px; color:var(--muted); background:var(--off); border-radius:8px; padding:10px 13px; margin-bottom:16px; line-height:1.6; border:1px solid var(--border); }
-  .inote strong { color:var(--dark); }
-  .toast { position:fixed; bottom:calc(var(--nav-h) + 10px); left:50%; transform:translateX(-50%) translateY(18px); z-index:500; background:var(--dark); color:#fff; padding:9px 16px; border-radius:8px; font-size:13px; font-weight:500; pointer-events:none; opacity:0; transition:all 0.2s ease; white-space:nowrap; box-shadow:0 4px 14px rgba(0,0,0,0.2); }
-  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
-  @media (min-width:768px) { .toast { bottom:auto; top:62px; } }
-
-  /* ─ ETA OPTION BUTTONS ─ */
-  .eta-grid { display:flex; flex-direction:column; gap:8px; }
-  .eta-btn { display:flex; align-items:center; gap:12px; background:var(--off); border:1px solid var(--border); border-radius:var(--r); padding:13px 16px; cursor:pointer; transition:all 0.12s; text-align:left; font-family:var(--font); min-height:52px; }
-  .eta-btn:hover { border-color:var(--dark); background:var(--white); }
-  .eta-btn:active { opacity:0.8; }
-  .eta-icon { font-size:22px; flex-shrink:0; }
-  .eta-label { font-size:14px; font-weight:600; color:var(--dark); }
-  .eta-sub   { font-size:11px; color:var(--muted); margin-top:1px; }
-
-  /* helped upload */
-  .helped-note { font-size:12px; color:var(--muted); background:var(--off); border:1px solid var(--border); border-radius:8px; padding:10px 13px; margin-bottom:16px; line-height:1.6; }
-  .helped-note strong { color:var(--dark); }
-`;
-
-// ─────────────────────────────────────────────────────────────────────────────
-// ROOT
-// ─────────────────────────────────────────────────────────────────────────────
-export default function App() {
-  // ── language ──
-  const [lang, setLang] = useState("en");
-  const t = T[lang];  // translation shortcut
-
-  // ── navigation ──
-  const [tab, setTab]         = useState("home");
-  const [animalSub, setASub]  = useState("adopt");    // adopt | foster | profile
-  const [lfSub, setLFSub]     = useState("board");    // board | post
-  const [lfTypeFilter, setLFType] = useState("all");  // all | lost | found
-  const [ownerSub, setOSub]   = useState("sitting");  // sitting | register | rehome | families | profile
-
-  // ── filters ──
-  const [species, setSpecies]     = useState("All");
-  const [search, setSearch]       = useState("");
-  const [fCountry, setFC]         = useState("All Countries");
-  const [fProvince, setFP]        = useState("All Provinces");
-  const [fCity, setFCi]           = useState("All Cities");
-  const [svcFilter, setSvcF]      = useState("All Services");
-  const [sitterCity, setSitterCity] = useState("All");
-
-  // ── modal state ──
-  const [detailAnimal, setDetailA]  = useState(null);
-  const [detailSitter, setDetailS]  = useState(null);
-  const [detailLF, setDetailLF]     = useState(null);
-  const [applyFor, setApplyFor]     = useState(null);
-  const [fosterFor, setFosterFor]   = useState(null);
-
-  // ── data state ──
-  const [reports, setReports] = useState(REPORTS_SEED);
-  const [lfItems, setLFItems] = useState(LF_SEED);
-  const [sitters, setSitters] = useState(SITTERS_SEED);
-  const [animals, setAnimals] = useState(ANIMALS);
-  const [dbLoading, setDbLoading] = useState(true);
-  const [photo, setPhoto]     = useState(null);
-  const [lfPhoto, setLFPhoto] = useState(null);
-  const [rf, setRf]           = useState({ title:"", location:"", desc:"", type:"Injured", animal:"" });
-  const [lfForm, setLFForm]   = useState({ type:"lost", name:"", species:"Dog", breed:"", color:"", area:"", city:"", contact:"", reward:"", desc:"" });
-
-  // ── Supabase: veri çek ──
-  useEffect(() => {
-    const load = async () => {
-      setDbLoading(true);
-      try {
-        // Raporları çek
-        const { data: rData } = await db.from("reports").select(`*, volunteers(*)`).order("created_at", { ascending:false });
-        if (rData && rData.length > 0) {
-          const mapped = rData.map(r => ({
-            id: r.id,
-            emoji: r.emoji || "🐾",
-            title: { en: r.title, tr: r.title },
-            desc:  { en: r.description || "", tr: r.description || "" },
-            location: r.location,
-            time: { en: new Date(r.created_at).toLocaleDateString("en"), tr: new Date(r.created_at).toLocaleDateString("tr") },
-            status: r.status,
-            reporter: r.reporter_name || "Anonymous",
-            volunteers: (r.volunteers || []).map(v => ({ name: v.name, eta: v.eta, etaOrder: v.eta_order })),
-          }));
-          setReports(mapped);
-        }
-
-        // Kayıp & bulunan ilanlarını çek
-        const { data: lfData } = await db.from("lf_listings").select("*").order("created_at", { ascending:false });
-        if (lfData && lfData.length > 0) {
-          const mapped = lfData.map(item => ({
-            id: item.id,
-            type: item.type,
-            emoji: item.species === "Dog" ? "🐕" : item.species === "Cat" ? "🐈" : item.species === "Rabbit" ? "🐇" : "🐾",
-            name: item.name || "Unknown",
-            species: { en: item.species, tr: item.species },
-            breed:   { en: item.breed || "", tr: item.breed || "" },
-            color:   { en: item.color || "", tr: item.color || "" },
-            area: item.area,
-            city: item.city,
-            date: { en: new Date(item.created_at).toLocaleDateString("en"), tr: new Date(item.created_at).toLocaleDateString("tr") },
-            contact: item.contact,
-            reward: { en: item.reward || "", tr: item.reward || "" },
-            desc: { en: item.desc_en || "", tr: item.desc_tr || "" },
-            status: item.status,
-          }));
-          setLFItems(prev => [...mapped, ...LF_SEED]);
-        }
-
-        // Sitterleri çek
-        const { data: sData } = await db.from("sitters").select("*").order("created_at", { ascending:false });
-        if (sData && sData.length > 0) {
-          const mapped = sData.map(s => ({
-            id: s.id,
-            name: s.name,
-            emoji: "👤",
-            city: s.city,
-            area: s.area,
-            rating: s.rating || 0,
-            reviews: s.review_count || 0,
-            price: { en: s.price, tr: s.price },
-            services: { en: s.services || [], tr: s.services || [] },
-            accepts: s.accepts || [],
-            hasYard: s.has_yard,
-            maxPets: s.max_pets,
-            availability: { en: s.availability, tr: s.availability },
-            bio: { en: s.bio, tr: s.bio },
-          }));
-          setSitters(prev => [...mapped, ...SITTERS_SEED]);
-        }
-      } catch (err) {
-        console.error("Supabase yükleme hatası:", err);
-      }
-      setDbLoading(false);
-    };
-    load();
-  }, []);
-
-  const [toast, setToast] = useState({ show:false, msg:"" });
-
-  const [helpedFor, setHelpedFor] = useState(null);
-  const [helpProof, setHelpProof] = useState(null);
-  const [etaFor, setEtaFor]       = useState(null);   // report to volunteer for
-  const [myName]                  = useState("You");   // in real app: logged-in user
-  const [showReportForm, setShowReportForm] = useState(false);
-
-  const fileRef   = useRef();
-  const lfFileRef = useRef();
-  const helpProofRef = useRef();
-
-  const say   = (msg) => { setToast({ show:true, msg }); setTimeout(() => setToast({ show:false, msg:"" }), 2800); };
-  const goTab = (t)   => { setTab(t); setSearch(""); setSpecies("All"); setFC("All Countries"); setFP("All Provinces"); setFCi("All Cities"); };
-
-  // filtered animals
-  const filtered = animals.filter(a => {
-    const okS  = species === "All" || a.species.en === species;
-    const okQ  = !search || a.name.toLowerCase().includes(search.toLowerCase()) || (a.breed?.en||"").toLowerCase().includes(search.toLowerCase());
-    const okC  = fCountry  === "All Countries"  || a.country  === fCountry;
-    const okP  = fProvince === "All Provinces"  || a.province === fProvince;
-    const okCi = fCity     === "All Cities"     || a.city     === fCity;
-    return okS && okQ && okC && okP && okCi;
-  });
-
-  const filteredSitters = sitters.filter(s =>
-    (sitterCity === "All" || s.city === sitterCity) &&
-    (svcFilter === "All Services" || (s.services?.en || s.services || []).includes(svcFilter))
-  );
-
-  const filteredLF = lfItems.filter(item =>
-    lfTypeFilter === "all" || item.type === lfTypeFilter
-  );
-
-  const sitterCities = ["All", ...Array.from(new Set(sitters.map(s => s.city)))];
-
-  // location filter bar (reused in Adopt & Foster)
-  const LocFilters = () => (
-    <div className="filter-bar">
-      <select className={`loc-select ${fCountry !== "All Countries" ? "on" : ""}`} value={fCountry} onChange={e => { setFC(e.target.value); setFP("All Provinces"); setFCi("All Cities"); }}>
-        {COUNTRIES.map(c => <option key={c}>{c}</option>)}
-      </select>
-      <select className={`loc-select ${fProvince !== "All Provinces" ? "on" : ""}`} value={fProvince} onChange={e => { setFP(e.target.value); setFCi("All Cities"); }}>
-        {(PROVINCES[fCountry] || ["All Provinces"]).map(p => <option key={p}>{p}</option>)}
-      </select>
-      <select className={`loc-select ${fCity !== "All Cities" ? "on" : ""}`} value={fCity} onChange={e => setFCi(e.target.value)}>
-        {(CITIES[fProvince] || ["All Cities"]).map(c => <option key={c}>{c}</option>)}
-      </select>
-    </div>
-  );
-
-  return (
-    <>
-      <style>{CSS}</style>
-
-      {/* TOPBAR */}
-      <header className="topbar">
-        <div className="logo"><div className="logo-dot" />{t.appName}</div>
-        <nav className="desk-nav">
-          {TABS.map(tb => (
-            <button key={tb.id} className={`dnav ${tab === tb.id ? "on" : ""} ${tb.id === "help" ? "red" : ""}`} onClick={() => goTab(tb.id)}>
-              {t[tb.id === "lostfound" ? "lostFound" : tb.id] || tb.label}
-            </button>
-          ))}
-        </nav>
-        <div className="lang-sel">
-          <button className={`lang-btn ${lang==="en"?"on":""}`} onClick={()=>setLang("en")}>EN</button>
-          <button className={`lang-btn ${lang==="tr"?"on":""}`} onClick={()=>setLang("tr")}>TR</button>
-        </div>
-      </header>
-
-      <div className="app">
-        {dbLoading && (
-          <div style={{ position:"fixed", top:0, left:0, right:0, height:3, background:"var(--amber)", zIndex:999, animation:"loadbar 1.5s ease-in-out infinite" }} />
-        )}
-
-        {/* ══════════════════════════════ HOME ══════════════════════════════ */}
-        {tab === "home" && <>
-          <div className="hero">
-            <div className="hero-label">{t.tagline}</div>
-            <h1 className="hero-h1">{t.heroH1}<br /><em>{t.heroH1Em}</em></h1>
-            <p className="hero-p">{t.heroP}</p>
-            <div className="hero-cta">
-              <button className="btn btn-dark" onClick={() => goTab("animals")}>{t.browseAnimals}</button>
-              <button className="btn btn-outline" onClick={() => goTab("help")}>🚨 {t.reportAnimal}</button>
-            </div>
-          </div>
-
-          <div className="stats">
-            {[[247,t.adopted],[58,t.waiting],[32,t.rescues],[14,t.shelters]].map(([n,l]) => (
-              <div key={l} className="stat"><div className="stat-n">{n}</div><div className="stat-l">{l}</div></div>
-            ))}
-          </div>
-
-          <div className="wrap">
-            <div className="sec-label">{t.browseByGoal}</div>
-            <div className="ql-list">
-              {[
-                { icon:"🏡", title:t.adoptTitle,    desc:t.adoptDesc,    tab:"animals",   sub:() => setASub("adopt")   },
-                { icon:"🤝", title:t.fosterTitle,   desc:t.fosterDesc,   tab:"animals",   sub:() => setASub("foster")  },
-                { icon:"🔍", title:t.lostFoundTitle, desc:t.lostFoundDesc,tab:"lostfound", sub:() => {}                },
-                { icon:"🛋️", title:t.sittingTitle,  desc:t.sittingDesc,  tab:"owners",    sub:() => setOSub("sitting") },
-                { icon:"🔄", title:t.rehomeTitle,   desc:t.rehomeDesc,   tab:"owners",    sub:() => setOSub("rehome")  },
-                { icon:"🚨", title:t.helpTitle,     desc:t.helpDesc,     tab:"help",      sub:() => {}                 },
-              ].map((f,i) => (
-                <div key={i} className="ql-item" onClick={() => { f.sub(); goTab(f.tab); }}>
-                  <div className="ql-icon">{f.icon}</div>
-                  <div className="ql-body"><div className="ql-title">{f.title}</div><div className="ql-desc">{f.desc}</div></div>
-                  <div className="ql-chev">›</div>
-                </div>
-              ))}
-            </div>
-
-            <div className="divider" />
-            <div className="sec-label">{t.recentlyAdded}</div>
-            <div className="mini-row">
-              {animals.map(a => <MiniCard key={a.id} a={a} lang={lang} onClick={() => setDetailA(a)} />)}
-            </div>
-          </div>
-        </>}
-
-        {/* ══════════════════════════════ ANIMALS ═══════════════════════════ */}
-        {tab === "animals" && <>
-          <div className="ph">
-            <div className="ph-title">{t.animals}</div>
-            <div className="ph-sub">{lang==="tr" ? "Sahiplenmek veya geçici bakım için hayvan bul." : "Find a pet to adopt or foster."}</div>
-            <div className="stabs">
-              <button className={`stab ${animalSub === "adopt"   ? "on" : ""}`} onClick={() => setASub("adopt")}>{t.adopt}</button>
-              <button className={`stab ${animalSub === "foster"  ? "on" : ""}`} onClick={() => setASub("foster")}>{t.foster}</button>
-              <button className={`stab ${animalSub === "profile" ? "on" : ""}`} onClick={() => setASub("profile")}>{t.postProfile}</button>
-            </div>
-          </div>
-
-          {/* Shared: species chips + location filters — only for adopt/foster */}
-          {animalSub !== "profile" && (
-          <div style={{ background:"#fff", borderBottom:"1px solid #ebebeb", padding:"10px 16px 0" }}>
-            <div className="chips-wrap" style={{ margin:0, padding:"0 0 10px" }}>
-              <div className="chip-row">
-                {SPECIES.map(s => {
-                  const pool = animalSub === "foster" ? ANIMALS.filter(a => a.canFoster) : ANIMALS;
-                  const cnt  = s.l === "All" ? pool.length : pool.filter(a => a.species.en === s.l).length;
-                  return (
-                    <button key={s.l} className={`chip ${species === s.l ? "on" : ""}`} onClick={() => setSpecies(s.l)}>
-                      {s.e} {s.l} <span className="chip-n">{cnt}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-          )}
-          {animalSub !== "profile" && <LocFilters />}
-
-          <div className="wrap" style={{ paddingTop:14 }}>
-            {animalSub === "profile" && (
-              <ProfileForm lang={lang} t={t} onSubmit={n => say(`✓ ${n} ${lang==="tr"?"profili yayınlandı":"profile posted"}`)} />
-            )}
-            {animalSub !== "profile" && (<>
-            {animalSub === "foster" && (
-              <div className="inote"><strong>{lang==="tr"?"Geçici bakım nedir?":"What is fostering?"}</strong> {t.fosterNote}</div>
-            )}
-            <div className="search-wrap">
-              <span className="search-icon">🔍</span>
-              <input placeholder={t.searchPlaceholder} value={search} onChange={e => setSearch(e.target.value)} />
-            </div>
-            {(() => {
-              const list = animalSub === "foster"
-                ? filtered.filter(a => a.canFoster)
-                : filtered;
-              return list.length > 0
-                ? <div className="a-list">{list.map(a => <ACard key={a.id} a={a} mode={animalSub} lang={lang} onClick={() => setDetailA(a)} />)}</div>
-                : <div style={{ textAlign:"center", padding:"40px 0", color:"var(--muted)", fontSize:13 }}>No animals found.</div>;
-            })()}
-            </>)}
-          </div>
-        </>}
-
-        {/* ══════════════════════════════ LOST & FOUND ══════════════════════ */}
-        {tab === "lostfound" && <>
-          <div className="ph">
-            <div className="ph-title">{t.lostFound}</div>
-            <div className="ph-sub">{t.lostFoundSub}</div>
-            <div className="stabs">
-              <button className={`stab ${lfSub === "board" ? "on" : ""}`} onClick={() => setLFSub("board")}>
-                {t.browse} <span style={{ fontSize:11, color:"var(--muted)", marginLeft:4 }}>({lfItems.filter(i=>i.status==="open").length} {t.openListings})</span>
-              </button>
-              <button className={`stab ${lfSub === "post" ? "on" : ""}`} onClick={() => setLFSub("post")}>
-                {t.postListing}
-              </button>
-            </div>
-          </div>
-
-          {lfSub === "board" && (
-            <div className="wrap" style={{ paddingTop:16 }}>
-              <div style={{ display:"flex", gap:8, marginBottom:14 }}>
-                {[["all", t.allListings],["lost", t.lostFilter],["found", t.foundFilter]].map(([v,l]) => (
-                  <button key={v} className={`chip ${lfTypeFilter === v ? "on" : ""}`} onClick={() => setLFType(v)}>{l}</button>
-                ))}
-              </div>
-
-              <div className="lf-list">
-                {filteredLF.map(item => (
-                  <div key={item.id} className={`lf-card ${item.status === "reunited" ? "reunited" : ""}`} onClick={() => setDetailLF(item)}>
-                    <div className="lf-top">
-                      <div className="lf-emo">
-                        {item.emoji}
-                        <span className={`lf-type ${item.status === "reunited" ? "lf-reunited" : item.type === "lost" ? "lf-lost" : "lf-found"}`}>
-                          {item.status === "reunited" ? t.reunited : item.type === "lost" ? (lang==="tr"?"Kayıp":"Lost") : (lang==="tr"?"Bulunan":"Found")}
-                        </span>
-                      </div>
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <div className="lf-name">{item.name === "Unknown" ? (lang==="tr"?`Bulunan ${item.species.tr}`:`Found ${item.species.en}`) : item.name}</div>
-                        <div className="lf-meta">{item.species[lang]} · {item.breed[lang]} · {item.color[lang]}</div>
-                        <div className="lf-meta">📍 {item.area}, {item.city} · {item.date[lang]}</div>
-                      </div>
-                      {item.reward[lang] && <span className="reward-pill">{lang==="tr"?"Ödül":"Reward"}: {item.reward[lang]}</span>}
-                    </div>
-                    <div className="lf-desc">{item.desc[lang]}</div>
-                    <div className="lf-foot">
-                      <span className="lf-contact">📞 {item.contact}</span>
-                      {item.status !== "reunited" && (
-                        <button className="btn btn-sm btn-outline" onClick={e => { e.stopPropagation(); say(t.contactCopied); }}>{t.contact}</button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {lfSub === "post" && (
-            <div className="wrap" style={{ paddingTop:16 }}>
-              <div className="inote">{t.postLostFoundNote}</div>
-
-              <div className="fg">
-                <label className="flabel">{t.listingType}</label>
-                <div style={{ display:"flex", gap:8 }}>
-                  {[["lost", t.iLostMyPet],["found", t.iFoundAnAnimal]].map(([v,l]) => (
-                    <label key={v} className={`opt-item ${lfForm.type === v ? "on" : ""}`} style={{ flex:1 }}>
-                      <input type="radio" name="lftype" checked={lfForm.type === v} onChange={() => setLFForm(f => ({ ...f, type:v }))} />
-                      <div className="opt-label" style={{ fontSize:12 }}>{l}</div>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {lfForm.type === "lost" && (
-                <div className="fg"><label className="flabel">{t.petName}</label><input className="fi" placeholder={lang==="tr"?"örn. Max":"e.g. Max"} value={lfForm.name} onChange={e => setLFForm(f => ({ ...f, name:e.target.value }))} /></div>
-              )}
-
-              <div className="frow">
-                <div className="fg"><label className="flabel">{t.species} *</label>
-                  <select className="fs" value={lfForm.species} onChange={e => setLFForm(f => ({ ...f, species:e.target.value }))}>
-                    {lang==="tr"
-                      ? <><option>Köpek</option><option>Kedi</option><option>Tavşan</option><option>Kuş</option><option>Hamster</option><option>Diğer</option></>
-                      : <><option>Dog</option><option>Cat</option><option>Rabbit</option><option>Bird</option><option>Hamster</option><option>Other</option></>}
-                  </select>
-                </div>
-                <div className="fg"><label className="flabel">{t.breed}</label><input className="fi" placeholder={lang==="tr"?"örn. Labrador":"e.g. Labrador"} value={lfForm.breed} onChange={e => setLFForm(f => ({ ...f, breed:e.target.value }))} /></div>
-              </div>
-
-              <div className="frow">
-                <div className="fg"><label className="flabel">{t.colour}</label><input className="fi" placeholder={lang==="tr"?"örn. Siyah & beyaz":"e.g. Black & white"} value={lfForm.color} onChange={e => setLFForm(f => ({ ...f, color:e.target.value }))} /></div>
-                <div className="fg"><label className="flabel">{t.cityField}</label><input className="fi" placeholder={lang==="tr"?"örn. İstanbul":"e.g. Nairobi"} value={lfForm.city} onChange={e => setLFForm(f => ({ ...f, city:e.target.value }))} /></div>
-              </div>
-
-              <div className="fg"><label className="flabel">{t.areaField}</label>
-                <div className="loc-row">
-                  <input className="fi" placeholder={lang==="tr"?"örn. Beşiktaş":"e.g. Westlands"} value={lfForm.area} onChange={e => setLFForm(f => ({ ...f, area:e.target.value }))} />
-                  <button className="loc-btn" onClick={() => { setLFForm(f => ({ ...f, area:"Westlands", city:"Nairobi" })); say(t.locationDetected); }}>📍</button>
-                </div>
-              </div>
-
-              <div className="fg"><label className="flabel">{t.yourContact}</label><input className="fi" placeholder={t.contactPlaceholder} value={lfForm.contact} onChange={e => setLFForm(f => ({ ...f, contact:e.target.value }))} /></div>
-
-              {lfForm.type === "lost" && (
-                <div className="fg"><label className="flabel">{t.reward}</label><input className="fi" placeholder={lang==="tr"?"örn. 1.000 TL":"e.g. KES 5,000"} value={lfForm.reward} onChange={e => setLFForm(f => ({ ...f, reward:e.target.value }))} /></div>
-              )}
-
-              <div className="fg"><label className="flabel">{t.descriptionField}</label>
-                <textarea className="fta" placeholder={lfForm.type === "lost" ? t.descLostPlaceholder : t.descFoundPlaceholder} value={lfForm.desc} onChange={e => setLFForm(f => ({ ...f, desc:e.target.value }))} />
-              </div>
-
-              <div className="fg">
-                <label className="flabel">{t.photo}</label>
-                {lfPhoto && <div className="photo-prev">{lfPhoto}</div>}
-                <div className="photo-drop" onClick={() => lfFileRef.current.click()}>
-                  <div style={{ fontSize:22, marginBottom:5 }}>📷</div>
-                  <div style={{ fontSize:12, fontWeight:500, color:"var(--muted)" }}>{t.uploadPhoto}</div>
-                  <div style={{ fontSize:11, color:"var(--muted)", marginTop:2 }}>{t.photoHint}</div>
-                </div>
-                <input ref={lfFileRef} type="file" accept="image/*" style={{ display:"none" }} onChange={e => { if(e.target.files[0]) { const em=["🐕","🐈","🐾","🐦","🐇"]; setLFPhoto(em[Math.floor(Math.random()*em.length)]); say(t.photoUploaded2); }}} />
-              </div>
-
-              <button className="btn btn-dark btn-full" onClick={async () => {
-                if(!lfForm.area || !lfForm.city || !lfForm.contact || !lfForm.desc) { say(lang==="tr"?"Lütfen tüm zorunlu alanları doldurun":"Please fill all required fields"); return; }
-                const emoji = lfForm.species==="Dog"||lfForm.species==="Köpek"?"🐕":lfForm.species==="Cat"||lfForm.species==="Kedi"?"🐈":lfForm.species==="Rabbit"||lfForm.species==="Tavşan"?"🐇":"🐾";
-                const { data } = await db.from("lf_listings").insert([{
-                  type: lfForm.type,
-                  name: lfForm.name || null,
-                  species: lfForm.species,
-                  breed: lfForm.breed || null,
-                  color: lfForm.color || null,
-                  area: lfForm.area,
-                  city: lfForm.city,
-                  contact: lfForm.contact,
-                  reward: lfForm.reward || null,
-                  desc_en: lfForm.desc,
-                  desc_tr: lfForm.desc,
-                  status: "open",
-                }]).select().single();
-                const newItem = { id:data?.id||Date.now(), type:lfForm.type, emoji, name:lfForm.name||"Unknown", species:{en:lfForm.species,tr:lfForm.species}, breed:{en:lfForm.breed||"",tr:lfForm.breed||""}, color:{en:lfForm.color||"",tr:lfForm.color||""}, area:lfForm.area, city:lfForm.city, date:{en:"Just now",tr:"Az önce"}, contact:lfForm.contact, reward:{en:lfForm.reward||"",tr:lfForm.reward||""}, desc:{en:lfForm.desc,tr:lfForm.desc}, status:"open" };
-                setLFItems(prev => [newItem, ...prev]);
-                setLFForm({ type:"lost", name:"", species:"Dog", breed:"", color:"", area:"", city:"", contact:"", reward:"", desc:"" });
-                setLFPhoto(null); setLFSub("board");
-                say(lfForm.type === "lost" ? t.postLost : t.postFound);
-              }}>
-                {lfForm.type === "lost" ? t.postLost : t.postFound}
-              </button>
-            </div>
-          )}
-        </>}
-
-        {/* ══════════════════════════════ OWNERS ════════════════════════════ */}
-        {tab === "owners" && <>
-          <div className="ph">
-            <div className="ph-title">{t.forOwners}</div>
-            <div className="ph-sub">{t.forOwnersSub}</div>
-            <div className="stabs">
-              <button className={`stab ${ownerSub === "sitting"  ? "on" : ""}`} onClick={() => setOSub("sitting")}>{t.petSitting}</button>
-              <button className={`stab ${ownerSub === "register" ? "on" : ""}`} onClick={() => setOSub("register")}>{t.becomeSitter}</button>
-              <button className={`stab ${ownerSub === "rehome"   ? "on" : ""}`} onClick={() => setOSub("rehome")}>{t.rehomeTab}</button>
-              <button className={`stab ${ownerSub === "families" ? "on" : ""}`} onClick={() => setOSub("families")}>{t.findFamilies}</button>
-            </div>
-          </div>
-
-          <div className="wrap" style={{ paddingTop:18 }}>
-
-            {ownerSub === "sitting" && <>
-              <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:10 }}>
-                <span style={{ fontSize:11, fontWeight:600, color:"var(--muted)", textTransform:"uppercase", letterSpacing:"0.5px", alignSelf:"center" }}>{t.cityLabel}</span>
-                {sitterCities.map(c => <button key={c} className={`chip ${sitterCity === c ? "on" : ""}`} onClick={() => setSitterCity(c)} style={{ minHeight:32, padding:"5px 12px", fontSize:11 }}>{c === "All" ? (lang==="tr"?"Tümü":"All") : c}</button>)}
-              </div>
-              <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:16 }}>
-                <span style={{ fontSize:11, fontWeight:600, color:"var(--muted)", textTransform:"uppercase", letterSpacing:"0.5px", alignSelf:"center" }}>{t.serviceLabel}</span>
-                {SVC_TYPES.map(s => <button key={s} className={`chip ${svcFilter === s ? "on" : ""}`} onClick={() => setSvcF(s)} style={{ minHeight:32, padding:"5px 12px", fontSize:11 }}>{s}</button>)}
-              </div>
-              <div style={{ fontSize:11, color:"var(--muted)", fontWeight:500, marginBottom:12 }}>{filteredSitters.length} {t.sittersFound}</div>
-              {filteredSitters.length > 0 ? (
-                <div className="sitter-list">
-                  {filteredSitters.map(s => (
-                    <div key={s.id} className="sitter-card" onClick={() => setDetailS(s)}>
-                      <div className="sitter-top">
-                        <div className="sitter-avatar">{s.emoji}</div>
-                        <div style={{ flex:1 }}>
-                          <div className="sitter-name">{s.name}</div>
-                          <div className="sitter-loc">📍 {s.area}, {s.city}</div>
-                          <div style={{ display:"flex", alignItems:"center", gap:5 }}>
-                            <span className="sitter-stars">{"★".repeat(Math.round(s.rating))}</span>
-                            <span style={{ fontSize:12, fontWeight:600 }}>{s.rating}</span>
-                            <span style={{ fontSize:11, color:"var(--muted)" }}>({s.reviews})</span>
-                          </div>
-                        </div>
-                        <div>
-                          <div className="sitter-price">{s.price[lang]}</div>
-                          <div className="sitter-avail">{s.availability[lang]}</div>
-                        </div>
-                      </div>
-                      <div className="sitter-bio">{s.bio[lang]}</div>
-                      <div className="svc-wrap">{s.services[lang].map(sv => <span key={sv} className="svc-tag">{sv}</span>)}</div>
-                      <div className="sitter-foot">
-                        <div>
-                          <div style={{ fontSize:11, color:"var(--muted)", marginBottom:2 }}>{t.accepts} <strong style={{ color:"var(--dark)" }}>{s.accepts.join(", ")}</strong></div>
-                          <div className="sitter-yard">{s.hasYard ? t.hasYard : t.noYard} · {t.maxPets} {s.maxPets}</div>
-                        </div>
-                        <button className="btn btn-dark btn-sm" onClick={e => { e.stopPropagation(); say(`📨 ${t.bookingRequestSent} ${s.name}!`); }}>{t.book}</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div style={{ textAlign:"center", padding:"40px 0", color:"var(--muted)", fontSize:13 }}>{t.noSittersFound}</div>
-              )}
-            </>}
-
-            {ownerSub === "register" && (
-              <RegisterSitterForm lang={lang} t={t} onSubmit={name => { say(`✓ ${name} ${lang==="tr"?"bakıcı olarak kaydedildi!":"registered as a sitter!"}`); setOSub("sitting"); }} />
-            )}
-
-            {ownerSub === "rehome" && (
-              <RehomeForm lang={lang} t={t} onSubmit={n => say(`✓ ${n} ${lang==="tr"?"yeni yuva ilanı yayınlandı":"listed for rehoming"}`)} />
-            )}
-
-            {ownerSub === "families" && (
-              <div className="p-list">
-                {ADOPTERS.map(p => (
-                  <div key={p.id} className="pcard">
-                    <div className="pav">{p.emoji}</div>
-                    <div style={{ flex:1 }}>
-                      <div style={{ display:"flex", justifyContent:"space-between", flexWrap:"wrap", gap:8 }}>
-                        <div>
-                          <div className="pname">{p.name}</div>
-                          <div className="plook">{t.lookingFor} <strong>{p.looking[lang]}</strong> · 📍 {p.city}</div>
-                        </div>
-                        <button className="btn btn-outline btn-sm" onClick={() => say(t.contactRequest)}>{t.contact}</button>
-                      </div>
-                      <div className="pdesc">{p.desc[lang]}</div>
-                      <div className="tags">{p.tags[lang].map(tg => <span key={tg} className="tag">{tg}</span>)}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-          </div>
-        </>}
-
-        {/* ══════════════════════════════ HELP ══════════════════════════════ */}
-        {tab === "help" && <>
-          <div className="emerg-bar">{t.emergencyBar}</div>
-          <div className="ph" style={{ position:"sticky" }}>
-            <div className="ph-title">{t.helpAnimals}</div>
-            <div className="ph-sub" style={{ marginBottom:0, paddingBottom:12 }}>{t.helpSub}</div>
-          </div>
-
-          <div className="wrap" style={{ paddingTop:16 }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-              <div style={{ fontSize:13, fontWeight:600, color:"var(--dark)" }}>
-                {t.activeReports}
-                <span style={{ fontWeight:400, color:"var(--muted)", marginLeft:6 }}>
-                  ({reports.filter(r => r.status === "active").length} {t.needingHelp})
-                </span>
-              </div>
-            </div>
-
-            {/* ── Reports list — active first, then helped, then resolved ── */}
-            <div className="r-list" style={{ marginBottom:24 }}>
-Done
-              
+<!--# VnTKqPBQ20cqqbcfPM7BSM7RnjWrtKqP0j2Fbc6d-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3c.org/TR/1999/REC-html401-19991224/loose.dtd">
+<html>
+<head>
+<meta name="description" content="Zscaler makes the internet safe for businesses by protecting their employees from malware, viruses, and other security threats.">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Internet Security by Zscaler</title>
+<script language="JavaScript">var defLang = 'en_US'</script>
+<!--Al Futtaim-->
+<style type="text/css">
+body {
+background-color:#e3e3e3;
+font-family:Arial, sans-serif;
+font-size:12px;
+color:#4B4F54;
+}
+a {
+cursor:pointer;
+text-decoration:none;
+color:#009dd0;
+}
+table {
+margin-top:10px;
+}
+td table {
+margin-top:0;
+text-align:center;
+}
+img {
+max-height:75px;
+max-width:430px;
+}
+.pg {
+position:absolute;
+top:0;
+bottom:0;
+left:0;
+right:0;
+overflow-x:hidden;
+white-space:nowrap;
+}
+.pg:before {
+content:"";
+display:inline-block;
+height:100%;
+vertical-align:middle;
+}
+.pg_cont {
+display:inline-block;
+vertical-align:middle;
+width:100%;
+position:relative;
+}
+.a_i {
+width:19px;
+height:19px;
+margin-right:10px;
+background-size: 19px 19px;
+display:inline-block;
+}
+.m_tbl {
+width:100%;
+max-width:758px;
+background:#e3e3e3;
+min-width:600px;
+}
+.pg.red .eu_h {
+color:#fd4239;
+border-top:3px solid #fd4239;
+}
+.pg.red .eu_h .a_i {
+background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAATCAYAAAByUDbMAAABoElEQVR4nK3Uz2vIYRzA8dcMzWGJdjSZKZLCDphfB7XVHBAXF2XFpJxd+BvUbtY20m4KxVExtbWkUYQLByU3OVhpy8zh+Tzr2dN3t30un1/P834+z/N8noc1lBZYPNVbx3twDQPYFuN+4RUm8ARL5YTWFzPWVZA2jGIWQ+jMC2ILzuERZrCjrmB9YW/CcxwLfwFTAf6J3TiPzTiMNziJz02wkQL0DpfwsVp8OCAb0IFnOIA5LG/zeEwWgN4GUBeeBihLN25mJ8NuhF7CIOYbQJPYHv59fAv7OlpL2OnQH2IbpexsAF3BePgdOFTC2kO/bQC9LED3AvTPymPoYuUFkHqprqizAF0NECwWY9vKynJi1yqg8QoEBwv7ewmbCt2HIw2goQrUgv6wF6QmXoY9KMqdLkBjDSDSueU3+Bi/S9gE3oedY2PS+6xBF3En7Hnczol8AX9xAa+xNWJHpXOajXwPzuBsAR7E1xoGX3BC6vJu7MVdzfIHl/GwDNa/xifsxy1xQ5XMSS2ypwax+n+Wc/ukr2YjfkhNXT81pP9sTeU/6YpejkX0NUMAAAAASUVORK5CYII=');
+}
+.pg.red .eu_h, .pg.red .eu_co, .pg.red .hr {
+border-left:3px solid #fd4239;
+border-right:3px solid #fd4239;
+}
+.pg.red .fo {
+border-bottom-color:#fd4239;
+}
+.pg.red .eu_co.st{
+border:0;
+}
+.pg.yl .eu_h .a_i {
+background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAFgUlEQVR4nO2dOWxcVRSGP0+wWWKSiC1WMAV7SAI0bBLBLBI0bEUSyiSAFCOgYLMpEBA3JCEUCISQEBIIKtIgpaCho6KhAglkCQlRRBAhKBIQW4Di5iHH+M28c+85955h7leO5y6eb972v/PuQKVSqQwNY5+8V3oKYi4C3gXuaPn7x8Bu4Eim+agxsxN6pSch5GrgM9plANx58j0bs8xImWESsho4BJzf4b1TwAfAGaYzMmCYhDyH7Ft/DTBvNBczhkXINPBkRLs54ALluZgyLEIWiNv9TAIvKM/FlGEQsoVw1hTLLHCFzlTsGQYh+0mb52nAS0pzMce7kNuBuxX62QbcpNCPOZ6F9ICXFfs7CIwp9meCZyE7gOsU+9sK3KfYnwlehUxgs9/fTzimuMWrkEeASwz63Qg8ZNCvGh6FrMX22mGBEMO4xKOQZ4FzDfufAp4y7D8Jb0KmgScyjDOP00jFm5AF4MwM47iNVDwJSY1IpLiMVDwJSY1IpLiMVLwIuQ2diESKu0jFgxDtiESKq0jFg5AdwPUFx3cVqZQWYhWRSHETqZQWYhWRSHETqZQUshZ4vuD4y3ERqZQUMg+cV3D85biIVEoJuZC4KhJrikcqpQ5kMRHJMeCosM16QkzSlSZSeVw4jholhGwGHhS2eR14Bvhd2O504BVkH/As8BqwKBxLhRK7LGlEcoI4GQC/AU8DfwvaFI1Ucgu5Fbgnol2MjIYTyK/Ei0UqOYWMEWIKKauA8YRxY+P8IpFKTiEpEclZCePGXltsBe5NGDeKXEJSI5KUm1YpMg+Q+cQnl5BZ4NKE9ikfakrb7JFKDiFrSL9dWkoIZI5UcgjRiEhK7bIgc6RiLWQDOv9MyS0EMkYq1kK0qkhKbiGQsUrFUshm9A6IJU57l5OlSsVSiGYVSektBDJFKlZCYiOSNkofQxrMIxULIWPoV5F4EQLGkYqFkO3ADcp9ethlNZhGKtpCJoB9yn2Cry0EDCMVbSGpEUkbKVuIxVW2WaSiKUQjImnD2xYCRpGKphDLKhJPx5AGk0hFS4hWRNKGxy0EDCIVLSHWD9p4FaIeqWgI2YT9PQOPu6yGWeByrc40hOR40MbrFgLKkUrqBzlDnvvO3k57l7MdpUglRUhsFUkMnreQBpVIJUWIRUTShudjSINKpBIrJPeDNlPEXeNcSZ7HrBuSI5XYxnuAy1IGFjIBfEVYk/f7jm2mgbvMZrQyTaTyVmwHMQsprwG+xtezHZ74jvBl/VnaMHYh5TmqjH4kRSpSIRsI1eSV/kRHKlIhe8l7kBxWoiMViZBNwMMxg4woUZGKRMg+4ftHnahIpetp7wzlVzv4CTgMHO/4/kngfmCd1YQ60EQqn3Zt0EWIRRWJlL+Am4Evhe22AJ/rT0fEQcIXutNjdV12QduAG1NmpMA3yGUAfAF8qzsVMaJIZZCQcWyqSKT8UaitFp0jlUFCckck/1c6V6n0E3I28KLKdCrQsUqln5A5uv28UKUbnSKVNiE1IrFhYKTSJmQv+W7sjBIDI5WVhFxFjUgs6RuprCQk93Kto0bfSGX5B38L5SOSUaC1SmWpkJxVJJWWKpWlQjxEJG2sJ24BmomTbT2yYqTSXM6P42O51jbWEQoHXqX7verVhHW2JCvK5eYA8BHwZ/NCI2QPivWpRuwm72L9OfhPlUqPGpGU5pRIpUeNSEpzSqTSo0YkHvj36bMeNSLxwCSwE+oVuScegCrEExdDFeKJVVCFeGIRqhBPHIYgRFw2X1HnGPA2BCEufllmxNkF/ABByCGClF9LzmhE+YVw/fFh80JzDHkHuBZ4k1BDW7HlR+ANwmf+/tI/LK2mWwQeBR4DzqHmW1YcJXzpJT+hUalUKpXKQP4B3AaeT/TFo6kAAAAASUVORK5CYII=');
+}
+.pg.yl .eu_h {
+color:#c2a200;
+border-top:3px solid #c2a200;
+}
+.pg.yl .eu_h, .pg.yl .eu_co, .pg.yl .hr {
+border-left:3px solid #c2a200;
+border-right:3px solid #c2a200;
+}
+.pg.yl .fo {
+border-bottom-color:#c2a200;
+}
+.pg.yl .eu_co.st{
+border:0;
+}
+.pg.or .eu_h {
+color:#e39e00;
+border-top:3px solid #e39e00;
+}
+.pg.or .eu_h .a_i {
+background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAASCAYAAAC5DOVpAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyhpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuNi1jMTExIDc5LjE1ODMyNSwgMjAxNS8wOS8xMC0wMToxMDoyMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENDIDIwMTUgKE1hY2ludG9zaCkiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6QjIzMTRDODNCQ0ExMTFFNUFBNTY5RTA4NDFEMEU0QTAiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6QjIzMTRDODRCQ0ExMTFFNUFBNTY5RTA4NDFEMEU0QTAiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDpCMjMxNEM4MUJDQTExMUU1QUE1NjlFMDg0MUQwRTRBMCIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDpCMjMxNEM4MkJDQTExMUU1QUE1NjlFMDg0MUQwRTRBMCIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/Poc8rmgAAAI2SURBVHjadJRdSFVBEMfvvRiGeP1IfdIKM3qQ/KQUtISCIBX8LEMFwcIPEBSEqPBREXwRQbIQS30wDUvDJEQQKkKI1C6hSQiBXB8Cw5CelPT2G5iF43Jc+DFzZmb/e87u7PGGQiGP29ga9nZgzsDbpPrQLM8X8OvgHHQR+27P8bqJMXFE3UYm7Vu5Ckw/lJBbduZ8LkJtmNtwzxaSQWwKI0zaOZ8lJM898I5JB57jxxNIpr7MGQyzis5DOOyoeAamCYrhBzyGGTAL3YQ3x4mZDcxF6CL2C5yAn1AAN6BeF/Q4RF33rEqtvNF9KIRYPjkFTuLnQDR0al0Wi54+cpoEIvHnIN9lb3phV2o1PwSnrLpKORgjJp9zCZZAjltWK3IUV2iPmQ3fhDHdpmaIkm3wIdSuQtdQv4z9oEcv/hq8JD6tn/YHGuAW/Cb+AHsWFqTOG3zu+YTTR+KVnuCqFPDsx/fjXwGJJWifrRCXE34K2Tx/1XkBOYANI6TjGUSSTCf+F9+vbzgoQlrTqu3zzTFvUsS2rc0cgF/yuQjGYwMquKFv0I1JhXarsbdFLEBBmOO67GGuQwy8hjTTRtTVYh/J3aRu1HqJoIhNkPhn3b917bUWuKvhYrV55Ftdrth70xrl0tUUTVh3tUZbwIxFavKtmmRMqfSfEZPjfQgR8BkOQYSu6pwXcsUgRXM92mtxkAnTLDJ+5H+G6B2M7Eu23tN5GKXwI7kY7bFqSJRy+bvoKQdl/n8BBgA1+diozP47HQAAAABJRU5ErkJggg==');
+}
+.pg.or .eu_h, .pg.or .eu_co, .pg.or .hr {
+border-left:3px solid #e39e00;
+border-right:3px solid #e39e00;
+}
+.pg.or .fo {
+border-bottom-color:#e39e00;
+}
+.pg.or .eu_co.st{
+border:0;
+}
+.m_tbl table td {
+padding:0 20px 16px 20px;
+text-align:left;
+background-color:white;
+}
+.m_tbl table td.bh {
+text-align:center;
+background-color:#e3e3e3;
+z-index:100;
+}
+.m_tbl table td.eu_h {
+padding-top: 20px;
+}
+.eu_h {
+vertical-align:middle;
+font-weight:normal;
+white-space:normal;
+font-size: 24px;
+background-color:white;
+border-left:3px solid;
+border-right:3px solid;
+border-top-left-radius: 10px;
+border-top-right-radius: 10px;
+}
+.pg .eu_h.sm {
+font-size:16px;
+color:#929496;
+border-top-left-radius:0;
+border-top-right-radius:0;
+border-top:0;
+padding-top:0;
+}
+hr {
+margin:0;
+border-top:0.5px solid #cfd0d1;
+}
+.eu_co {
+font-size:16px;
+color:#2a2c30;
+border-left:3px solid;
+border-right:3px solid;
+white-space: normal;
+word-wrap: break-word;
+}
+.eu_co.rsn{
+color:#000000;
+}
+.eu_l {
+display:inline;
+padding-left:5px;
+}
+.bh {
+min-height:35px;
+display:block;
+max-height:75px;
+color:#0076A9;
+font-size:16px;
+overflow:hidden;
+padding-bottom:15px;
+padding-top:5px;
+background-color:#e3e3e3;
+text-align:center;
+max-width:758px;
+text-overflow: ellipsis;
+}
+.btn {
+background:#009dd0;
+color:#FFFFFF;
+border-radius:5px;
+border:2px solid #009dd0;
+cursor:pointer;
+display:inline-block;
+height:30px;
+margin:10px 0 15px;
+font-size:18px;
+line-height:26px;
+width:auto;
+padding:0 20px;
+}
+.btn:focus {
+outline:none;
+}
+.btn:hover {
+background:#fff;
+color:#0076A9;
+}
+.eu_co.fo {
+height:32px;
+color:#696A6D;
+background-color:#f3f3f3;
+line-height:32px;
+font-size:11px;
+padding-bottom:0px;
+border-bottom:3px solid;
+border-bottom-left-radius:10px;
+border-bottom-right-radius:10px;
+}
+.eu_co.fo.pb35 {
+background-color: white;
+color: #2a2c30;
+font-size: 16px;
+padding-bottom: 20px;
+}
+.eu_co.st {
+font-size: 12px;
+padding: 10px 0;
+line-height: 20px;
+position: relative;
+color: #939393;
+background:#e3e3e3;
+border:0;
+text-align: center;
+}
+.s_img {
+vertical-align:top;
+padding-right:5px;
+background:url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADoAAAAMCAYAAAAzmK6YAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyhpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuNi1jMTExIDc5LjE1ODMyNSwgMjAxNS8wOS8xMC0wMToxMDoyMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENDIDIwMTUgKE1hY2ludG9zaCkiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6MDg4M0FBNkZBODFFMTFFNUI3RkJGMDcxMjM1MjFGQjUiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6MDg4M0FBNzBBODFFMTFFNUI3RkJGMDcxMjM1MjFGQjUiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDowODgzQUE2REE4MUUxMUU1QjdGQkYwNzEyMzUyMUZCNSIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDowODgzQUE2RUE4MUUxMUU1QjdGQkYwNzEyMzUyMUZCNSIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PkDA4BkAAANHSURBVHja1JZpSBVhFIaveevaQpGRqaVkC5UWSiutkCVtRlaWtlhRli3+CPtREBFFBUULoVBhEYVYtEALEgZmC4ZEJBFEciuznVKIdjW098BzZbqo+c/64HGcmW++Oed873nnBjQ0NLhs5OTkuJoY8WK5GCn6CI94K26Io+K+6x8ZmZmZLd53+51bMtGiXswXax33noqzokh8FJ/aOLcBxPm8NZPd7GZnHXaLZaK735wf4oJ4IdqLUHGzjZO0OArEF9T21xGQnZ3tIZHEZuZY1b6LR2IvCY8WE0WEqBGPxUVR4nhukujL83X2LlEh7ok5Ik68F1doB1+rjBNV4hL3O4kkMYh5l0UHUSnyRJoYIyazKVcl48Zd1ibavTBLNIN+a258FltYdIVYSUXtehBS9zB3s9jH/ydEMhKPINGD9lIxTbwRw8QzMZwiWqtUix5Ici7rDCGxaIp5TJwWS0VvnrV26kkxRhBjHgUvaac/i1pI8rWYKo6ICSQ3Wwyl8hZglBWO+Sb/GP5fQ8Db2dXzwsv7TEFTRCpKyCTJdRRlFV5gwW4TY8USUS66ivHiJ3MtyR0ikneFiwSSNFmnmCJsR58gC/9RzQNlrewb25l+YrE4w7VNYr84LDaKWBKwAnwT18QukSu6NRGHyXuro3i2sycpboiw2OfRVr9YwzwkG3VlScaHfGZU3kyiWY4kB4uZ9GYves5c+DbHGSRZKx6KQF6WhtxPOdY1OfanT5NZz86LHXNCkHgRMaRwXihe4Se3xED6Pp3WiCCG6axT7HTdA2IWwfnGHXogCjksFB39CpGA1Hyjgl72Yhi25nURzK6Y7K26D8QGkkliV0OR8mp2MRkzCsboInnWVPOSXrzLMYZet4KtRyFxKNLb6Lr2g0HOlMpCoVy3Pvog8lmgpVGJQZmbfuWlBbhxIK7ppo/MODJwTTOP42KPWECvheHqO9m9c2IUPV5KL8dT0EQ+hbmo6R1ml8/nr1SyTf8jUWw4HL2HYBCFrUjSi6zK/L7NboLzjXaYh4vggqh4rWOOfcu7UOAGx/VQnvX9QAni6FvPw5rVSqxOeQQwp0bn9U0l6p9ELK7lwXnjcLw6ql7AZ6nqf/gJ+FuAAQDyhegdUpDo7QAAAABJRU5ErkJggg==") no-repeat;
+width:55px;
+height:17px;
+position:relative;
+top:3px;
+display:inline-block;
+}
+.f_btn {
+display:inline-block;
+}
+.uq_cd {
+position:absolute;
+bottom:54px;
+right:25px;
+font-size:10px;
+color:#696A6D;
+}
+.s_l td {
+font-size: 13px;
+color: #77797c;
+text-align:right;
+}
+.s_l a {
+padding:4px;
+cursor:pointer;
+font-size:13px;
+}
+.s_l .sprt {
+margin-left: 6px;
+margin-right: 4px;
+padding-right: 0;
+cursor: default;
+height: 14px;
+border-left: 1px #cfd0d1 solid;
+}
+.langSelector{
+width:200px;
+}
+.langSelector td{
+text-align:right;
+}
+.logo_container{
+position:relative;
+max-width:758px;
+margin:0px auto;
+}
+.err_cd {
+font-size:16px;
+color:#2a2c30;
+text-align: left;
+background-color:white;
+padding-bottom:16px;
+}
+@media only screen and (max-width:700px) {
+td.bh{
+padding-bottom:35px;
+}
+.eu_h{
+font-size:18px;
+}
+.eu_h,.eu_co,.st{
+word-wrap:break-word;
+white-space:normal;
+}
+.sm{
+font-size:14px;
+}
+.fo{
+padding:2px 0;
+height:20px;
+line-height:20px;
+}
+.m_tbl {
+min-width: 300px;
+width: 95%;
+position:relative;
+left:-3px;
+}
+.uq_cd {
+bottom: 77px;
+}
+.a_i {
+position: relative;
+top: 4px;
+}
+.s_l {
+position: absolute;
+top:85px;
+width:100%;
+z-index:100;
+}
+.s_l a {
+padding: 0;
+}
+.m_tbl table .s_l td {
+text-align: center;
+}
+.pg{
+overflow-y:auto;
+}
+.langSelector{
+width:100%;
+}
+.langSelector td{
+text-align:center;
+}
+}
+</style>
+
+</head>
+<body>
+<!--[if lte IE 7]>
+<style type="text/css">
+.a_i {
+display: none;
+margin-right: 0;
+width: 0;
+}
+.m_tbl {
+width: 100%;
+}
+.pg {
+text-align: center;
+width:100%;
+}
+.pg_cont {
+width: 600px;
+}
+.m_tbl table td.eu_co.st {
+background-color: #e3e3e3;
+}
+.logo_container{
+width:600px;
+}
+</style>
+<![endif]-->
+<div class="pg red">
+<div class="pg_cont">
+<div id="logo_container" class="logo_container">
+<table id="logo" width="50%" cellspacing="0" cellpadding="0" border="0" align="center">
+<tbody>
+<tr align="center">
+<td align="center" class="bh">
+<img src="https://login.zscloud.net:443/__zsig/7DsTnq6q4DtnN" /></td></tr>
+</tbody></table></div>
+<table class="m_tbl" cellpadding="0" cellspacing="0" align="center">
+<tbody><tr>
+<td height="100" valign="top" style="position:relative;">
+<div class="uq_cd">D22</div>
+<!--locale en_US-->
+<table id="en_US" width="100%" border="0" cellspacing="0" cellpadding="0">
+<tbody><tr><td class="eu_h">
+<i class="a_i"></i>
+Sorry, you don't have permission to visit this site.
+</td></tr>
+<tr><td class="hr"><hr></td></tr>
+<tr><td class="eu_co">
+<b><head>
+<style type="text/css">
+body {
+background-color: white;
+font-family: Verdana,Arial,Helvetica,sans-serif;
+font-size: 12px;
+text-align: center;
+}
+.enduser_border {
+border:1px solid #0067B3;
+}
+.enduser_head {
+font-family:Verdana, Arial, Helvetica, sans-serif;
+font-size:25px;
+background-color:#e8e8e8;
+color:#0067B3; height:60px;
+padding:5px;
+font-weight:bold;
+vertical-align:middle;
+text-align:center;
+}
+.enduser_txt {
+background-color:#e8e8e8;
+color:#000000;
+padding:3px;
+font-family:Verdana, Arial, Helvetica, sans-serif;
+font-size:12px;
+text-align:center;
+}
+.enduser_contact {
+font-family:Verdana, Arial, Helvetica, sans-serif;
+font-size:12px;
+background-color:#e8e8e8;
+text-align:center; color:#000000;
+padding:3px; height:20px;
+}
+.enduser_link {
+background-color:#e8e8e8;
+color:#000000;
+padding:3px;
+height:60px;
+vertical-align:middle;
+text-align:center;
+}
+.enduser_link1 {
+background-color: #e8e8e8;
+font-size:13px;
+text-align:center;
+color:#0067B3;
+padding:3px;
+font-weight:bold;
+vertical-align:middle;
+}
+.boxhead {
+background-color:#e8e8e8;
+line-height:150%;
+color:#e8e8e8;
+height:25px;
+padding:2px 4px 2px 4px;
+font-size:16px;
+font-weight:bold;
+vertical-align:middle;
+text-align:center;
+border:1px solid #e8e8e8;
+}
+.imgprop {
+background-color: #e8e8e8;
+padding: 10px 5px;
+text-align: center;
+vertical-align: middle;
+}
+</style>
+</head>
+
+Access to this Website is currently blocked by the Al Futtaim Group Internet Content Control and Monitoring Software systems. If you would like to review the category of this Website, please report to https://itservices.symphonysummit.com/ with the URL (Website) details</b>
+</td></tr>
+<tr><td class="eu_co rsn">
+Not allowed to browse <B>FileHost</B> category
+</td></tr>
+<tr><td class="eu_co">
+You tried to visit:<div class="eu_l"><a href="https://raw.githubusercontent.com/SirLucasTaptik/Paweero/refs/heads/main/src/App.jsx">https://raw.githubusercontent.com/SirLucasTaptik/Paweero/refs/heads/main/src/App.jsx</a></div>
+</td></tr><tr>
+<td class="hr"><hr></td>
+</tr>
+<tr><td class="eu_co ln">
+<a href="https://alfuttaimgroup.sharepoint.com/sites/afgintprd/SitePages/Policy%20%26%20Tools/Group%20Technology%20and%20Digital%20Platforms.aspx">
+See our internet use policy.
+</a>
+</td></tr>
+<tr><td class="eu_co fo">
+</td></tr>
+<tr><td class="eu_co st">
+<span class="s_img"></span>
+Your organization has selected Zscaler to protect you from internet threats.
+</td></tr>
+</tbody></table>
+<!--/locale en_US-->
+</td></tr>
+</tbody></table>
+</div>
+</div>
+</body></html>
+<!-- 2874 1 2 0 1778434452 132 https://raw.githubusercontent.com/SirLucasTaptik/Paweero/refs/heads/main/src/App.jsx -->
