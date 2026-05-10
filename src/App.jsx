@@ -1,8 +1,3 @@
-bash
-
-sed -n '1,650p' /mnt/user-data/outputs/pawero-app/src/App.jsx
-Output
-
 import { useState, useRef, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 
