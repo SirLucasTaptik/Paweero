@@ -648,11 +648,6 @@ const CSS = `
   .sitter-stars  { font-size:11px; color:var(--amber); }
   .sitter-price  { font-size:13px; font-weight:700; color:var(--dark); margin-left:auto; text-align:right; white-space:nowrap; }
   .sitter-avail  { font-size:10px; color:var(--muted); text-align:right; margin-top:1px; }
-  bash
-
-sed -n '651,1350p' /mnt/user-data/outputs/pawero-app/src/App.jsx
-Output
-
   .sitter-bio    { font-size:12px; color:var(--muted); line-height:1.55; margin-bottom:8px; }
   .svc-wrap { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:8px; }
   .svc-tag  { background:var(--off); border:1px solid var(--border); color:var(--body); font-size:10px; font-weight:500; padding:2px 8px; border-radius:999px; }
@@ -1353,12 +1348,6 @@ export default function App() {
 
             {/* ── Reports list — active first, then helped, then resolved ── */}
             <div className="r-list" style={{ marginBottom:24 }}>
-Done
-              bash
-
-sed -n '651,1350p' /mnt/user-data/outputs/pawero-app/src/App.jsx
-Output
-
   .sitter-bio    { font-size:12px; color:var(--muted); line-height:1.55; margin-bottom:8px; }
   .svc-wrap { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:8px; }
   .svc-tag  { background:var(--off); border:1px solid var(--border); color:var(--body); font-size:10px; font-weight:500; padding:2px 8px; border-radius:999px; }
