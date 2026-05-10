@@ -1331,9 +1331,6 @@ export default function App() {
             {/* ── Reports list — active first, then helped, then resolved ── */}
             <div className="r-list" style={{ marginBottom:24 }}>
 
-  .sitter-foot { display:flex; gap:8px; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:10px; margin-top:2px; }
-  .sitter-yard { font-size:11px; color:var(--muted); }
-
   /* ─ ADOPTER CARDS ─ */
   .p-list { display:flex; flex-direction:column; gap:1px; background:var(--border); border-radius:var(--r); overflow:hidden; border:1px solid var(--border); }
   .pcard  { background:var(--white); padding:14px 16px; display:flex; gap:12px; align-items:flex-start; }
