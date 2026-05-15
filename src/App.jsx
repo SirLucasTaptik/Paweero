@@ -1023,23 +1023,52 @@ export default function App() {
         {tab === "home" && <>
 {/* ── HERO BANNER ── */}
 <div style={{
-  width:"100%",
-  maxHeight:"260px",
-  overflow:"hidden",
-  position:"relative",
+  display:"flex",
+  flexDirection:"column",
+  borderBottom:"1px solid var(--border)",
 }}>
-  <img
-    src="https://uyuqcpttdbejaakbwzyl.supabase.co/storage/v1/object/public/pawero-photos/banner/hero.jpg"
-    alt="Lucas & Şirin"
-    style={{
-      width:"100%",
-      height:"260px",
-      objectFit:"cover",
-      objectPosition:"center",
-      display:"block",
-    }}
-  />
-</div>    
+  {/* Desktop: side by side. Mobile: stacked */}
+  <div style={{
+    display:"flex",
+    flexDirection:"row",
+    alignItems:"stretch",
+    flexWrap:"wrap",
+  }}>
+    {/* LEFT: hero text */}
+    <div className="hero" style={{
+      flex:"1 1 300px",
+      borderBottom:"none",
+    }}>
+      <div className="hero-label">{t.tagline}</div>
+      <h1 className="hero-h1">{t.heroH1}<br /><em>{t.heroH1Em}</em></h1>
+      <p className="hero-p">{t.heroP}</p>
+      <div className="hero-cta">
+        <button className="btn btn-dark" onClick={() => goTab("animals")}>{t.browseAnimals}</button>
+        <button className="btn btn-outline" onClick={() => goTab("help")}>🚨 {t.reportAnimal}</button>
+      </div>
+    </div>
+
+    {/* RIGHT: banner photo */}
+    <div style={{
+      flex:"1 1 300px",
+      minHeight:"260px",
+      maxHeight:"380px",
+      overflow:"hidden",
+    }}>
+      <img
+        src="https://uyuqcpttdbejaakbwzyl.supabase.co/storage/v1/object/public/pawero-photos/banner/hero.jpg"
+        alt="Lucas & Şirin"
+        style={{
+          width:"100%",
+          height:"100%",
+          objectFit:"cover",
+          objectPosition:"center",
+          display:"block",
+        }}
+      />
+    </div>
+  </div>
+</div>
           <div className="hero">
             <div className="hero-label">{t.tagline}</div>
             <h1 className="hero-h1">{t.heroH1}<br /><em>{t.heroH1Em}</em></h1>
@@ -1049,7 +1078,6 @@ export default function App() {
               <button className="btn btn-outline" onClick={() => goTab("help")}>🚨 {t.reportAnimal}</button>
             </div>
           </div>
-
           <div className="stats">
             {[[247,t.adopted],[58,t.waiting],[32,t.rescues],[14,t.shelters]].map(([n,l]) => (
               <div key={l} className="stat"><div className="stat-n">{n}</div><div className="stat-l">{l}</div></div>
