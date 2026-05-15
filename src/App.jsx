@@ -1043,6 +1043,11 @@ export default function App() {
     />
   </div>
    </div>
+          <div className="stats">
+            {[[247,t.adopted],[58,t.waiting],[32,t.rescues],[14,t.shelters]].map(([n,l]) => (
+              <div key={l} className="stat"><div className="stat-n">{n}</div><div className="stat-l">{l}</div></div>
+            ))}
+          </div>
           <div className="wrap">
             <div className="sec-label">{t.browseByGoal}</div>
             <div className="ql-list">
