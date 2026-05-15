@@ -1042,7 +1042,6 @@ export default function App() {
       />
     </div>
   </div>
-</div>
           <div className="hero">
             <div className="hero-label">{t.tagline}</div>
             <h1 className="hero-h1">{t.heroH1}<br /><em>{t.heroH1Em}</em></h1>
