@@ -1042,6 +1042,7 @@ export default function App() {
       style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition:"center top", display:"block" }}
     />
   </div>
+   </div>
           <div className="wrap">
             <div className="sec-label">{t.browseByGoal}</div>
             <div className="ql-lis">
