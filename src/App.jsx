@@ -1022,32 +1022,6 @@ export default function App() {
         {/* ══════════════════════════════ HOME ══════════════════════════════ */}
         {tab === "home" && <>
 {/* ── HERO BANNER ── */}
-<div style={{
-  display:"flex",
-  flexDirection:"column",
-  borderBottom:"1px solid var(--border)",
-}}>
-  {/* Desktop: side by side. Mobile: stacked */}
-  <div style={{
-    display:"flex",
-    flexDirection:"row",
-    alignItems:"stretch",
-    flexWrap:"wrap",
-  }}>
-    {/* LEFT: hero text */}
-    <div className="hero" style={{
-      flex:"1 1 300px",
-      borderBottom:"none",
-    }}>
-      <div className="hero-label">{t.tagline}</div>
-      <h1 className="hero-h1">{t.heroH1}<br /><em>{t.heroH1Em}</em></h1>
-      <p className="hero-p">{t.heroP}</p>
-      <div className="hero-cta">
-        <button className="btn btn-dark" onClick={() => goTab("animals")}>{t.browseAnimals}</button>
-        <button className="btn btn-outline" onClick={() => goTab("help")}>🚨 {t.reportAnimal}</button>
-      </div>
-    </div>
-
     {/* RIGHT: banner photo */}
     <div style={{
       flex:"1 1 300px",
