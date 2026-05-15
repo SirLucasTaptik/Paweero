@@ -1021,6 +1021,25 @@ export default function App() {
 
         {/* ══════════════════════════════ HOME ══════════════════════════════ */}
         {tab === "home" && <>
+{/* ── HERO BANNER ── */}
+<div style={{
+  width:"100%",
+  maxHeight:"260px",
+  overflow:"hidden",
+  position:"relative",
+}}>
+  <img
+    src="https://uyuqcpttdbejaakbwzyl.supabase.co/storage/v1/object/public/pawero-photos/banner/hero.jpg"
+    alt="Lucas & Şirin"
+    style={{
+      width:"100%",
+      height:"260px",
+      objectFit:"cover",
+      objectPosition:"center",
+      display:"block",
+    }}
+  />
+</div>    
           <div className="hero">
             <div className="hero-label">{t.tagline}</div>
             <h1 className="hero-h1">{t.heroH1}<br /><em>{t.heroH1Em}</em></h1>
