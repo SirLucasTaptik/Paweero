@@ -1021,44 +1021,30 @@ export default function App() {
 
         {/* ══════════════════════════════ HOME ══════════════════════════════ */}
         {tab === "home" && <>
-{/* ── HERO BANNER ── */}
-    {/* RIGHT: banner photo */}
-    <div style={{
-      flex:"1 1 300px",
-      minHeight:"260px",
-      maxHeight:"380px",
-      overflow:"hidden",
-    }}>
-      <img
-        src="https://uyuqcpttdbejaakbwzyl.supabase.co/storage/v1/object/public/pawero-photos/banner/hero.jpg"
-        alt="Lucas & Şirin"
-        style={{
-          width:"100%",
-          height:"100%",
-          objectFit:"cover",
-          objectPosition:"center",
-          display:"block",
-        }}
-      />
+<div style={{ display:"flex", alignItems:"stretch", borderBottom:"1px solid var(--border)", flexWrap:"wrap" }}>
+  
+  {/* SOL: hero metni */}
+  <div className="hero" style={{ flex:"1 1 320px", borderBottom:"none" }}>
+    <div className="hero-label">{t.tagline}</div>
+    <h1 className="hero-h1">{t.heroH1}<br /><em>{t.heroH1Em}</em></h1>
+    <p className="hero-p">{t.heroP}</p>
+    <div className="hero-cta">
+      <button className="btn btn-dark" onClick={() => goTab("animals")}>{t.browseAnimals}</button>
+      <button className="btn btn-outline" onClick={() => goTab("help")}>🚨 {t.reportAnimal}</button>
     </div>
-          <div className="hero">
-            <div className="hero-label">{t.tagline}</div>
-            <h1 className="hero-h1">{t.heroH1}<br /><em>{t.heroH1Em}</em></h1>
-            <p className="hero-p">{t.heroP}</p>
-            <div className="hero-cta">
-              <button className="btn btn-dark" onClick={() => goTab("animals")}>{t.browseAnimals}</button>
-              <button className="btn btn-outline" onClick={() => goTab("help")}>🚨 {t.reportAnimal}</button>
-            </div>
-          </div>
-          <div className="stats">
-            {[[247,t.adopted],[58,t.waiting],[32,t.rescues],[14,t.shelters]].map(([n,l]) => (
-              <div key={l} className="stat"><div className="stat-n">{n}</div><div className="stat-l">{l}</div></div>
-            ))}
-          </div>
+  </div>
 
+  {/* SAĞ: fotoğraf */}
+  <div style={{ flex:"1 1 320px", minHeight:"280px", maxHeight:"420px", overflow:"hidden" }}>
+    <img
+      src="https://uyuqcpttdbejaakbwzyl.supabase.co/storage/v1/object/public/pawero-photos/banner/hero.jpg"
+      alt="Lucas & Şirin"
+      style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition:"center top", display:"block" }}
+    />
+  </div>
           <div className="wrap">
             <div className="sec-label">{t.browseByGoal}</div>
-            <div className="ql-list">
+            <div className="ql-lis">
               {[
                 { icon:"🏡", title:t.adoptTitle,    desc:t.adoptDesc,    tab:"animals",   sub:() => setASub("adopt")   },
                 { icon:"🤝", title:t.fosterTitle,   desc:t.fosterDesc,   tab:"animals",   sub:() => setASub("foster")  },
