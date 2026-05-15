@@ -120,7 +120,7 @@ const ETA_OPTIONS = [
 const T = {
   en: {
     // app shell
-    appName:"Pawero", tagline:"Turkey · Northern Cyprus · UAE", lang:"EN",
+    appName:"Paweero", tagline:"Turkey · Northern Cyprus · UAE", lang:"EN",
     home:"Home", animals:"Animals", lostFound:"Lost & Found", owners:"Owners", help:"Help",
     // hero
     heroH1:"Every animal deserves", heroH1Em:"a loving home.",
