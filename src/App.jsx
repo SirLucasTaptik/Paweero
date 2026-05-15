@@ -1045,7 +1045,7 @@ export default function App() {
    </div>
           <div className="wrap">
             <div className="sec-label">{t.browseByGoal}</div>
-            <div className="ql-lis">
+            <div className="ql-list">
               {[
                 { icon:"🏡", title:t.adoptTitle,    desc:t.adoptDesc,    tab:"animals",   sub:() => setASub("adopt")   },
                 { icon:"🤝", title:t.fosterTitle,   desc:t.fosterDesc,   tab:"animals",   sub:() => setASub("foster")  },
