@@ -1556,7 +1556,80 @@ export default function App() {
           </div>
         </>}
               </div>
-
+{/* ── SUBMIT REPORT SHEET ── */}
+      {showReportForm && (
+        <div className="sheet-overlay" onClick={() => setShowReportForm(false)}>
+          <div className="sheet" onClick={e => e.stopPropagation()}>
+            <div className="sh-handle" />
+            <div className="sh-hd">
+              <div className="sh-title">{t.submitReportTitle}</div>
+              <button className="sh-close" onClick={() => setShowReportForm(false)}>✕</button>
+            </div>
+            <div className="sh-body">
+              <div className="fg"><label className="flabel">{t.animalType}</label>
+                <div className="type-row">{["🐕","🐈","🐦","🐄","🐎","🐾"].map(e => <button key={e} className={`tbtn ${rf.animal === e ? "on" : ""}`} onClick={() => setRf(f => ({ ...f, animal:e }))}>{e}</button>)}</div>
+              </div>
+              <div className="fg"><label className="flabel">{t.situation}</label>
+                <select className="fs" value={rf.type} onChange={e => setRf(f => ({ ...f, type:e.target.value }))}>
+                  {lang==="tr"
+                    ? <><option>Yaralı</option><option>Terk edilmiş</option><option>Hasta</option><option>Başıboş / Kayıp</option><option>İstismar / İhmal</option><option>Diğer</option></>
+                    : <><option>Injured</option><option>Abandoned</option><option>Sick</option><option>Stray / Lost</option><option>Abuse / Neglect</option><option>Other</option></>}
+                </select>
+              </div>
+              <div className="fg"><label className="flabel">{t.titleField}</label>
+                <input className="fi" placeholder={lang==="tr"?"örn. Bağdat Cad. yaralı köpek":"e.g. Injured dog on Bağdat Ave"} value={rf.title} onChange={e => setRf(f => ({ ...f, title:e.target.value }))} />
+              </div>
+              <div className="fg"><label className="flabel">{t.locationField}</label>
+                <div className="loc-row">
+                  <input className="fi" placeholder={lang==="tr"?"Sokak, semt, şehir":"Street, area, city"} value={rf.location} onChange={e => setRf(f => ({ ...f, location:e.target.value }))} />
+                  <button className="loc-btn" onClick={() => { setRf(f => ({ ...f, location:"GPS" })); say("📍 " + (lang==="tr"?"Konum algılandı":"Location detected")); }}>📍</button>
+                </div>
+              </div>
+              <div className="fg"><label className="flabel">{t.description}</label>
+                <textarea className="fta" placeholder={lang==="tr"?"Görünür yaralar? Hayvan ne zamandan beri orada?":"Visible injuries? How long has the animal been there?"} value={rf.desc} onChange={e => setRf(f => ({ ...f, desc:e.target.value }))} />
+              </div>
+              <div className="fg">
+                <label className="flabel">{t.photo}</label>
+                {photo && <div className="photo-prev"><img src={photo} style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:8}} /></div>}
+                <div className="photo-drop" onClick={() => fileRef.current.click()}>
+                  <div style={{ fontSize:22, marginBottom:5 }}>📷</div>
+                  <div style={{ fontSize:12, fontWeight:500, color:"var(--muted)" }}>{photo ? "✓ Photo uploaded" : t.uploadPhoto}</div>
+                  <div style={{ fontSize:11, color:"var(--muted)", marginTop:2 }}>{t.photoHint}</div>
+                </div>
+                <input ref={fileRef} type="file" accept="image/*" style={{ display:"none" }} onChange={async e => {
+                  const file = e.target.files[0];
+                  if (!file) return;
+                  const ext = file.name.split('.').pop();
+                  const path = `reports/${Date.now()}.${ext}`;
+                  const { error } = await db.storage.from("pawero-photos").upload(path, file);
+                  if (error) { say("Photo upload failed"); return; }
+                  const { data: urlData } = db.storage.from("pawero-photos").getPublicUrl(path);
+                  setPhoto(urlData.publicUrl);
+                  say(lang==="tr"?"Fotoğraf yüklendi":"Photo uploaded");
+                }} />
+              </div>
+              <button className="btn btn-red btn-full" onClick={async () => {
+                if(!rf.title || !rf.location) { say(lang==="tr"?"Lütfen başlık ve konum girin":"Please fill title and location"); return; }
+                const { error } = await db.from("reports").insert([{
+                  emoji: rf.animal || "🐾",
+                  title: rf.title,
+                  description: rf.desc || "",
+                  location: rf.location,
+                  reporter_name: myName,
+                  status: "active",
+                  photo_url: photo || null,
+                }]);
+                if (error) { say(lang==="tr"?"Hata oluştu, tekrar dene":"Error occurred, please try again"); return; }
+                setRf({ title:"", location:"", desc:"", type:"Injured", animal:"" });
+                setPhoto(null); setShowReportForm(false);
+                say(lang==="tr"?"İhbar gönderildi — kurtarma ekibi bildirildi":"Report submitted — responders notified");
+                await loadFromDB();
+              }}>{t.submitReport}</button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* BOTTOM NAV */}
       <nav className="bottom-nav">
         {TABS.map(tb => (
