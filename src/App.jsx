@@ -221,6 +221,20 @@ const T = {
     proofHint:"Must show the animal's current condition",
     noPhotoNoHelp:"You cannot mark this as helped without uploading a photo.",
     markedAsHelped:"✓ Marked as helped — thank you!",
+{showReportForm && (
+  <div className="sheet-overlay" onClick={() => setShowReportForm(false)}>
+    <div className="sheet" onClick={e => e.stopPropagation()}>
+      <div className="sh-handle" />
+      <div className="sh-hd">
+        <div className="sh-title">{t.submitReportTitle}</div>
+        <button className="sh-close" onClick={() => setShowReportForm(false)}>✕</button>
+      </div>
+      <div className="sh-body">
+        {/* form içeriği buraya — aynı alanlar */}
+      </div>
+    </div>
+  </div>
+)}  
     // adoption application
     applyTitle:"Adoption Application", fosterAppTitle:"Foster Application",
     personalInfo:"Personal Information", personalInfoSub:"All details are kept confidential.",
