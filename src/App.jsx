@@ -1231,7 +1231,7 @@ export default function App() {
                     <div className="lf-foot">
                       <span className="lf-contact">📞 {item.contact}</span>
                       {item.status !== "reunited" && (
-                        <button className="btn btn-sm btn-outline" onClick={e => { e.stopPropagation(); say(t.contactCopied); }}>{t.contact}</button>
+                        <button className="btn btn-sm btn-outline" onClick={e => {    e.stopPropagation();    window.location.href = `tel:${item.contact}`; }}>{t.contact}</button>
                       )}
                     </div>
                   </div>
@@ -1395,7 +1395,7 @@ export default function App() {
                           <div style={{ fontSize:11, color:"var(--muted)", marginBottom:2 }}>{t.accepts} <strong style={{ color:"var(--dark)" }}>{s.accepts.join(", ")}</strong></div>
                           <div className="sitter-yard">{s.hasYard ? t.hasYard : t.noYard} · {t.maxPets} {s.maxPets}</div>
                         </div>
-                        <button className="btn btn-dark btn-sm" onClick={e => { e.stopPropagation(); say(`📨 ${t.bookingRequestSent} ${s.name}!`); }}>{t.book}</button>
+                        <button className="btn btn-dark btn-sm" onClick={e => {    e.stopPropagation();    if (contactInfo?.email && contactInfo?.verified) {     window.location.href = `mailto:${s.email || 'info@paweero.com'}?subject=Booking Request for ${s.name}&body=Hi ${s.name},%0D%0A%0D%0AI would like to book your services.%0D%0A%0D%0AMy contact: ${contactInfo.email} / ${contactInfo.phone}`;   } else {     requireContact(() => say(`📨 ${t.bookingRequestSent} ${s.name}!`));   } }}>{t.book}</button>
                       </div>
                     </div>
                   ))}
@@ -1431,7 +1431,7 @@ export default function App() {
                           <div className="pname">{p.name}</div>
                           <div className="plook">{t.lookingFor} <strong>{p.looking[lang]}</strong> · 📍 {p.city}</div>
                         </div>
-                        <button className="btn btn-outline btn-sm" onClick={() => say(t.contactRequest)}>{t.contact}</button>
+                        <button className="btn btn-outline btn-sm" onClick={() => {   if (contactInfo?.email && contactInfo?.verified) {     window.location.href = `mailto:info@paweero.com?subject=Adoption Inquiry - ${p.name}&body=Hi,%0D%0A%0D%0AI am interested in connecting with ${p.name}.%0D%0A%0D%0AMy contact: ${contactInfo.email} / ${contactInfo.phone}`;   } else {     requireContact(() => say(t.contactRequest));   } }}>{t.contact}</button>
                       </div>
                       <div className="pdesc">{p.desc[lang]}</div>
                       <div className="tags">{p.tags[lang].map(tg => <span key={tg} className="tag">{tg}</span>)}</div>
