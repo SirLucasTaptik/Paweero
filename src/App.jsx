@@ -15,18 +15,18 @@ const ANIMALS = [
   { id:2, name:"Mochi",  emoji:"🐈", species:{en:"Cat",    tr:"Kedi"},    breed:{en:"Domestic Shorthair",      tr:"Tekir"},                    age:{en:"4 mos",    tr:"4 aylık"}, gender:{en:"Male",  tr:"Erkek"}, country:"Türkiye",      province:"İzmir",      city:"Konak",    tags:{en:["Vaccinated","Playful","Indoor"],          tr:["Aşılı","Oyuncu","İç mekan"]},             urgent:true,  isNew:false, canFoster:true,  desc:{en:"Mochi is a tiny bundle of energy! Found as a stray kitten, now healthy and ready for his forever family.",                   tr:"Mochi sokaktan kurtarılmış minik bir yavru. Sağlığına kavuştu, sıcak bir yuva bekliyor."} },
   { id:3, name:"Rocky",  emoji:"🐇", species:{en:"Rabbit", tr:"Tavşan"},  breed:{en:"Holland Lop",             tr:"Hollanda Lop"},             age:{en:"1 yr",     tr:"1 yaş"},    gender:{en:"Male",  tr:"Erkek"}, country:"Türkiye",      province:"Ankara",     city:"Çankaya",  tags:{en:["Neutered","Litter-trained","Gentle"],     tr:["Kısırlaştırıldı","Evcil","Sakin"]},       urgent:false, isNew:false, canFoster:false, desc:{en:"Rocky is a calm and gentle rabbit. Perfect for a quiet household.",                                                          tr:"Rocky sakin, uysal bir tavşan. Sessiz bir eve çok uygun."} },
   { id:4, name:"Bella",  emoji:"🐕", species:{en:"Dog",    tr:"Köpek"},   breed:{en:"German Shepherd",         tr:"Alman Çoban Köpeği"},       age:{en:"3 yrs",    tr:"3 yaş"},    gender:{en:"Female",tr:"Dişi"}, country:"BAE",          province:"Dubai",      city:"Jumeirah", tags:{en:["Trained","Vaccinated","Active"],          tr:["Eğitimli","Aşılı","Aktif"]},              urgent:false, isNew:true,  canFoster:false, desc:{en:"Bella is smart and loyal. Needs an active family with outdoor space.",                                                       tr:"Bella zeki ve sadık bir köpek. Dış alanı olan aktif bir aile için ideal."} },
-  { id:5, name:"Cleo",   emoji:"🐈", species:{en:"Cat",    tr:"Kedi"},    breed:{en:"Siamese Mix",             tr:"Siyam Mix"},                age:{en:"6 yrs",    tr:"6 yaş"},    gender:{en:"Female",tr:"Dişi"}, country:"Kuzey Kıbrıs", province:"Girne",      city:"Girne",    tags:{en:["Senior","Calm","Vaccinated"],             tr:["Yaşlı","Sakin","Aşılı"]},                 urgent:true,  isNew:false, canFoster:true,  desc:{en:"Cleo is a senior cat who loves peaceful spots. She deserves a forever home.",                                                tr:"Cleo huzurlu bir köşe seven yaşlı bir kedi. Kalıcı bir yuva hak ediyor."} },
+  { id:5, name:"Cleo",   emoji:"🐈", species:{en:"Cat",    tr:"Kedi"},    breed:{en:"Siamese Mix",             tr:"Siyam Mix"},                age:{en:"6 yrs",    tr:"6 yaş"},    gender:{en:"Female",tr:"Dişi"}, country:"Kıbrıs", province:"Girne",      city:"Girne",    tags:{en:["Senior","Calm","Vaccinated"],             tr:["Yaşlı","Sakin","Aşılı"]},                 urgent:true,  isNew:false, canFoster:true,  desc:{en:"Cleo is a senior cat who loves peaceful spots. She deserves a forever home.",                                                tr:"Cleo huzurlu bir köşe seven yaşlı bir kedi. Kalıcı bir yuva hak ediyor."} },
   { id:6, name:"Peanut", emoji:"🐹", species:{en:"Hamster",tr:"Hamster"}, breed:{en:"Syrian Hamster",          tr:"Suriye Hamster"},           age:{en:"6 mos",    tr:"6 aylık"}, gender:{en:"Male",  tr:"Erkek"}, country:"BAE",          province:"Abu Dhabi",  city:"Al Reem",  tags:{en:["Healthy","Friendly"],                    tr:["Sağlıklı","Uysal"]},                      urgent:false, isNew:false, canFoster:true,  desc:{en:"Peanut comes with cage and accessories. Easy to care for.",                                                                  tr:"Peanut kafesi ve aksesuarlarıyla birlikte verilecek."} },
   { id:7, name:"Atlas",  emoji:"🐕", species:{en:"Dog",    tr:"Köpek"},   breed:{en:"Kangal Mix",              tr:"Kangal Mix"},               age:{en:"4 yrs",    tr:"4 yaş"},    gender:{en:"Male",  tr:"Erkek"}, country:"Türkiye",      province:"Ankara",     city:"Keçiören", tags:{en:["Vaccinated","Stray","Large breed"],       tr:["Aşılı","Sahipsiz","Büyük cüsse"]},        urgent:true,  isNew:false, canFoster:true,  desc:{en:"Atlas was rescued from the street. Big and gentle, needs a home with a large garden.",                                       tr:"Atlas sokaktan alındı. Büyük ve sevecen, geniş bahçeli bir eve ihtiyacı var."} },
   { id:8, name:"Zara",   emoji:"🐈", species:{en:"Cat",    tr:"Kedi"},    breed:{en:"Van Cat",                 tr:"Van Kedisi"},               age:{en:"2 yrs",    tr:"2 yaş"},    gender:{en:"Female",tr:"Dişi"}, country:"Türkiye",      province:"Van",        city:"İpekyolu", tags:{en:["Vaccinated","Spayed","Active"],           tr:["Aşılı","Kısırlaştırıldı","Aktif"]},       urgent:false, isNew:true,  canFoster:true,  desc:{en:"Zara is a Van Cat, Turkey's iconic breed. Loves water and has an energetic personality.",                                    tr:"Zara Türkiye'nin simgesi Van kedisi. Suyu seven, enerjik bir karakter."} },
-  { id:9, name:"Max",    emoji:"🐕", species:{en:"Dog",    tr:"Köpek"},   breed:{en:"Labrador Mix",            tr:"Labrador Mix"},             age:{en:"1 yr",     tr:"1 yaş"},    gender:{en:"Male",  tr:"Erkek"}, country:"Kuzey Kıbrıs", province:"Lefkoşa",    city:"Lefkoşa",  tags:{en:["Vaccinated","Playful","Young"],           tr:["Aşılı","Oyuncu","Genç"]},                 urgent:false, isNew:true,  canFoster:true,  desc:{en:"Max is an energetic and affectionate young dog. Loves running in open spaces.",                                              tr:"Max enerjik ve sevecen genç bir köpek. Açık alanda koşmayı çok seviyor."} },
+  { id:9, name:"Max",    emoji:"🐕", species:{en:"Dog",    tr:"Köpek"},   breed:{en:"Labrador Mix",            tr:"Labrador Mix"},             age:{en:"1 yr",     tr:"1 yaş"},    gender:{en:"Male",  tr:"Erkek"}, country:"Kıbrıs", province:"Lefkoşa",    city:"Lefkoşa",  tags:{en:["Vaccinated","Playful","Young"],           tr:["Aşılı","Oyuncu","Genç"]},                 urgent:false, isNew:true,  canFoster:true,  desc:{en:"Max is an energetic and affectionate young dog. Loves running in open spaces.",                                              tr:"Max enerjik ve sevecen genç bir köpek. Açık alanda koşmayı çok seviyor."} },
 ];
 
-const COUNTRIES = ["All Countries","Türkiye","Kuzey Kıbrıs","BAE"];
+const COUNTRIES = ["All Countries","Türkiye","Kıbrıs","BAE"];
 const PROVINCES = {
   "All Countries":  ["All Provinces"],
   "Türkiye":        ["All Provinces","İstanbul","Ankara","İzmir","Antalya","Bursa","Adana","Gaziantep","Van","Mersin","Muğla"],
-  "Kuzey Kıbrıs":  ["All Provinces","Lefkoşa","Gazimağusa","Girne","Güzelyurt","İskele"],
+  "Kıbrıs":  ["All Provinces","Lefkoşa","Gazimağusa","Girne","Güzelyurt","İskele"],
   "BAE":            ["All Provinces","Dubai","Abu Dhabi","Sharjah","Ajman","Ras Al Khaimah","Fujairah"],
 };
 const CITIES = {
@@ -120,7 +120,7 @@ const ETA_OPTIONS = [
 const T = {
   en: {
     // app shell
-    appName:"Pawero", tagline:"Turkey · Northern Cyprus · UAE", lang:"EN",
+    appName:"Paweero", tagline:"Turkey · Cyprus · UAE", lang:"EN",
     home:"Home", animals:"Animals", lostFound:"Lost & Found", owners:"Owners", help:"Help",
     // hero
     heroH1:"Every animal deserves", heroH1Em:"a loving home.",
@@ -141,7 +141,7 @@ const T = {
     adopt:"Adopt", foster:"Foster", postProfile:"📋 Post Adoption Profile",
     findPet:"Find a pet to adopt or foster.",
     fosterWhat:"What is fostering?",
-    fosterNote:"You temporarily care for an animal (2–8 weeks) while we find a permanent home. Pawero covers all vet costs.",
+    fosterNote:"You temporarily care for an animal (2–8 weeks) while we find a permanent home. Paweero covers all vet costs.",
     searchPlaceholder:"Search by name or breed…",
     noAnimalsFound:"No animals found.",
     applyAdopt:"Apply to Adopt", applyFoster:"Apply to Foster",
@@ -170,7 +170,7 @@ const T = {
     book:"Book", sitterProfile:"Sitter Profile", sendRequest:"Send Booking Request",
     bookingRequestSent:"Booking request sent to",
     hasYard:"✓ Has yard", noYard:"✕ No yard", maxPets:"Max",
-    sitterRegNote:"Join our sitter network. Set your own rates and hours. Pet owners in your area will find and book you through Pawero.",
+    sitterRegNote:"Join our sitter network. Set your own rates and hours. Pet owners in your area will find and book you through Paweero.",
     yourName:"Your name *", cityInput:"City *", neighbourhood:"Neighbourhood",
     pricePerDay:"Price per day", servicesOffered:"Services offered *", animalsAccepted:"Animals accepted *",
     availability:"Availability", availPlaceholder:"e.g. Mon–Fri, weekends only",
@@ -266,7 +266,7 @@ const T = {
     whyAdopt_foster:"Why do you want to foster",
     whyPlaceholder:"What drew you to this animal? Why are you a good match?",
     longTermQ:"Long-term care plan? *", longTermPlaceholder:"How will you care for them over the years, if circumstances change?",
-    declaration:"I confirm all information is truthful. Pawero may conduct a home visit and may reject any application without providing a reason.",
+    declaration:"I confirm all information is truthful. Paweero may conduct a home visit and may reject any application without providing a reason.",
     reviewTitle:"Review Your Application", reviewSub:"Tap any completed step to go back and edit.",
     confirmNote_pre:"Confirmation will be sent to", confirmNote_post:"We'll respond within 3–5 business days.",
     personalSection:"Personal", homeSection:"Home", lifestyleSection:"Lifestyle", experienceSection:"Experience",
@@ -290,7 +290,7 @@ const T = {
   },
   tr: {
     // uygulama kabuğu
-    appName:"Pawero", tagline:"Türkiye · Kuzey Kıbrıs · BAE", lang:"TR",
+    appName:"Paweero", tagline:"Türkiye · Kıbrıs · BAE", lang:"TR",
     home:"Ana Sayfa", animals:"Hayvanlar", lostFound:"Kayıp & Bulunan", owners:"Sahipler", help:"Yardım",
     // hero
     heroH1:"Her hayvan hak ediyor", heroH1Em:"sevgi dolu bir yuva.",
@@ -311,7 +311,7 @@ const T = {
     adopt:"Sahiplen", foster:"Geçici Bakım", postProfile:"📋 Sahiplenme Profili Oluştur",
     findPet:"Sahiplenmek veya geçici bakım için hayvan bul.",
     fosterWhat:"Geçici bakım nedir?",
-    fosterNote:"Kalıcı yuva bulana kadar 2–8 hafta boyunca hayvana geçici bakım verirsin. Tüm veteriner masrafları Pawero'a aittir.",
+    fosterNote:"Kalıcı yuva bulana kadar 2–8 hafta boyunca hayvana geçici bakım verirsin. Tüm veteriner masrafları Paweero'a aittir.",
     searchPlaceholder:"İsim veya ırk ile ara…",
     noAnimalsFound:"Hayvan bulunamadı.",
     applyAdopt:"Sahiplenme Başvurusu", applyFoster:"Geçici Bakım Başvurusu",
@@ -340,7 +340,7 @@ const T = {
     book:"Rezervasyon", sitterProfile:"Bakıcı Profili", sendRequest:"Rezervasyon İsteği Gönder",
     bookingRequestSent:"Rezervasyon isteği gönderildi:",
     hasYard:"✓ Bahçe/dış alan var", noYard:"✕ Dış alan yok", maxPets:"Maks.",
-    sitterRegNote:"Bakıcı ağımıza katıl. Kendi saatlerini ve ücretini belirle. Yakınındaki hayvan sahipleri seni Pawero üzerinden bulup rezervasyon yapacak.",
+    sitterRegNote:"Bakıcı ağımıza katıl. Kendi saatlerini ve ücretini belirle. Yakınındaki hayvan sahipleri seni Paweero üzerinden bulup rezervasyon yapacak.",
     yourName:"Adın *", cityInput:"Şehir *", neighbourhood:"Semt / Mahalle",
     pricePerDay:"Günlük ücret", servicesOffered:"Sunduğun hizmetler *", animalsAccepted:"Bakabileceğin hayvanlar *",
     availability:"Müsaitlik", availPlaceholder:"örn. Pzt–Cum, yalnızca hafta sonu",
@@ -436,7 +436,7 @@ const T = {
     whyAdopt_foster:"Bu hayvana neden geçici bakım vermek istiyorsun?",
     whyPlaceholder:"Bu hayvanı seçme sebebin? Neden iyi bir eşleşmesiniz?",
     longTermQ:"Uzun vadeli bakım planın? *", longTermPlaceholder:"Koşullar değişse bile yıllar içinde hayvana nasıl bakacaksın?",
-    declaration:"Tüm bilgilerin doğru olduğunu onaylıyorum. Pawero ev ziyareti yapabilir ve herhangi bir başvuruyu gerekçe göstermeksizin reddedebilir.",
+    declaration:"Tüm bilgilerin doğru olduğunu onaylıyorum. Paweero ev ziyareti yapabilir ve herhangi bir başvuruyu gerekçe göstermeksizin reddedebilir.",
     reviewTitle:"Başvurunu Gözden Geçir", reviewSub:"Düzenlemek için tamamlanmış adımlara dokun.",
     confirmNote_pre:"Onay e-postası", confirmNote_post:"adresine gönderilecek. 3–5 iş günü içinde yanıt alırsın.",
     personalSection:"Kişisel", homeSection:"Ev", lifestyleSection:"Yaşam", experienceSection:"Deneyim",
@@ -1306,9 +1306,9 @@ export default function App() {
                   if (!file) return;
                   const ext = file.name.split('.').pop();
                   const path = `lf/${Date.now()}.${ext}`;
-                  const { error } = await db.storage.from("pawero-photos").upload(path, file);
+                  const { error } = await db.storage.from("Paweero-photos").upload(path, file);
                   if (error) { say("Photo upload failed"); return; }
-                  const { data: urlData } = db.storage.from("pawero-photos").getPublicUrl(path);
+                  const { data: urlData } = db.storage.from("Paweero-photos").getPublicUrl(path);
                   setLFPhoto(urlData.publicUrl);
                   say(t.photoUploaded2);
                 }} />
@@ -1597,9 +1597,9 @@ export default function App() {
                   if (!file) return;
                   const ext = file.name.split('.').pop();
                   const path = `reports/${Date.now()}.${ext}`;
-                  const { error } = await db.storage.from("pawero-photos").upload(path, file);
+                  const { error } = await db.storage.from("Paweero-photos").upload(path, file);
                   if (error) { say("Photo upload failed"); return; }
-                  const { data: urlData } = db.storage.from("pawero-photos").getPublicUrl(path);
+                  const { data: urlData } = db.storage.from("Paweero-photos").getPublicUrl(path);
                   setPhoto(urlData.publicUrl);
                   say(lang==="tr"?"Fotoğraf yüklendi":"Photo uploaded");
                 }} />
@@ -1891,9 +1891,9 @@ export default function App() {
                     if (!file) return;
                     const ext = file.name.split('.').pop();
                     const path = `proofs/${Date.now()}.${ext}`;
-                    const { error } = await db.storage.from("pawero-photos").upload(path, file);
+                    const { error } = await db.storage.from("Paweero-photos").upload(path, file);
                     if (error) { say("Photo upload failed"); return; }
-                    const { data: urlData } = db.storage.from("pawero-photos").getPublicUrl(path);
+                    const { data: urlData } = db.storage.from("Paweero-photos").getPublicUrl(path);
                     setHelpProof(urlData.publicUrl);
                   }} />
                   <div style={{ fontSize:11, color:"var(--muted)", textAlign:"center", marginTop:14 }}>{t.noPhotoNoHelp}</div>
