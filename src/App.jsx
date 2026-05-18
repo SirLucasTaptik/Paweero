@@ -1383,7 +1383,15 @@ export default function App() {
             <div className="ph-title">{t.helpAnimals}</div>
             <div className="ph-sub" style={{ marginBottom:0, paddingBottom:12 }}>{t.helpSub}</div>
           </div>
-
+            {/* ── CTA to submit new report ── */}
+            {/* ── Submit new report CTA ── */}
+              <div style={{ borderTop:"1px solid var(--border)", paddingTop:20, textAlign:"center" }}>
+                <div style={{ fontSize:13, color:"var(--muted)", marginBottom:12 }}>{t.notListedAbove}</div>
+                <button className="btn btn-red btn-full" onClick={() => setShowReportForm(true)}>{t.submitNewReport}</button>
+              </div>
+          </div>
+        </>}
+          
           <div className="wrap" style={{ paddingTop:16 }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
               <div style={{ fontSize:13, fontWeight:600, color:"var(--dark)" }}>
@@ -1473,15 +1481,6 @@ export default function App() {
                   );
                 })}
             </div>
-
-            {/* ── CTA to submit new report ── */}
-            {/* ── Submit new report CTA ── */}
-              <div style={{ borderTop:"1px solid var(--border)", paddingTop:20, textAlign:"center" }}>
-                <div style={{ fontSize:13, color:"var(--muted)", marginBottom:12 }}>{t.notListedAbove}</div>
-                <button className="btn btn-red btn-full" onClick={() => setShowReportForm(true)}>{t.submitNewReport}</button>
-              </div>
-          </div>
-        </>}
 
       {/* ── SUBMIT REPORT MODAL/DRAWER ── */}
       {showReportForm && (
