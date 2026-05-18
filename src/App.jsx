@@ -1389,7 +1389,6 @@ export default function App() {
                 <div style={{ fontSize:13, color:"var(--muted)", marginBottom:12 }}>{t.notListedAbove}</div>
                 <button className="btn btn-red btn-full" onClick={() => setShowReportForm(true)}>{t.submitNewReport}</button>
               </div>
-          </div>
         </>}
           
           <div className="wrap" style={{ paddingTop:16 }}>
