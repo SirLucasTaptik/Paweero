@@ -1487,12 +1487,10 @@ export default function App() {
             </div>
 
             {/* ── CTA to submit new report ── */}
-            {!showReportForm ? (
-              <div style={{ borderTop:"1px solid var(--border)", paddingTop:20, textAlign:"center" }}>
-                <div style={{ fontSize:13, color:"var(--muted)", marginBottom:12 }}>{t.notListedAbove}</div>
-                <button className="btn btn-red btn-full" onClick={() => setShowReportForm(true)}>{t.submitNewReport}</button>
-              </div>
-            ) : (
+<div style={{ borderTop:"1px solid var(--border)", paddingTop:20, textAlign:"center" }}>
+  <div style={{ fontSize:13, color:"var(--muted)", marginBottom:12 }}>{t.notListedAbove}</div>
+  <button className="btn btn-red btn-full" onClick={() => setShowReportForm(true)}>{t.submitNewReport}</button>
+</div> 
               <div style={{ borderTop:"1px solid var(--border)", paddingTop:20 }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
                   <div style={{ fontSize:14, fontWeight:600, color:"var(--dark)" }}>{lang==="tr"?"İhbar Gönder":"Submit a Report"}</div>
