@@ -167,7 +167,6 @@ const TABS = [
   { id:"home",     icon:"⌂",  label:"Home"        },
   { id:"animals",  icon:"🐾", label:"Animals"      },
   { id:"lostfound",icon:"🔍", label:"Lost & Found" },
-  { id:"owners",   icon:"🏠", label:"Owners"       },
   { id:"help",     icon:"🚨", label:"Help"         },
 ];
 
@@ -202,7 +201,7 @@ const T = {
     // home quick links
     browseByGoal:"Browse by goal",
     adoptTitle:"Adopt a Pet",              adoptDesc:"Browse rescued animals and submit an adoption application.",
-    fosterTitle:"Foster an Animal",        fosterDesc:"Provide a temporary home. We cover all vet costs.",
+    fosterTitle:"Foster an Animal",        fosterDesc:"Provide a temporary home for an animal in need.",
     lostFoundTitle:"Lost & Found",         lostFoundDesc:"Report a lost pet or view found animals.",
     sittingTitle:"Pet Sitting & Boarding", sittingDesc:"Find trusted sitters near you, or register as one.",
     rehomeTitle:"Rehome Your Pet",         rehomeDesc:"List your pet so loving families can find them.",
@@ -212,7 +211,7 @@ const T = {
     adopt:"Adopt", foster:"Foster", postProfile:"📋 Post Adoption Profile",
     findPet:"Find a pet to adopt or foster.",
     fosterWhat:"What is fostering?",
-    fosterNote:"You temporarily care for an animal (2–8 weeks) while we find a permanent home. Paweero covers all vet costs.",
+    fosterNote:"You temporarily care for an animal (2–8 weeks) while we find a permanent home.",
     searchPlaceholder:"Search by name or breed…",
     noAnimalsFound:"No animals found.",
     applyAdopt:"Apply to Adopt", applyFoster:"Apply to Foster",
@@ -372,7 +371,7 @@ const T = {
     // hızlı bağlantılar
     browseByGoal:"Ne yapmak istiyorsun?",
     adoptTitle:"Hayvan Sahiplen",          adoptDesc:"Kurtarılmış hayvanlara göz at ve sahiplenme başvurusu gönder.",
-    fosterTitle:"Geçici Bakım Ver",        fosterDesc:"Geçici bir yuva sun. Veteriner masraflarını biz karşılıyoruz.",
+    fosterTitle:"Geçici Bakım Ver",        fosterDesc:"İhtiyacı olan bir hayvana geçici bir yuva sun.",
     lostFoundTitle:"Kayıp & Bulunan",      lostFoundDesc:"Kayıp ilanı ver ya da bulunan hayvanları görüntüle.",
     sittingTitle:"Petsitter & Pansiyonat", sittingDesc:"Yakınındaki güvenilir bakıcıları bul ya da bakıcı olarak kayıt ol.",
     rehomeTitle:"Hayvanını Yeni Yuvaya",   rehomeDesc:"Hayvanını listele, ona sevgi dolu bir aile bulsun.",
@@ -382,7 +381,7 @@ const T = {
     adopt:"Sahiplen", foster:"Geçici Bakım", postProfile:"📋 Sahiplenme Profili Oluştur",
     findPet:"Sahiplenmek veya geçici bakım için hayvan bul.",
     fosterWhat:"Geçici bakım nedir?",
-    fosterNote:"Kalıcı yuva bulana kadar 2–8 hafta boyunca hayvana geçici bakım verirsin. Tüm veteriner masrafları Paweero'a aittir.",
+    fosterNote:"Kalıcı yuva bulana kadar 2–8 hafta boyunca hayvana geçici bakım verirsin.",
     searchPlaceholder:"İsim veya ırk ile ara…",
     noAnimalsFound:"Hayvan bulunamadı.",
     applyAdopt:"Sahiplenme Başvurusu", applyFoster:"Geçici Bakım Başvurusu",
@@ -880,7 +879,7 @@ export default function App() {
   const [animalSub, setASub]  = useState("adopt");    // adopt | foster | profile
   const [lfSub, setLFSub]     = useState("board");    // board | post
   const [lfTypeFilter, setLFType] = useState("all");  // all | lost | found
-  const [ownerSub, setOSub]   = useState("sitting");  // sitting | register | rehome | families | profile
+  // (ownerSub removed — Owners section deleted)
 
   // ── filters ──
   const [species, setSpecies]     = useState("All");
@@ -888,8 +887,7 @@ export default function App() {
   const [fCountry, setFC]         = useState("All Countries");
   const [fProvince, setFP]        = useState("All Provinces");
   const [fCity, setFCi]           = useState("All Cities");
-  const [svcFilter, setSvcF]      = useState("All Services");
-  const [sitterCity, setSitterCity] = useState("All");
+  // (svcFilter/sitterCity removed — Owners section deleted)
 
   // ── modal state ──
   const [detailAnimal, setDetailA]  = useState(null);
@@ -1146,16 +1144,9 @@ export default function App() {
     return okS && okQ && okC && okP && okCi && okType;
   });
 
-  const filteredSitters = sitters.filter(s =>
-    (sitterCity === "All" || s.city === sitterCity) &&
-    (svcFilter === "All Services" || (s.services?.en || s.services || []).includes(svcFilter))
-  );
-
   const filteredLF = lfItems.filter(item =>
     lfTypeFilter === "all" || item.type === lfTypeFilter
   );
-
-  const sitterCities = ["All", ...Array.from(new Set(sitters.map(s => s.city)))];
 
   // location filter bar (reused in Adopt & Foster)
   const LocFilters = () => (
@@ -1222,8 +1213,6 @@ export default function App() {
                 { icon:"🏡", title:t.adoptTitle,    desc:t.adoptDesc,    tab:"animals",   sub:() => setASub("adopt")   },
                 { icon:"🤝", title:t.fosterTitle,   desc:t.fosterDesc,   tab:"animals",   sub:() => setASub("foster")  },
                 { icon:"🔍", title:t.lostFoundTitle, desc:t.lostFoundDesc,tab:"lostfound", sub:() => {}                },
-                { icon:"🛋️", title:t.sittingTitle,  desc:t.sittingDesc,  tab:"owners",    sub:() => setOSub("sitting") },
-                { icon:"🔄", title:t.rehomeTitle,   desc:t.rehomeDesc,   tab:"owners",    sub:() => setOSub("rehome")  },
                 { icon:"🚨", title:t.helpTitle,     desc:t.helpDesc,     tab:"help",      sub:() => {}                 },
               ].map((f,i) => (
                 <div key={i} className="ql-item" onClick={() => { f.sub(); goTab(f.tab); }}>
@@ -1486,116 +1475,6 @@ export default function App() {
           )}
         </>}
 
-        {/* ══════════════════════════════ OWNERS ════════════════════════════ */}
-        {tab === "owners" && <>
-          <div className="ph">
-            <div className="ph-title">{t.forOwners}</div>
-            <div className="ph-sub">{t.forOwnersSub}</div>
-            <div className="stabs">
-              <button className={`stab ${ownerSub === "sitting"  ? "on" : ""}`} onClick={() => setOSub("sitting")}>{t.petSitting}</button>
-              <button className={`stab ${ownerSub === "register" ? "on" : ""}`} onClick={() => setOSub("register")}>{t.becomeSitter}</button>
-              <button className={`stab ${ownerSub === "rehome"   ? "on" : ""}`} onClick={() => setOSub("rehome")}>{t.rehomeTab}</button>
-              <button className={`stab ${ownerSub === "families" ? "on" : ""}`} onClick={() => setOSub("families")}>{t.findFamilies}</button>
-            </div>
-          </div>
-
-          <div className="wrap" style={{ paddingTop:18 }}>
-
-            {ownerSub === "sitting" && <>
-              <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:10 }}>
-                <span style={{ fontSize:11, fontWeight:600, color:"var(--muted)", textTransform:"uppercase", letterSpacing:"0.5px", alignSelf:"center" }}>{t.cityLabel}</span>
-                {sitterCities.map(c => <button key={c} className={`chip ${sitterCity === c ? "on" : ""}`} onClick={() => setSitterCity(c)} style={{ minHeight:32, padding:"5px 12px", fontSize:11 }}>{c === "All" ? (lang==="tr"?"Tümü":"All") : c}</button>)}
-              </div>
-              <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:16 }}>
-                <span style={{ fontSize:11, fontWeight:600, color:"var(--muted)", textTransform:"uppercase", letterSpacing:"0.5px", alignSelf:"center" }}>{t.serviceLabel}</span>
-                {SVC_TYPES.map(s => <button key={s} className={`chip ${svcFilter === s ? "on" : ""}`} onClick={() => setSvcF(s)} style={{ minHeight:32, padding:"5px 12px", fontSize:11 }}>{s}</button>)}
-              </div>
-              <div style={{ fontSize:11, color:"var(--muted)", fontWeight:500, marginBottom:12 }}>{filteredSitters.length} {t.sittersFound}</div>
-              {filteredSitters.length > 0 ? (
-                <div className="sitter-list">
-                  {filteredSitters.map(s => (
-                    <div key={s.id} className="sitter-card" onClick={() => setDetailS(s)}>
-                      <div className="sitter-top">
-                        <div className="sitter-avatar">{s.emoji}</div>
-                        <div style={{ flex:1 }}>
-                          <div className="sitter-name">{s.name}</div>
-                          <div className="sitter-loc">📍 {s.area}, {s.city}</div>
-                          <div style={{ display:"flex", alignItems:"center", gap:5 }}>
-                            <span className="sitter-stars">{"★".repeat(Math.round(s.rating))}</span>
-                            <span style={{ fontSize:12, fontWeight:600 }}>{s.rating}</span>
-                            <span style={{ fontSize:11, color:"var(--muted)" }}>({s.reviews})</span>
-                          </div>
-                        </div>
-                        <div>
-                          <div className="sitter-price">{s.price[lang]}</div>
-                          <div className="sitter-avail">{s.availability[lang]}</div>
-                        </div>
-                      </div>
-                      <div className="sitter-bio">{s.bio[lang]}</div>
-                      <div className="svc-wrap">{s.services[lang].map(sv => <span key={sv} className="svc-tag">{sv}</span>)}</div>
-                      <div className="sitter-foot">
-                        <div>
-                          <div style={{ fontSize:11, color:"var(--muted)", marginBottom:2 }}>{t.accepts} <strong style={{ color:"var(--dark)" }}>{s.accepts.join(", ")}</strong></div>
-                          <div className="sitter-yard">{s.hasYard ? t.hasYard : t.noYard} · {t.maxPets} {s.maxPets}</div>
-                        </div>
-                        <button className="btn btn-dark btn-sm" onClick={e => {
-                          e.stopPropagation();
-                          if (s.contact_pref === "phone" && s.contact_phone) {
-                            window.location.href = `tel:${s.contact_phone}`;
-                          } else if (s.contact_email) {
-                            window.location.href = `mailto:${s.contact_email}?subject=${lang==="tr"?"Rezervasyon İsteği":"Booking Request"} - ${s.name}`;
-                          } else {
-                            say(`📨 ${t.bookingRequestSent} ${s.name}!`);
-                          }
-                        }}>{t.book}</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div style={{ textAlign:"center", padding:"40px 0", color:"var(--muted)", fontSize:13 }}>{t.noSittersFound}</div>
-              )}
-            </>}
-
-            {ownerSub === "register" && (
-              <RegisterSitterForm lang={lang} t={t} onSubmit={async (name) => {
-                say(`✓ ${name} ${lang==="tr"?"bakıcı olarak kaydedildi!":"registered as a sitter!"}`);
-                setOSub("sitting");
-                await loadFromDB();
-              }} requireContact={requireContact} />
-            )}
-
-            {ownerSub === "rehome" && (
-              <RehomeForm lang={lang} t={t} onSubmit={async (n) => {
-                say(`✓ ${n} ${lang==="tr"?"yeni yuva ilanı yayınlandı":"listed for rehoming"}`);
-                await loadFromDB();
-              }} requireContact={requireContact} />
-            )}
-
-            {ownerSub === "families" && (
-              <div className="p-list">
-                {ADOPTERS.map(p => (
-                  <div key={p.id} className="pcard">
-                    <div className="pav">{p.emoji}</div>
-                    <div style={{ flex:1 }}>
-                      <div style={{ display:"flex", justifyContent:"space-between", flexWrap:"wrap", gap:8 }}>
-                        <div>
-                          <div className="pname">{p.name}</div>
-                          <div className="plook">{t.lookingFor} <strong>{p.looking[lang]}</strong> · 📍 {p.city}</div>
-                        </div>
-                        <button className="btn btn-outline btn-sm" onClick={() => say(t.contactRequest)}>{t.contact}</button>
-                      </div>
-                      <div className="pdesc">{p.desc[lang]}</div>
-                      <div className="tags">{p.tags[lang].map(tg => <span key={tg} className="tag">{tg}</span>)}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-          </div>
-        </>}
-
         {/* ══════════════════════════════ HELP ══════════════════════════════ */}
         {tab === "help" && <>
           <div className="emerg-bar">{t.emergencyBar}</div>
@@ -1606,7 +1485,7 @@ export default function App() {
                 <div className="ph-sub" style={{ marginBottom:0, paddingBottom:12 }}>{t.helpSub}</div>
               </div>
               <button className="btn btn-red btn-sm" style={{ flexShrink:0, marginLeft:12 }} onClick={() => setShowReportForm(true)}>
-                🚨 {lang==="tr"?"İhbar Et":"Report"}
+                🚨 {lang==="tr"?"Yardım İste":"Report"}
               </button>
             </div>
           </div>
