@@ -12,12 +12,15 @@ const ADMIN_PASSWORD = "paweerohelpsin2026!";
 // ─── IMAGE MODERATION ────────────────────────────────────────────────────────
 const moderateImage = async (imageUrl) => {
   try {
+    console.log("Calling moderate-image with:", imageUrl);
     const { data, error } = await db.functions.invoke("moderate-image", {
       body: { imageUrl }
     });
-    if (error) return { safe: true }; // fail open
+    console.log("moderate-image response:", { data, error });
+    if (error) { console.error("moderate-image error:", error); return { safe: true }; } // fail open
     return data;
-  } catch {
+  } catch (err) {
+    console.error("moderate-image exception:", err);
     return { safe: true }; // fail open
   }
 };
