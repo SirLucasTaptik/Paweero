@@ -1017,25 +1017,34 @@ export default function App() {
 
       if (aErr) console.error("Animals error:", aErr);
       if (aData && aData.length > 0) {
-        const dbAnimals = aData.map(a => ({
-          id: a.id,
-          name: a.name || "",
-          emoji: a.emoji || "🐾",
-          species:  { en: a.species || "", tr: a.species || "" },
-          breed:    { en: a.breed   || "", tr: a.breed   || "" },
-          age:      { en: a.age     || "", tr: a.age     || "" },
-          gender:   { en: a.gender  || "", tr: a.gender  || "" },
-          country:  a.country  || "",
-          province: a.province || "",
-          city:     a.city     || "",
-          tags:     { en: [], tr: [] },
-          urgent:   a.urgent   || false,
-          isNew:    a.is_new   || false,
-          canFoster: a.can_foster || false,
-          canAdopt:  a.can_adopt  !== false,
-          desc:     { en: a.desc_en || "", tr: a.desc_tr || "" },
-          photo_url: a.photo_url || null,
-        }));
+        const dbAnimals = aData.map(a => {
+          const healthTags = { en: [], tr: [] };
+          if (a.is_neutered === "yes") { healthTags.en.push("Neutered/Spayed"); healthTags.tr.push("Kısırlaştırıldı"); }
+          if (a.vaccinated_parasite === "yes") { healthTags.en.push("Parasite Treated"); healthTags.tr.push("Parazit Aşılı"); }
+          if (a.vaccinated_rabies === "yes") { healthTags.en.push("Rabies Vaccinated"); healthTags.tr.push("Kuduz Aşılı"); }
+          return {
+            id: a.id,
+            name: a.name || "",
+            emoji: a.emoji || "🐾",
+            species:  { en: a.species || "", tr: a.species || "" },
+            breed:    { en: a.breed   || "", tr: a.breed   || "" },
+            age:      { en: a.age     || "", tr: a.age     || "" },
+            gender:   { en: a.gender  || "", tr: a.gender  || "" },
+            country:  a.country  || "",
+            province: a.province || "",
+            city:     a.city     || "",
+            tags:     healthTags,
+            urgent:   a.urgent   || false,
+            isNew:    a.is_new   || false,
+            canFoster: a.can_foster || false,
+            canAdopt:  a.can_adopt  !== false,
+            desc:     { en: a.desc_en || "", tr: a.desc_tr || "" },
+            photo_url: a.photo_url || null,
+            isNeutered: a.is_neutered || "unknown",
+            vaccinatedParasite: a.vaccinated_parasite || "unknown",
+            vaccinatedRabies: a.vaccinated_rabies || "unknown",
+          };
+        });
         // DB hayvanlarını seed ile birleştir
         setAnimals([...dbAnimals, ...ANIMALS]);
       } else {
@@ -2264,6 +2273,7 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact }) {
     name:"", species:"Dog", breed:"", age:"", gender:"Female",
     country:"Türkiye", province:"İstanbul", city:"",
     canFoster:false, canAdopt:true, desc:"",
+    isNeutered:"", vaccinatedParasite:"", vaccinatedRabies:"",
   });
   const [animalPhoto, setAnimalPhoto] = useState(null);
   const animalFileRef = useRef();
@@ -2368,6 +2378,53 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact }) {
         </div>
       </div>
 
+      {/* Health info */}
+      <div className="fg">
+        <label className="flabel">{lang==="tr"?"Sağlık Bilgileri":"Health Information"}</label>
+        <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+
+          {/* Neutered/spayed */}
+          <div>
+            <div style={{ fontSize:12, color:"var(--muted)", marginBottom:5 }}>{lang==="tr"?"Kısırlaştırıldı mı?":"Neutered / Spayed?"}</div>
+            <div style={{ display:"flex", gap:8 }}>
+              {[["yes",lang==="tr"?"Evet":"Yes"],["no",lang==="tr"?"Hayır":"No"],["unknown",lang==="tr"?"Bilinmiyor":"Unknown"]].map(([v,l])=>(
+                <label key={v} className={`opt-item ${f.isNeutered===v?"on":""}`} style={{ flex:1, padding:"8px 10px" }}>
+                  <input type="radio" name="neutered" checked={f.isNeutered===v} onChange={()=>setF(x=>({...x,isNeutered:v}))} />
+                  <div className="opt-label" style={{ fontSize:12 }}>{l}</div>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Parasite vaccination */}
+          <div>
+            <div style={{ fontSize:12, color:"var(--muted)", marginBottom:5 }}>{lang==="tr"?"İç/Dış Parazit Aşısı Var mı?":"Internal/External Parasite Treatment?"}</div>
+            <div style={{ display:"flex", gap:8 }}>
+              {[["yes",lang==="tr"?"Evet":"Yes"],["no",lang==="tr"?"Hayır":"No"],["unknown",lang==="tr"?"Bilinmiyor":"Unknown"]].map(([v,l])=>(
+                <label key={v} className={`opt-item ${f.vaccinatedParasite===v?"on":""}`} style={{ flex:1, padding:"8px 10px" }}>
+                  <input type="radio" name="parasite" checked={f.vaccinatedParasite===v} onChange={()=>setF(x=>({...x,vaccinatedParasite:v}))} />
+                  <div className="opt-label" style={{ fontSize:12 }}>{l}</div>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Rabies vaccination */}
+          <div>
+            <div style={{ fontSize:12, color:"var(--muted)", marginBottom:5 }}>{lang==="tr"?"Kuduz Aşısı Var mı?":"Rabies Vaccination?"}</div>
+            <div style={{ display:"flex", gap:8 }}>
+              {[["yes",lang==="tr"?"Evet":"Yes"],["no",lang==="tr"?"Hayır":"No"],["unknown",lang==="tr"?"Bilinmiyor":"Unknown"]].map(([v,l])=>(
+                <label key={v} className={`opt-item ${f.vaccinatedRabies===v?"on":""}`} style={{ flex:1, padding:"8px 10px" }}>
+                  <input type="radio" name="rabies" checked={f.vaccinatedRabies===v} onChange={()=>setF(x=>({...x,vaccinatedRabies:v}))} />
+                  <div className="opt-label" style={{ fontSize:12 }}>{l}</div>
+                </label>
+              ))}
+            </div>
+          </div>
+
+        </div>
+      </div>
+
       {/* Description */}
       <div className="fg">
         <label className="flabel">{lang==="tr"?"Açıklama *":"Description *"}</label>
@@ -2399,6 +2456,7 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact }) {
         if (!f.desc) { alert(lang==="tr"?"Açıklama girin":"Please enter description"); return; }
         if (!animalPhoto) { alert(lang==="tr"?"Lütfen fotoğraf yükleyin":"Please upload a photo"); return; }
         if (!f.canAdopt && !f.canFoster) { alert(lang==="tr"?"En az bir ilan türü seçin":"Please select at least one listing type"); return; }
+        if (!f.isNeutered || !f.vaccinatedParasite || !f.vaccinatedRabies) { alert(lang==="tr"?"Lütfen sağlık bilgilerinin tamamını doldurun":"Please fill in all health information"); return; }
         requireContact(async (contact) => {
           const speciesEn = spMap[f.species] || f.species;
           const fullDesc = f.address ? `${f.desc}\n📍 ${f.address}` : f.desc;
@@ -2421,9 +2479,12 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact }) {
             status: "active",
             urgent: false,
             is_new: true,
+            is_neutered: f.isNeutered || null,
+            vaccinated_parasite: f.vaccinatedParasite || null,
+            vaccinated_rabies: f.vaccinatedRabies || null,
           }]);
           onSubmit(f.name);
-          setF({ name:"", species:"Dog", breed:"", age:"", gender:"Female", country:"Türkiye", province:"İstanbul", city:"", address:"", canFoster:false, canAdopt:true, desc:"" });
+          setF({ name:"", species:"Dog", breed:"", age:"", gender:"Female", country:"Türkiye", province:"İstanbul", city:"", address:"", canFoster:false, canAdopt:true, desc:"", isNeutered:"", vaccinatedParasite:"", vaccinatedRabies:"" });
           setAnimalPhoto(null);
         });
       }}>
