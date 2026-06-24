@@ -1793,7 +1793,12 @@ export default function App() {
             <div className="sh-handle" />
             <div className="sh-hd"><div className="sh-title">{t.animalProfile}</div><button className="sh-close" onClick={() => setDetailA(null)}>✕</button></div>
             <div className="sh-body">
-              <div className="d-thumb">{detailAnimal.emoji}</div>
+              <div className="d-thumb" style={{ overflow:"hidden", padding:0 }}>
+                {detailAnimal.photo_url
+                  ? <img src={detailAnimal.photo_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                  : detailAnimal.emoji
+                }
+              </div>
               <div className="d-name">{detailAnimal.name}</div>
               <div className="d-sub">{detailAnimal.breed[lang]} · {detailAnimal.species[lang]}</div>
               <div className="d-pills">
@@ -2005,8 +2010,11 @@ export default function App() {
 function MiniCard({ a, lang, onClick }) {
   return (
     <div className="mini-card" onClick={onClick}>
-      <div style={{ height:84, background:"var(--off)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:36, position:"relative" }}>
-        {a.emoji}
+      <div style={{ height:84, background:"var(--off)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:36, position:"relative", overflow:"hidden" }}>
+        {a.photo_url
+          ? <img src={a.photo_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+          : a.emoji
+        }
         {a.urgent          && <span className="abadge ab-red">{lang==="tr"?"Acil":"Urgent"}</span>}
         {!a.urgent&&a.isNew && <span className="abadge ab-grn">{lang==="tr"?"Yeni":"New"}</span>}
       </div>
@@ -2022,8 +2030,11 @@ function MiniCard({ a, lang, onClick }) {
 function ACard({ a, mode, lang, onClick }) {
   return (
     <div className="acard" onClick={onClick}>
-      <div className="acard-img">
-        {a.emoji}
+      <div className="acard-img" style={{ overflow:"hidden" }}>
+        {a.photo_url
+          ? <img src={a.photo_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+          : a.emoji
+        }
         {a.urgent           && <span className="abadge ab-red">{lang==="tr"?"Acil":"Urgent"}</span>}
         {!a.urgent&&a.isNew && <span className="abadge ab-grn">{lang==="tr"?"Yeni":"New"}</span>}
         <span className="abadge ab-sp">{a.species[lang]}</span>
