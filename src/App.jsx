@@ -2505,9 +2505,10 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact }) {
         if (!f.canAdopt && !f.canFoster) { alert(lang==="tr"?"En az bir ilan türü seçin":"Please select at least one listing type"); return; }
         if (!f.isNeutered || !f.vaccinatedParasite || !f.vaccinatedRabies) { alert(lang==="tr"?"Lütfen sağlık bilgilerinin tamamını doldurun":"Please fill in all health information"); return; }
         requireContact(async (contact) => {
+          console.log("requireContact onConfirm called, contact:", contact);
           const speciesEn = spMap[f.species] || f.species;
           const fullDesc = f.address ? `${f.desc}\n📍 ${f.address}` : f.desc;
-          const { error } = await db.from("animals").insert([{
+          const insertPayload = {
             name: f.name,
             emoji: speciesEn==="Dog"?"🐕":speciesEn==="Cat"?"🐈":speciesEn==="Rabbit"?"🐇":speciesEn==="Bird"?"🐦":speciesEn==="Hamster"?"🐹":"🐾",
             species: speciesEn,
@@ -2529,7 +2530,10 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact }) {
             is_neutered: f.isNeutered || null,
             vaccinated_parasite: f.vaccinatedParasite || null,
             vaccinated_rabies: f.vaccinatedRabies || null,
-          }]);
+          };
+          console.log("Inserting animal payload:", insertPayload);
+          const { data, error } = await db.from("animals").insert([insertPayload]).select();
+          console.log("Insert result — data:", data, "error:", error);
           if (error) {
             console.error("Animal insert error:", error);
             alert((lang==="tr"?"Kayıt hatası: ":"Insert error: ") + error.message);
