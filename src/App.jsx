@@ -200,7 +200,7 @@ const T = {
     heroP:"Adopt, foster, find a pet sitter, post a lost & found, or report animals in distress.",
     browseAnimals:"Browse Animals", reportAnimal:"Report Animal in Need",
     // stats
-    adopted:"Adopted", waiting:"Waiting", rescues:"Rescues", shelters:"Shelters",
+    adopted:"Adopted", waiting:"Waiting", rescues:"Rescue", shelters:"Shelters", helped:"Helped",
     // home quick links
     browseByGoal:"Browse by goal",
     adoptTitle:"Adopt a Pet",              adoptDesc:"Browse rescued animals and submit an adoption application.",
@@ -267,6 +267,7 @@ const T = {
     helpAnimals:"Help Animals in Need",
     helpSub:"Spotted an injured or abandoned animal? Report it and rescuers will be notified immediately.",
     activeReports:"Active Reports", needingHelp:"needing help",
+    helpedTab:"Helped", helpedAnimals:"animals helped",
     volunteersResponding:"volunteer(s) responding",
     iCanHelp:"I can help →", youAreResponding:"✓ You're responding",
     markAsHelped:"Mark as Helped", animalHasBeenHelped:"✓ Animal has been helped",
@@ -370,7 +371,7 @@ const T = {
     heroP:"Sahiplen, geçici bakım ver, bakıcı bul, kayıp ilanı ver ya da tehlikedeki hayvanları bildir.",
     browseAnimals:"Hayvanlara Göz At", reportAnimal:"Tehlikedeki Hayvan Bildir",
     // istatistikler
-    adopted:"Sahiplenilen", waiting:"Bekleyen", rescues:"Kurtarma", shelters:"Barınak",
+    adopted:"Sahiplenilen", waiting:"Bekleyen", rescues:"Kurtarma", shelters:"Barınak", helped:"Yardım Edildi",
     // hızlı bağlantılar
     browseByGoal:"Ne yapmak istiyorsun?",
     adoptTitle:"Hayvan Sahiplen",          adoptDesc:"Kurtarılmış hayvanlara göz at ve sahiplenme başvurusu gönder.",
@@ -437,6 +438,7 @@ const T = {
     helpAnimals:"Tehlikedeki Hayvanlara Yardım",
     helpSub:"Yaralı ya da terk edilmiş bir hayvan gördün mü? Bildir, kurtarma ekibi hemen haberdar edilsin.",
     activeReports:"Aktif İhbarlar", needingHelp:"yardım bekliyor",
+    helpedTab:"Yardım Edildi", helpedAnimals:"hayvana yardım edildi",
     volunteersResponding:"gönüllü yanıt veriyor",
     iCanHelp:"Yardım edebilirim →", youAreResponding:"✓ Yanıt veriyorsun",
     markAsHelped:"Yardım Edildi Olarak İşaretle", animalHasBeenHelped:"✓ Hayvana yardım edildi",
@@ -609,7 +611,10 @@ const CSS = `
   .hero-cta { display:flex; gap:10px; flex-wrap:wrap; }
 
   /* ─ STATS ─ */
-  .stats { display:grid; grid-template-columns:repeat(4,1fr); border-bottom:1px solid var(--border); }
+  .stats { display:grid; grid-template-columns:repeat(3,1fr); border-bottom:1px solid var(--border); }
+  .stat.clickable { cursor:pointer; transition:background 0.12s; }
+  .stat.clickable:active { background:var(--off); }
+  @media (hover:hover) { .stat.clickable:hover { background:var(--off); } }
   .stat  { padding:12px 0; text-align:center; border-right:1px solid var(--border); }
   .stat:last-child { border-right:none; }
   .stat-n { font-size:19px; font-weight:700; color:var(--dark); letter-spacing:-0.5px; }
@@ -881,6 +886,7 @@ export default function App() {
   const [tab, setTab]         = useState("home");
   const [animalSub, setASub]  = useState("adopt");    // adopt | foster | profile
   const [lfSub, setLFSub]     = useState("board");    // board | post
+  const [helpSub, setHelpSub] = useState("active");   // active | helped
   const [lfTypeFilter, setLFType] = useState("all");  // all | lost | found
   // (ownerSub removed — Owners section deleted)
 
@@ -1181,7 +1187,7 @@ export default function App() {
 
       {/* TOPBAR */}
       <header className="topbar">
-        <div className="logo"><div className="logo-dot" />{t.appName}</div>
+        <div className="logo" style={{ cursor:"pointer" }} onClick={() => goTab("home")}><div className="logo-dot" />{t.appName}</div>
         <nav className="desk-nav">
           {TABS.map(tb => (
             <button key={tb.id} className={`dnav ${tab === tb.id ? "on" : ""} ${tb.id === "help" ? "red" : ""}`} onClick={() => goTab(tb.id)}>
@@ -1213,9 +1219,22 @@ export default function App() {
           </div>
 
           <div className="stats">
-            {[[247,t.adopted],[58,t.waiting],[32,t.rescues],[14,t.shelters]].map(([n,l]) => (
-              <div key={l} className="stat"><div className="stat-n">{n}</div><div className="stat-l">{l}</div></div>
-            ))}
+            {(() => {
+              const waitingCount = animals.filter(a => a.canAdopt !== false || a.canFoster === true).length;
+              const rescueCount  = reports.filter(r => r.status === "active").length;
+              const helpedCount  = reports.filter(r => r.status === "helped" || r.status === "resolved").length;
+              const statDefs = [
+                { n: waitingCount, l: t.waiting, onClick: () => goTab("animals") },
+                { n: rescueCount,  l: t.rescues, onClick: () => { goTab("help"); setHelpSub("active"); } },
+                { n: helpedCount,  l: t.helped || (lang==="tr"?"Yardım Edildi":"Helped"), onClick: () => { goTab("help"); setHelpSub("helped"); } },
+              ];
+              return statDefs.map(s => (
+                <div key={s.l} className="stat clickable" onClick={s.onClick}>
+                  <div className="stat-n">{s.n}</div>
+                  <div className="stat-l">{s.l}</div>
+                </div>
+              ));
+            })()}
           </div>
 
           <div className="wrap">
@@ -1500,21 +1519,42 @@ export default function App() {
                 🚨 {lang==="tr"?"Yardım İste":"Report"}
               </button>
             </div>
+            <div className="stabs">
+              <button className={`stab ${helpSub === "active" ? "on" : ""}`} onClick={() => setHelpSub("active")}>
+                {t.activeReports} <span style={{ fontSize:11, color:"var(--muted)", marginLeft:4 }}>({reports.filter(r => r.status === "active").length})</span>
+              </button>
+              <button className={`stab ${helpSub === "helped" ? "on" : ""}`} onClick={() => setHelpSub("helped")}>
+                {t.helpedTab} <span style={{ fontSize:11, color:"var(--muted)", marginLeft:4 }}>({reports.filter(r => r.status === "helped" || r.status === "resolved").length})</span>
+              </button>
+            </div>
           </div>
 
           <div className="wrap" style={{ paddingTop:16 }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-              <div style={{ fontSize:13, fontWeight:600, color:"var(--dark)" }}>
-                {t.activeReports}
-                <span style={{ fontWeight:400, color:"var(--muted)", marginLeft:6 }}>
-                  ({reports.filter(r => r.status === "active").length} {t.needingHelp})
-                </span>
+            {helpSub === "active" && (
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+                <div style={{ fontSize:13, fontWeight:600, color:"var(--dark)" }}>
+                  {t.activeReports}
+                  <span style={{ fontWeight:400, color:"var(--muted)", marginLeft:6 }}>
+                    ({reports.filter(r => r.status === "active").length} {t.needingHelp})
+                  </span>
+                </div>
               </div>
-            </div>
+            )}
+            {helpSub === "helped" && (
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+                <div style={{ fontSize:13, fontWeight:600, color:"var(--dark)" }}>
+                  {t.helpedTab}
+                  <span style={{ fontWeight:400, color:"var(--muted)", marginLeft:6 }}>
+                    ({reports.filter(r => r.status === "helped" || r.status === "resolved").length} {t.helpedAnimals})
+                  </span>
+                </div>
+              </div>
+            )}
 
-            {/* ── Reports list — active first, then helped, then resolved ── */}
+            {/* ── Reports list — filtered by active sub-tab ── */}
             <div className="r-list" style={{ marginBottom:24 }}>
               {[...reports]
+                .filter(r => helpSub === "active" ? r.status === "active" : (r.status === "helped" || r.status === "resolved"))
                 .sort((a,b) => {
                   const order = { active:0, helped:1, resolved:2 };
                   return (order[a.status]??1) - (order[b.status]??1);
@@ -1595,6 +1635,13 @@ export default function App() {
                     </div>
                   );
                 })}
+              {reports.filter(r => helpSub === "active" ? r.status === "active" : (r.status === "helped" || r.status === "resolved")).length === 0 && (
+                <div style={{ textAlign:"center", padding:"40px 0", color:"var(--muted)", fontSize:13 }}>
+                  {helpSub === "active"
+                    ? (lang==="tr"?"Şu anda aktif ihbar yok.":"No active reports right now.")
+                    : (lang==="tr"?"Henüz yardım edilen hayvan yok.":"No animals helped yet.")}
+                </div>
+              )}
             </div>
 
           </div>
