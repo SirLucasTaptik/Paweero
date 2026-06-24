@@ -2507,7 +2507,7 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact }) {
         requireContact(async (contact) => {
           const speciesEn = spMap[f.species] || f.species;
           const fullDesc = f.address ? `${f.desc}\n📍 ${f.address}` : f.desc;
-          await db.from("animals").insert([{
+          const { error } = await db.from("animals").insert([{
             name: f.name,
             emoji: speciesEn==="Dog"?"🐕":speciesEn==="Cat"?"🐈":speciesEn==="Rabbit"?"🐇":speciesEn==="Bird"?"🐦":speciesEn==="Hamster"?"🐹":"🐾",
             species: speciesEn,
@@ -2530,6 +2530,11 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact }) {
             vaccinated_parasite: f.vaccinatedParasite || null,
             vaccinated_rabies: f.vaccinatedRabies || null,
           }]);
+          if (error) {
+            console.error("Animal insert error:", error);
+            alert((lang==="tr"?"Kayıt hatası: ":"Insert error: ") + error.message);
+            return;
+          }
           onSubmit(f.name);
           setF({ name:"", species:"Dog", breed:"", age:"", gender:"Female", country:"Türkiye", province:"İstanbul", city:"", address:"", canFoster:false, canAdopt:true, desc:"", isNeutered:"", vaccinatedParasite:"", vaccinatedRabies:"" });
           setAnimalPhoto(null);
