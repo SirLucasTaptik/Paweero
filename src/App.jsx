@@ -973,6 +973,7 @@ export default function App() {
             reward: { en: item.reward || "", tr: item.reward || "" },
             desc: { en: item.desc_en || "", tr: item.desc_tr || "" },
             status: item.status || "open",
+            photo_url: item.photo_url || null,
           })));
         } else {
           setLFItems(LF_SEED); // DB boşsa seed göster
@@ -1347,8 +1348,11 @@ export default function App() {
                 {filteredLF.map(item => (
                   <div key={item.id} className={`lf-card ${item.status === "reunited" ? "reunited" : ""}`} onClick={() => setDetailLF(item)}>
                     <div className="lf-top">
-                      <div className="lf-emo">
-                        {item.emoji}
+                      <div className="lf-emo" style={{ overflow:"hidden" }}>
+                        {item.photo_url
+                          ? <img src={item.photo_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                          : item.emoji
+                        }
                         <span className={`lf-type ${item.status === "reunited" ? "lf-reunited" : item.type === "lost" ? "lf-lost" : "lf-found"}`}>
                           {item.status === "reunited" ? t.reunited : item.type === "lost" ? (lang==="tr"?"Kayıp":"Lost") : (lang==="tr"?"Bulunan":"Found")}
                         </span>
@@ -1883,7 +1887,12 @@ export default function App() {
               <button className="sh-close" onClick={() => setDetailLF(null)}>✕</button>
             </div>
             <div className="sh-body">
-              <div className="d-thumb">{detailLF.emoji}</div>
+              <div className="d-thumb" style={{ overflow:"hidden", padding:0 }}>
+                {detailLF.photo_url
+                  ? <img src={detailLF.photo_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                  : detailLF.emoji
+                }
+              </div>
               <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
                 <div className="d-name">{detailLF.name === "Unknown" ? (lang==="tr"?`Bulunan ${detailLF.species.tr}`:`Found ${detailLF.species.en}`) : detailLF.name}</div>
                 <span className={`lf-type ${detailLF.status === "reunited" ? "lf-reunited" : detailLF.type === "lost" ? "lf-lost" : "lf-found"}`} style={{ position:"static" }}>
