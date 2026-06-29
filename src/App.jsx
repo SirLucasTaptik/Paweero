@@ -276,6 +276,15 @@ const T = {
     lostFoundSub:"Reuniting pets with their owners.",
     browse:"Browse", postListing:"+ Post a Listing",
     openListings:"open", allListings:"All listings", lostFilter:"🔴 Lost", foundFilter:"🟢 Found",
+    lfEmptyLostTitle:"Good news! No lost animals have been reported in this area.",
+    lfEmptyLostDesc:"We hope it stays this way. If your pet has gone missing, you can create a lost pet report to help the community find them.",
+    lfEmptyLostCta:"Report a Lost Pet",
+    lfEmptyFoundTitle:"No found animals have been reported yet.",
+    lfEmptyFoundDesc:"There are currently no reported found animals in this area. If you've found a pet, create a report to help reunite them with their family.",
+    lfEmptyFoundCta:"Report a Found Pet",
+    lfEmptyAllTitle:"No listings yet in this area.",
+    lfEmptyAllDesc:"Nothing has been reported here so far. If you've lost or found an animal, create a listing to help reunite pets with their families.",
+    lfEmptyAllCta:"Post a Listing",
     postLostFoundNote:"Post a listing whether you've lost a pet or found one. Include a clear description and your contact details.",
     listingType:"Type of listing *", iLostMyPet:"I lost my pet 🔴", iFoundAnAnimal:"I found an animal 🟢",
     petName:"Pet name *", species:"Species", breed:"Breed", colour:"Colour", cityField:"City *",
@@ -447,6 +456,15 @@ const T = {
     lostFoundSub:"Hayvanları sahipleriyle buluşturuyoruz.",
     browse:"İlanlar", postListing:"+ İlan Ver",
     openListings:"açık", allListings:"Tüm ilanlar", lostFilter:"🔴 Kayıp", foundFilter:"🟢 Bulunan",
+    lfEmptyLostTitle:"İyi haber! Bu bölgede kayıp hayvan ihbarı yok.",
+    lfEmptyLostDesc:"Umuyoruz bu böyle kalır. Eğer hayvanınız kayıpsa, topluluğun onu bulmasına yardımcı olmak için bir kayıp ilanı oluşturabilirsiniz.",
+    lfEmptyLostCta:"Kayıp İlanı Ver",
+    lfEmptyFoundTitle:"Henüz bulunan hayvan ihbarı yapılmamış.",
+    lfEmptyFoundDesc:"Bu bölgede şu anda bildirilmiş bulunan hayvan yok. Bir hayvan bulduysanız, ailesine kavuşmasına yardımcı olmak için bir ilan oluşturabilirsiniz.",
+    lfEmptyFoundCta:"Bulunan Hayvan İlanı Ver",
+    lfEmptyAllTitle:"Bu bölgede henüz hiç ilan yok.",
+    lfEmptyAllDesc:"Şimdiye kadar buraya hiçbir şey bildirilmemiş. Bir hayvan kaybettiyseniz veya bulduysanız, ailesine kavuşmasına yardımcı olmak için bir ilan oluşturabilirsiniz.",
+    lfEmptyAllCta:"İlan Ver",
     postLostFoundNote:"Kayıp ilanı veya bulunan hayvan ilanı ver. Net bir açıklama ve iletişim bilgilerini ekle.",
     listingType:"İlan türü *", iLostMyPet:"Hayvanımı kaybettim 🔴", iFoundAnAnimal:"Bir hayvan buldum 🟢",
     petName:"Hayvanın adı *", species:"Tür", breed:"Irk", colour:"Renk", cityField:"Şehir *",
@@ -1542,6 +1560,31 @@ export default function App() {
                     </div>
                   </div>
                 ))}
+
+                {filteredLF.length === 0 && (() => {
+                  // Contextual empty state — tone and illustration depend on which tab is active.
+                  // "Lost" with zero results is good news (framed positively).
+                  // "Found" and "All" with zero results invite the user to help, without sounding celebratory.
+                  const empty = {
+                    lost:  { emoji:"🎉", title: t.lfEmptyLostTitle,  desc: t.lfEmptyLostDesc,  cta: t.lfEmptyLostCta,  newType:"lost"  },
+                    found: { emoji:"🔍", title: t.lfEmptyFoundTitle, desc: t.lfEmptyFoundDesc, cta: t.lfEmptyFoundCta, newType:"found" },
+                    all:   { emoji:"🐾", title: t.lfEmptyAllTitle,   desc: t.lfEmptyAllDesc,   cta: t.lfEmptyAllCta,   newType:"lost"  },
+                  }[lfTypeFilter] || {};
+
+                  return (
+                    <div style={{ textAlign:"center", padding:"48px 20px", maxWidth:380, margin:"0 auto" }}>
+                      <div style={{ fontSize:48, marginBottom:14 }}>{empty.emoji}</div>
+                      <div style={{ fontSize:15, fontWeight:700, color:"var(--dark)", marginBottom:8, lineHeight:1.4 }}>{empty.title}</div>
+                      <div style={{ fontSize:13, color:"var(--muted)", lineHeight:1.65, marginBottom:20 }}>{empty.desc}</div>
+                      <button
+                        className="btn btn-dark"
+                        onClick={() => { setLFForm(f => ({ ...f, type: empty.newType })); setLFSub("post"); }}
+                      >
+                        + {empty.cta}
+                      </button>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           )}
