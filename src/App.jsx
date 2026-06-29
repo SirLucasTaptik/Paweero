@@ -50,7 +50,9 @@ const photoErrorMsg = (errorCode, lang) => {
       ? "Fotoğrafta bir hayvan görünmüyor. Lütfen hayvanın net bir fotoğrafını yükleyin."
       : "We couldn't detect an animal in this photo. Please upload a clear photo of the animal.";
   }
-  return lang === "tr" ? "Uygunsuz içerik tespit edildi" : "Inappropriate content detected";
+  return lang === "tr"
+    ? "Bu fotoğraf uygunsuz veya zararlı içerik içeriyor olabilir. Lütfen hayvanın uygun bir fotoğrafını yükleyin."
+    : "This photo may contain inappropriate or harmful content. Please upload a suitable photo of the animal.";
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -175,6 +177,7 @@ const TABS = [
 
 const APP_STEPS = [{id:1,title:"Personal"},{id:2,title:"Home"},{id:3,title:"Lifestyle"},{id:4,title:"Experience"},{id:5,title:"Review"}];
 const EMPTY_APP = { firstName:"",lastName:"",email:"",phone:"",age:"",occupation:"",homeType:"",ownRent:"",hasYard:"",hasChildren:"",childrenAges:"",householdSize:"",hoursHome:"",activityLevel:"",travelFreq:"",petCare:"",allergies:"",hadPetsBefore:"",currentPetDetails:"",currentPets:"",vetReference:"",whyAdopt:"",longTermPlan:"",agree:false };
+const EMPTY_FOSTER_APP = { firstName:"",lastName:"",email:"",phone:"",hasPetExperience:"",experienceNote:"",availableFrom:"",fosterDuration:"",canProvideCare:"",notes:"",agree:false };
 const genRef    = () => "PWR-" + Math.random().toString(36).slice(2,7).toUpperCase();
 
 // ─── ETA OPTIONS ─────────────────────────────────────────────────────────────
@@ -746,7 +749,7 @@ const CSS = `
   .rcard  { background:var(--white); border:1px solid var(--border); border-left:3px solid var(--red); border-radius:var(--r); padding:14px 16px; }
   .rcard.helped   { border-left-color:var(--blue); }
   .rcard.resolved { border-left-color:var(--green); opacity:0.55; }
-  .r-icon  { font-size:28px; flex-shrink:0; }
+  .r-icon  { font-size:28px; flex-shrink:0; position:relative; }
   .r-title { font-size:13px; font-weight:600; color:var(--dark); margin-bottom:2px; letter-spacing:-0.1px; }
   .r-desc  { font-size:12px; color:var(--muted); line-height:1.5; margin-bottom:6px; }
   .r-meta  { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:6px; }
@@ -902,6 +905,7 @@ export default function App() {
   const [detailAnimal, setDetailA]  = useState(null);
   const [detailSitter, setDetailS]  = useState(null);
   const [detailLF, setDetailLF]     = useState(null);
+  const [detailReport, setDetailReport] = useState(null);
   const [applyFor, setApplyFor]     = useState(null);
   const [fosterFor, setFosterFor]   = useState(null);
 
@@ -911,8 +915,8 @@ export default function App() {
   const [sitters, setSitters] = useState([]);
   const [animals, setAnimals] = useState(ANIMALS);
   const [dbLoading, setDbLoading] = useState(true);
-  const [photo, setPhoto]     = useState(null);
-  const [lfPhoto, setLFPhoto] = useState(null);
+  const [photos, setPhotos]   = useState([]);
+  const [lfPhotos, setLFPhotos] = useState([]);
   const [rf, setRf]           = useState({ title:"", location:"", desc:"", type:"Injured", animal:"", rCountry:"Türkiye", rProvince:"İstanbul", rCity:"", rAddress:"" });
   const [lfForm, setLFForm]   = useState({ type:"lost", name:"", species:"Dog", breed:"", color:"", area:"", city:"", contact:"", reward:"", desc:"", lfCountry:"Türkiye", lfProvince:"İstanbul", lfAddress:"" });
 
@@ -938,7 +942,8 @@ export default function App() {
             time: { en: new Date(r.created_at).toLocaleDateString("en"), tr: new Date(r.created_at).toLocaleDateString("tr") },
             status: r.status,
             reporter: r.reporter_name || "Anonymous",
-            photo_url: r.photo_url || null,
+            photo_url: r.photo_url || (r.photo_urls && r.photo_urls[0]) || null,
+            photo_urls: r.photo_urls || (r.photo_url ? [r.photo_url] : []),
             volunteers: (r.volunteers || []).map(v => ({ name: v.name, eta: v.eta, etaOrder: v.eta_order })),
           })));
         } else {
@@ -973,7 +978,8 @@ export default function App() {
             reward: { en: item.reward || "", tr: item.reward || "" },
             desc: { en: item.desc_en || "", tr: item.desc_tr || "" },
             status: item.status || "open",
-            photo_url: item.photo_url || null,
+            photo_url: item.photo_url || (item.photo_urls && item.photo_urls[0]) || null,
+            photo_urls: item.photo_urls || (item.photo_url ? [item.photo_url] : []),
           })));
         } else {
           setLFItems(LF_SEED); // DB boşsa seed göster
@@ -1046,7 +1052,8 @@ export default function App() {
             canFoster: a.can_foster || false,
             canAdopt:  a.can_adopt  !== false,
             desc:     { en: a.desc_en || "", tr: a.desc_tr || "" },
-            photo_url: a.photo_url || null,
+            photo_url: a.photo_url || (a.photo_urls && a.photo_urls[0]) || null,
+            photo_urls: a.photo_urls || (a.photo_url ? [a.photo_url] : []),
             isNeutered: a.is_neutered || "unknown",
             vaccinatedParasite: a.vaccinated_parasite || "unknown",
             vaccinatedRabies: a.vaccinated_rabies || "unknown",
@@ -1143,8 +1150,8 @@ export default function App() {
     }
   };
 
-  const fileRef   = useRef();
-  const lfFileRef = useRef();
+  // (fileRef removed — MultiPhotoUpload manages its own file input ref)
+  // (lfFileRef removed — MultiPhotoUpload manages its own file input ref)
   const helpProofRef = useRef();
 
   const say   = (msg) => { setToast({ show:true, msg }); setTimeout(() => setToast({ show:false, msg:"" }), 2800); };
@@ -1299,9 +1306,21 @@ export default function App() {
 
           <div className="wrap" style={{ paddingTop:14 }}>
             {animalSub === "post" && (
-              <PostAnimalForm lang={lang} t={t} onSubmit={async (name) => {
-                say(`✓ ${name} ${lang==="tr"?"eklendi — onay bekleniyor":"submitted — pending review"}`);
+              <PostAnimalForm lang={lang} t={t} onSubmit={async (name, newAnimal) => {
+                // Redirect to the relevant listings tab (Adopt or Foster) based on what was submitted
+                const targetSub = newAnimal?.canAdopt ? "adopt" : "foster";
+                setASub(targetSub);
+                // Show the new listing immediately at the top, even while it's the only thing visible
+                if (newAnimal) {
+                  setAnimals(prev => [newAnimal, ...prev.filter(a => a.id !== newAnimal.id)]);
+                }
+                say(`✓ ${name} ${lang==="tr"?"eklendi — listede görünüyor":"submitted — now showing in listings"}`);
+                // Refresh from DB in the background to stay in sync; new entry is already visible above
                 await loadFromDB();
+                // Re-apply the optimistic entry on top in case loadFromDB ordering differs
+                if (newAnimal) {
+                  setAnimals(prev => [newAnimal, ...prev.filter(a => a.id !== newAnimal.id)]);
+                }
               }} requireContact={requireContact} />
             )}
             {animalSub !== "post" && (<>
@@ -1457,28 +1476,13 @@ export default function App() {
               </div>
 
               <div className="fg">
-                <label className="flabel">{t.photo}</label>
-                {lfPhoto && <div className="photo-prev"><img src={lfPhoto} style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:8}} /></div>}
-                <div className="photo-drop" onClick={() => lfFileRef.current.click()}>
-                  <div style={{ fontSize:22, marginBottom:5 }}>📷</div>
-                  <div style={{ fontSize:12, fontWeight:500, color:"var(--muted)" }}>{lfPhoto ? "✓ Photo uploaded" : t.uploadPhoto}</div>
-                  <div style={{ fontSize:11, color:"var(--muted)", marginTop:2 }}>{t.photoHint}</div>
-                </div>
-                <input ref={lfFileRef} type="file" accept="image/*" style={{ display:"none" }} onChange={async e => {
-                  const file = e.target.files[0];
-                  if (!file) return;
-                  say(lang==="tr"?"Yükleniyor...":"Uploading...");
-                  const result = await uploadPhoto(file, "lf");
-                  if (result.error === "inappropriate" || result.error === "not_animal") { say(photoErrorMsg(result.error, lang)); return; }
-                  if (result.error) { say("Upload failed"); return; }
-                  setLFPhoto(result.url);
-                  say(t.photoUploaded2);
-                }} />
+                <label className="flabel">{lang==="tr"?"Fotoğraflar * (1–5)":"Photos * (1–5)"}</label>
+                <MultiPhotoUpload photos={lfPhotos} setPhotos={setLFPhotos} folder="lf" lang={lang} t={t} maxPhotos={5} />
               </div>
 
               <button className="btn btn-dark btn-full" onClick={() => requireContact(async (contact) => {
                 if(!lfForm.lfProvince || !lfForm.city || !lfForm.desc) { say(lang==="tr"?"Lütfen tüm zorunlu alanları doldurun":"Please fill all required fields"); return; }
-                if(!lfPhoto) { say(lang==="tr"?"Lütfen fotoğraf yükleyin":"Please upload a photo — it helps identify the animal"); return; }
+                if(lfPhotos.length === 0) { alert(lang==="tr"?"Lütfen en az 1 fotoğraf yükleyin — hayvanı tanımlamaya yardımcı olur":"Please upload at least 1 photo — it helps identify the animal"); return; }
                 const fullArea = [lfForm.lfAddress, lfForm.city].filter(Boolean).join(", ");
                 const { error } = await db.from("lf_listings").insert([{
                   type: lfForm.type,
@@ -1496,11 +1500,12 @@ export default function App() {
                   desc_en: lfForm.desc,
                   desc_tr: lfForm.desc,
                   status: "open",
-                  photo_url: lfPhoto || null,
+                  photo_url: lfPhotos[0] || null,
+                  photo_urls: lfPhotos,
                 }]);
                 if (error) { say(lang==="tr"?"Hata oluştu, tekrar dene":"Error occurred, please try again"); return; }
                 setLFForm({ type:"lost", name:"", species:"Dog", breed:"", color:"", area:"", city:"", contact:"", reward:"", desc:"", lfCountry:"Türkiye", lfProvince:"İstanbul", lfAddress:"" });
-                setLFPhoto(null); setLFSub("board");
+                setLFPhotos([]); setLFSub("board");
                 say(lfForm.type === "lost" ? t.postLost : t.postFound);
                 await loadFromDB();
               })}>
@@ -1569,11 +1574,16 @@ export default function App() {
                     <div key={r.id} className={`rcard ${r.status === "helped" ? "helped" : r.status === "resolved" ? "resolved" : ""}`}>
                       {/* Top row: icon/photo + title + status pill */}
                       <div style={{ display:"flex", gap:10, alignItems:"flex-start" }}>
-                        <div className="r-icon" style={{ flexShrink:0 }}>
+                        <div className="r-icon" style={{ flexShrink:0, cursor: (r.photo_urls?.length > 1) ? "pointer" : "default" }} onClick={() => { if (r.photo_urls?.length > 1) setDetailReport(r); }}>
                           {r.photo_url
                             ? <img src={r.photo_url} style={{ width:52, height:52, objectFit:"cover", borderRadius:8, display:"block" }} />
                             : <div style={{ width:52, height:52, background:"var(--off)", borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", fontSize:26 }}>{r.emoji}</div>
                           }
+                          {r.photo_urls?.length > 1 && (
+                            <div style={{ position:"absolute", bottom:-4, right:-4, background:"rgba(0,0,0,0.65)", color:"#fff", fontSize:9, fontWeight:700, padding:"1px 5px", borderRadius:999 }}>
+                              +{r.photo_urls.length - 1}
+                            </div>
+                          )}
                         </div>
                         <div style={{ flex:1, minWidth:0 }}>
                           <div style={{ display:"flex", justifyContent:"space-between", gap:6, flexWrap:"wrap", marginBottom:3 }}>
@@ -1696,27 +1706,12 @@ export default function App() {
                 <textarea className="fta" placeholder={lang==="tr"?"Görünür yaralar? Hayvan ne zamandan beri orada?":"Visible injuries? How long has the animal been there?"} value={rf.desc} onChange={e => setRf(f => ({ ...f, desc:e.target.value }))} />
               </div>
               <div className="fg">
-                <label className="flabel">{t.photo}</label>
-                {photo && <div className="photo-prev"><img src={photo} style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:8}} /></div>}
-                <div className="photo-drop" onClick={() => fileRef.current.click()}>
-                  <div style={{ fontSize:22, marginBottom:5 }}>📷</div>
-                  <div style={{ fontSize:12, fontWeight:500, color:"var(--muted)" }}>{photo ? "✓ Photo uploaded" : t.uploadPhoto}</div>
-                  <div style={{ fontSize:11, color:"var(--muted)", marginTop:2 }}>{t.photoHint}</div>
-                </div>
-                <input ref={fileRef} type="file" accept="image/*" style={{ display:"none" }} onChange={async e => {
-                  const file = e.target.files[0];
-                  if (!file) return;
-                  say(lang==="tr"?"Yükleniyor...":"Uploading...");
-                  const result = await uploadPhoto(file, "reports");
-                  if (result.error === "inappropriate" || result.error === "not_animal") { say(photoErrorMsg(result.error, lang)); return; }
-                  if (result.error) { say("Upload failed"); return; }
-                  setPhoto(result.url);
-                  say(lang==="tr"?"Fotoğraf yüklendi":"Photo uploaded");
-                }} />
+                <label className="flabel">{lang==="tr"?"Fotoğraflar * (1–5)":"Photos * (1–5)"}</label>
+                <MultiPhotoUpload photos={photos} setPhotos={setPhotos} folder="reports" lang={lang} t={t} maxPhotos={5} />
               </div>
               <button className="btn btn-red btn-full" onClick={() => requireContact(async (contact) => {
                 if(!rf.title || !rf.rProvince || !rf.rCity) { say(lang==="tr"?"Lütfen başlık, il ve semt seçin":"Please fill title, province and area"); return; }
-                if(!photo) { say(lang==="tr"?"Lütfen hayvanın fotoğrafını yükleyin":"Please upload a photo of the animal"); return; }
+                if(photos.length === 0) { alert(lang==="tr"?"Lütfen hayvanın en az 1 fotoğrafını yükleyin":"Please upload at least 1 photo of the animal"); return; }
                 const fullLocation = [rf.rAddress, rf.rCity, rf.rProvince, rf.rCountry].filter(Boolean).join(", ");
                 const { error } = await db.from("reports").insert([{
                   emoji: rf.animal || "🐾",
@@ -1725,11 +1720,12 @@ export default function App() {
                   location: fullLocation,
                   reporter_name: contact.email,
                   status: "active",
-                  photo_url: photo || null,
+                  photo_url: photos[0] || null,
+                  photo_urls: photos,
                 }]);
                 if (error) { say(lang==="tr"?"Hata oluştu, tekrar dene":"Error occurred, please try again"); return; }
                 setRf({ title:"", location:"", desc:"", type:"Injured", animal:"", rCountry:"Türkiye", rProvince:"İstanbul", rCity:"", rAddress:"" });
-                setPhoto(null); setShowReportForm(false);
+                setPhotos([]); setShowReportForm(false);
                 say(lang==="tr"?"İhbar gönderildi — kurtarma ekibi bildirildi":"Report submitted — responders notified");
                 await loadFromDB();
               })}>{t.submitReport}</button>
@@ -1853,12 +1849,7 @@ export default function App() {
             <div className="sh-handle" />
             <div className="sh-hd"><div className="sh-title">{t.animalProfile}</div><button className="sh-close" onClick={() => setDetailA(null)}>✕</button></div>
             <div className="sh-body">
-              <div className="d-thumb" style={{ overflow:"hidden", padding:0 }}>
-                {detailAnimal.photo_url
-                  ? <img src={detailAnimal.photo_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-                  : detailAnimal.emoji
-                }
-              </div>
+              <ImageCarousel photos={detailAnimal.photo_urls} emoji={detailAnimal.emoji} height={220} />
               <div className="d-name">{detailAnimal.name}</div>
               <div className="d-sub">{detailAnimal.breed[lang]} · {detailAnimal.species[lang]}</div>
               <div className="d-pills">
@@ -1887,12 +1878,7 @@ export default function App() {
               <button className="sh-close" onClick={() => setDetailLF(null)}>✕</button>
             </div>
             <div className="sh-body">
-              <div className="d-thumb" style={{ overflow:"hidden", padding:0 }}>
-                {detailLF.photo_url
-                  ? <img src={detailLF.photo_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-                  : detailLF.emoji
-                }
-              </div>
+              <ImageCarousel photos={detailLF.photo_urls} emoji={detailLF.emoji} height={220} />
               <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
                 <div className="d-name">{detailLF.name === "Unknown" ? (lang==="tr"?`Bulunan ${detailLF.species.tr}`:`Found ${detailLF.species.en}`) : detailLF.name}</div>
                 <span className={`lf-type ${detailLF.status === "reunited" ? "lf-reunited" : detailLF.type === "lost" ? "lf-lost" : "lf-found"}`} style={{ position:"static" }}>
@@ -1911,6 +1897,30 @@ export default function App() {
                   <button className="btn btn-dark btn-full" onClick={() => { setDetailLF(null); say(t.contactCopied); }}>📞 {t.contactInfo} {detailLF.contact}</button>
                 )}
                 <button className="btn btn-outline btn-full" onClick={() => setDetailLF(null)}>{t.close}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* REPORT DETAIL SHEET (gallery view) */}
+      {detailReport && (
+        <div className="sheet-overlay" onClick={() => setDetailReport(null)}>
+          <div className="sheet" onClick={e => e.stopPropagation()}>
+            <div className="sh-handle" />
+            <div className="sh-hd">
+              <div className="sh-title">{detailReport.title[lang] || detailReport.title}</div>
+              <button className="sh-close" onClick={() => setDetailReport(null)}>✕</button>
+            </div>
+            <div className="sh-body">
+              <ImageCarousel photos={detailReport.photo_urls} emoji={detailReport.emoji} height={220} />
+              <div className="d-pills">
+                <span className="d-pill">📍 {detailReport.location}</span>
+                <span className="d-pill">🕐 {detailReport.time[lang] || detailReport.time}</span>
+              </div>
+              <div className="d-desc">{detailReport.desc[lang] || detailReport.desc}</div>
+              <div className="d-acts">
+                <button className="btn btn-outline btn-full" onClick={() => setDetailReport(null)}>{t.close}</button>
               </div>
             </div>
           </div>
@@ -2051,7 +2061,7 @@ export default function App() {
                     if (!file) return;
                     say(lang==="tr"?"Yükleniyor...":"Uploading...");
                     const result = await uploadPhoto(file, "proofs");
-                    if (result.error === "inappropriate" || result.error === "not_animal") { say(photoErrorMsg(result.error, lang)); return; }
+                    if (result.error === "inappropriate" || result.error === "not_animal") { alert(photoErrorMsg(result.error, lang)); return; }
                     if (result.error) { say("Upload failed"); return; }
                     setHelpProof(result.url);
                   }} />
@@ -2119,6 +2129,14 @@ function ACard({ a, mode, lang, onClick }) {
 }
 
 function AppSheet({ animal, mode, lang, t, onClose }) {
+  if (mode === "foster") {
+    return <FosterAppSheet animal={animal} lang={lang} t={t} onClose={onClose} />;
+  }
+  return <AdoptAppSheet animal={animal} mode={mode} lang={lang} t={t} onClose={onClose} />;
+}
+
+// ─── ADOPT APPLICATION — full multi-step screening form ─────────────────────
+function AdoptAppSheet({ animal, mode, lang, t, onClose }) {
   const [step, setStep]     = useState(1);
   const [app, setApp]       = useState(EMPTY_APP);
   const [errors, setErr]    = useState({});
@@ -2276,6 +2294,223 @@ function AppSheet({ animal, mode, lang, t, onClose }) {
   );
 }
 
+// ─── FOSTER APPLICATION — short, single-screen form ─────────────────────────
+// Deliberately lighter than the Adopt flow: just enough info to evaluate
+// someone's ability to provide short-term temporary care.
+function FosterAppSheet({ animal, lang, t, onClose }) {
+  const [app, setApp]       = useState(EMPTY_FOSTER_APP);
+  const [errors, setErr]    = useState({});
+  const [submitted, setSub] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [refCode]           = useState(genRef);
+
+  const set = (k, v) => setApp(a => ({ ...a, [k]: v }));
+  const req = lang==="tr" ? "Zorunlu" : "Required";
+  const sel = lang==="tr" ? "Lütfen seçin" : "Please select";
+  const E = (k) => errors[k] ? <div className="err">{errors[k]}</div> : null;
+
+  const Opt = ({ name, value, label, hint }) => (
+    <label className={`opt-item ${app[name]===value?"on":""}`}>
+      <input type="radio" name={name} checked={app[name]===value} onChange={()=>set(name,value)}/>
+      <div><div className="opt-label">{label}</div>{hint&&<div className="opt-hint">{hint}</div>}</div>
+    </label>
+  );
+
+  const validate = () => {
+    const e = {};
+    if (!app.firstName.trim()) e.firstName = req;
+    if (!app.lastName.trim())  e.lastName  = req;
+    if (!app.email.includes("@")) e.email = (lang==="tr"?"Geçerli e-posta girin":"Valid email required");
+    if (!app.phone.trim())    e.phone     = req;
+    if (!app.canProvideCare)  e.canProvideCare = sel;
+    if (!app.availableFrom.trim()) e.availableFrom = req;
+    if (!app.agree)           e.agree     = req;
+    return e;
+  };
+
+  const submit = async () => {
+    const e = validate();
+    if (Object.keys(e).length) { setErr(e); return; }
+    setErr({});
+    setSubmitting(true);
+    try {
+      await db.from("applications").insert([{
+        ref_code: refCode,
+        mode: "foster",
+        first_name: app.firstName, last_name: app.lastName,
+        email: app.email, phone: app.phone,
+        // Map onto the existing applications schema where it makes sense —
+        // experience/availability go into the free-text fields we already have.
+        had_pets_before: app.hasPetExperience,
+        current_pet_details: app.experienceNote,
+        long_term_plan: app.availableFrom + (app.fosterDuration ? ` (${app.fosterDuration})` : ""),
+        why_adopt: app.notes,
+        status: "pending",
+      }]);
+    } catch (err) {
+      console.error("Foster başvurusu kaydedilemedi:", err);
+    }
+    setSubmitting(false);
+    setSub(true);
+  };
+
+  return (
+    <div className="sheet-overlay" onClick={onClose}>
+      <div className="sheet" onClick={e=>e.stopPropagation()}>
+        <div className="sh-handle"/>
+        <div className="sh-hd">
+          <div className="sh-title">{t.fosterAppTitle}</div>
+          <button className="sh-close" onClick={onClose}>✕</button>
+        </div>
+
+        {!submitted ? <>
+          <div className="app-strip">
+            <div className="app-strip-emoji">{animal.emoji}</div>
+            <div>
+              <div className="app-strip-name">{lang==="tr"?"Geçici bakım:":"Fostering:"} {animal.name}</div>
+              <div className="app-strip-meta">{animal.breed[lang]} · {animal.city}, {animal.province}</div>
+            </div>
+            <div className="app-strip-note">{lang==="tr" ? "Genellikle 1–2 gün içinde dönüş yapılır" : "Usually reviewed within 1–2 days"}</div>
+          </div>
+
+          <div className="sh-body">
+            <div style={{ fontSize:15, fontWeight:600, marginBottom:3 }}>
+              {lang==="tr" ? "Geçici Bakım Başvurusu" : "Foster Application"}
+            </div>
+            <div style={{ fontSize:12, color:"var(--muted)", marginBottom:18 }}>
+              {lang==="tr"
+                ? "Sadece geçici bakım için gereken temel bilgiler — 2 dakikadan kısa sürer."
+                : "Just the essentials for temporary care — takes less than 2 minutes."}
+            </div>
+
+            {/* Contact details */}
+            <div className="frow">
+              <div className="fg">
+                <label className="flabel">{t.firstName}</label>
+                <input className="fi" placeholder={lang==="tr"?"Zeynep":"Jane"} value={app.firstName} onChange={e=>set("firstName",e.target.value)} />
+                {E("firstName")}
+              </div>
+              <div className="fg">
+                <label className="flabel">{t.lastName}</label>
+                <input className="fi" placeholder={lang==="tr"?"Yılmaz":"Mwangi"} value={app.lastName} onChange={e=>set("lastName",e.target.value)} />
+                {E("lastName")}
+              </div>
+            </div>
+            <div className="fg">
+              <label className="flabel">{t.email}</label>
+              <input className="fi" type="email" placeholder="ornek@email.com" value={app.email} onChange={e=>set("email",e.target.value)} />
+              {E("email")}
+            </div>
+            <div className="fg">
+              <label className="flabel">{t.phoneField}</label>
+              <input className="fi" placeholder="+90 5XX XXX XX XX" value={app.phone} onChange={e=>set("phone",e.target.value)} />
+              {E("phone")}
+            </div>
+
+            <div className="divider" />
+
+            {/* Brief experience — optional */}
+            <div className="fg">
+              <label className="flabel">{lang==="tr" ? "Hayvan Deneyimi (opsiyonel)" : "Animal Experience (optional)"}</label>
+              <div className="opt-group">
+                <Opt name="hasPetExperience" value="yes_current" label={lang==="tr"?"Şu anda hayvanım var":"I currently have pets"} />
+                <Opt name="hasPetExperience" value="yes_past"    label={lang==="tr"?"Daha önce hayvanım oldu":"I've had pets before"} />
+                <Opt name="hasPetExperience" value="no"          label={lang==="tr"?"Bu ilk olur":"This would be my first"} />
+              </div>
+            </div>
+            {app.hasPetExperience && app.hasPetExperience !== "no" && (
+              <div className="fg">
+                <textarea
+                  className="fta"
+                  style={{ minHeight:60 }}
+                  placeholder={lang==="tr" ? "Kısaca anlat (isteğe bağlı)" : "Briefly describe (optional)"}
+                  value={app.experienceNote}
+                  onChange={e=>set("experienceNote", e.target.value)}
+                />
+              </div>
+            )}
+
+            <div className="divider" />
+
+            {/* Availability */}
+            <div className="frow">
+              <div className="fg">
+                <label className="flabel">{lang==="tr" ? "Ne Zaman Başlayabilirsin? *" : "Available From *"}</label>
+                <input className="fi" placeholder={lang==="tr" ? "örn. Hemen / 15 Temmuz" : "e.g. Immediately / July 15"} value={app.availableFrom} onChange={e=>set("availableFrom", e.target.value)} />
+                {E("availableFrom")}
+              </div>
+              <div className="fg">
+                <label className="flabel">{lang==="tr" ? "Ne Kadar Süre Bakabilirsin?" : "How Long Can You Foster?"}</label>
+                <input className="fi" placeholder={lang==="tr" ? "örn. 2–4 hafta" : "e.g. 2–4 weeks"} value={app.fosterDuration} onChange={e=>set("fosterDuration", e.target.value)} />
+              </div>
+            </div>
+
+            {/* Ability to provide care */}
+            <div className="fg">
+              <label className="flabel">{lang==="tr" ? "Geçici Bakım Verebilir misin? *" : "Can You Provide Temporary Care? *"}</label>
+              <div className="opt-group">
+                <Opt name="canProvideCare" value="yes" label={lang==="tr"?"Evet, uygun bir alanım var":"Yes, I have a suitable space"} />
+                <Opt name="canProvideCare" value="yes_other_pets" label={lang==="tr"?"Evet, ama evde başka hayvan var":"Yes, but I have other pets at home"} />
+                <Opt name="canProvideCare" value="not_sure" label={lang==="tr"?"Emin değilim, konuşalım":"Not sure — let's discuss"} />
+              </div>
+              {E("canProvideCare")}
+            </div>
+
+            {/* Notes */}
+            <div className="fg">
+              <label className="flabel">{lang==="tr" ? "Notlar (opsiyonel)" : "Notes for the Shelter (optional)"}</label>
+              <textarea
+                className="fta"
+                style={{ minHeight:70 }}
+                placeholder={lang==="tr" ? "Bilmemiz gereken bir şey var mı?" : "Anything else we should know?"}
+                value={app.notes}
+                onChange={e=>set("notes", e.target.value)}
+              />
+            </div>
+
+            <div className="fg">
+              <label style={{display:"flex",alignItems:"flex-start",gap:10,cursor:"pointer"}}>
+                <input type="checkbox" style={{marginTop:3,accentColor:"var(--dark)",width:15,height:15,flexShrink:0}} checked={app.agree} onChange={e=>set("agree", e.target.checked)} />
+                <span style={{fontSize:12,color:"var(--muted)",lineHeight:1.6}}>{t.declaration}</span>
+              </label>
+              {E("agree")}
+            </div>
+          </div>
+
+          <div className="sh-foot">
+            <span className="step-count">{lang==="tr" ? "Tek adım" : "Single step"}</span>
+            <button className="btn btn-dark btn-sm" onClick={submit} disabled={submitting}>
+              {submitting ? (lang==="tr"?"Gönderiliyor...":"Submitting...") : t.stepSubmit}
+            </button>
+          </div>
+        </> : (
+          <div className="sh-body">
+            <div className="success">
+              <div className="suc-i">✓</div>
+              <div className="suc-t">{t.appSubmitted}</div>
+              <div className="suc-d">
+                {t.appSubmittedDesc_pre} {app.firstName}. {t.appSubmittedDesc_foster} <strong>{animal.name}</strong>{t.appSubmittedDesc_post?` ${t.appSubmittedDesc_post}`:""}
+              </div>
+              <div className="suc-ref"><div className="suc-ref-l">{t.refLabel}</div><div className="suc-ref-c">{refCode}</div></div>
+              <div className="suc-steps">
+                {[
+                  [t.appStep1, t.appStep1d],
+                  [t.appStep2, t.appStep2d],
+                  [t.appStep3, `${t.appStep3d_pre} ${app.email} ${t.appStep3d_post}`],
+                  [t.appStep4_foster, t.appStep4d_foster],
+                ].map(([st,sd],i)=>(
+                  <div key={i} className="suc-step"><div className="suc-step-n">{i+1}</div><div><strong style={{color:"var(--dark)"}}>{st}</strong><br/>{sd}</div></div>
+                ))}
+              </div>
+              <button className="btn btn-dark btn-full" style={{maxWidth:240,margin:"0 auto"}} onClick={onClose}>{t.done}</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function RehomeForm({ lang, t, onSubmit, requireContact }) {
   const [f, setF] = useState({ name:"", species:"Dog", age:"", reason:"" });
   const [rehomePhoto, setRehomePhoto] = useState(null);
@@ -2324,6 +2559,210 @@ function RehomeForm({ lang, t, onSubmit, requireContact }) {
   );
 }
 
+// ─── IMAGE CAROUSEL (swipeable gallery with dot pagination) ────────────────
+function ImageCarousel({ photos, emoji, height = 220 }) {
+  const [idx, setIdx] = useState(0);
+  const touchStartX = useRef(null);
+  const list = (photos && photos.length > 0) ? photos : null;
+
+  if (!list) {
+    return (
+      <div className="d-thumb" style={{ height }}>
+        {emoji}
+      </div>
+    );
+  }
+
+  const goTo = (i) => setIdx(Math.max(0, Math.min(list.length - 1, i)));
+
+  const onTouchStart = (e) => { touchStartX.current = e.touches[0].clientX; };
+  const onTouchEnd = (e) => {
+    if (touchStartX.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(dx) > 40) {
+      if (dx < 0) goTo(idx + 1); else goTo(idx - 1);
+    }
+    touchStartX.current = null;
+  };
+
+  return (
+    <div style={{ position:"relative", marginBottom:12 }}>
+      <div
+        style={{ height, borderRadius:10, overflow:"hidden", background:"var(--off)", position:"relative" }}
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+      >
+        <img src={list[idx]} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
+
+        {list.length > 1 && (
+          <>
+            <button
+              type="button"
+              onClick={() => goTo(idx - 1)}
+              disabled={idx === 0}
+              style={{
+                position:"absolute", top:"50%", left:8, transform:"translateY(-50%)",
+                width:30, height:30, borderRadius:"50%", border:"none",
+                background:"rgba(0,0,0,0.45)", color:"#fff", fontSize:14,
+                display:"flex", alignItems:"center", justifyContent:"center",
+                cursor:"pointer", opacity: idx===0 ? 0.35 : 1,
+              }}
+            >‹</button>
+            <button
+              type="button"
+              onClick={() => goTo(idx + 1)}
+              disabled={idx === list.length - 1}
+              style={{
+                position:"absolute", top:"50%", right:8, transform:"translateY(-50%)",
+                width:30, height:30, borderRadius:"50%", border:"none",
+                background:"rgba(0,0,0,0.45)", color:"#fff", fontSize:14,
+                display:"flex", alignItems:"center", justifyContent:"center",
+                cursor:"pointer", opacity: idx===list.length-1 ? 0.35 : 1,
+              }}
+            >›</button>
+
+            {/* image count badge */}
+            <div style={{
+              position:"absolute", top:8, right:8, background:"rgba(0,0,0,0.55)", color:"#fff",
+              fontSize:11, fontWeight:600, padding:"2px 8px", borderRadius:999,
+            }}>
+              {idx + 1} / {list.length}
+            </div>
+          </>
+        )}
+      </div>
+
+      {list.length > 1 && (
+        <div style={{ display:"flex", justifyContent:"center", gap:6, marginTop:8 }}>
+          {list.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => goTo(i)}
+              style={{
+                width: i===idx ? 8 : 6, height: i===idx ? 8 : 6, borderRadius:"50%", border:"none",
+                background: i===idx ? "var(--amber)" : "var(--border)",
+                cursor:"pointer", padding:0, transition:"all 0.15s",
+              }}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── MULTI PHOTO UPLOAD (1–5 images, moderated, reorderable) ────────────────
+function MultiPhotoUpload({ photos, setPhotos, folder, lang, t, maxPhotos = 5 }) {
+  const fileRef = useRef();
+  const [uploading, setUploading] = useState(false);
+  const dragIndex = useRef(null);
+
+  const handleFiles = async (files) => {
+    const remaining = maxPhotos - photos.length;
+    if (remaining <= 0) {
+      alert(lang==="tr" ? `En fazla ${maxPhotos} fotoğraf yükleyebilirsiniz.` : `You can upload up to ${maxPhotos} photos.`);
+      return;
+    }
+    const toUpload = Array.from(files).slice(0, remaining);
+    setUploading(true);
+    for (const file of toUpload) {
+      const result = await uploadPhoto(file, folder);
+      if (result.error === "inappropriate" || result.error === "not_animal") {
+        alert(photoErrorMsg(result.error, lang));
+        continue; // skip this one, keep trying the rest
+      }
+      if (result.error) {
+        alert(lang==="tr" ? "Yükleme başarısız oldu" : "Upload failed");
+        continue;
+      }
+      setPhotos(prev => [...prev, result.url].slice(0, maxPhotos));
+    }
+    setUploading(false);
+  };
+
+  const removePhoto = (idx) => {
+    setPhotos(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const movePhoto = (from, to) => {
+    setPhotos(prev => {
+      const arr = [...prev];
+      const [moved] = arr.splice(from, 1);
+      arr.splice(to, 0, moved);
+      return arr;
+    });
+  };
+
+  return (
+    <div>
+      {photos.length > 0 && (
+        <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:10 }}>
+          {photos.map((url, idx) => (
+            <div
+              key={url+idx}
+              draggable
+              onDragStart={() => { dragIndex.current = idx; }}
+              onDragOver={e => e.preventDefault()}
+              onDrop={() => { if (dragIndex.current !== null && dragIndex.current !== idx) movePhoto(dragIndex.current, idx); dragIndex.current = null; }}
+              style={{
+                position:"relative", width:84, height:84, borderRadius:8, overflow:"hidden",
+                border: idx===0 ? "2px solid var(--amber)" : "1px solid var(--border)",
+                flexShrink:0, cursor:"grab",
+              }}
+            >
+              <img src={url} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
+              {idx === 0 && (
+                <div style={{ position:"absolute", bottom:0, left:0, right:0, background:"rgba(212,134,43,0.92)", color:"#fff", fontSize:9, fontWeight:700, textAlign:"center", padding:"2px 0" }}>
+                  {lang==="tr"?"KAPAK":"COVER"}
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => removePhoto(idx)}
+                style={{
+                  position:"absolute", top:3, right:3, width:20, height:20, borderRadius:"50%",
+                  background:"rgba(0,0,0,0.65)", color:"#fff", border:"none", fontSize:12,
+                  display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", lineHeight:1,
+                }}
+              >✕</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {photos.length < maxPhotos && (
+        <div className="photo-drop" onClick={() => fileRef.current.click()}>
+          <div style={{ fontSize:22, marginBottom:5 }}>📷</div>
+          <div style={{ fontSize:12, fontWeight:500, color:"var(--muted)" }}>
+            {uploading
+              ? (lang==="tr"?"Yükleniyor...":"Uploading...")
+              : (photos.length === 0
+                  ? t.uploadPhoto
+                  : (lang==="tr" ? `Daha fazla ekle (${photos.length}/${maxPhotos})` : `Add more (${photos.length}/${maxPhotos})`))}
+          </div>
+          <div style={{ fontSize:11, color:"var(--muted)", marginTop:2 }}>
+            {lang==="tr" ? `En fazla ${maxPhotos} fotoğraf · ${t.photoHint}` : `Up to ${maxPhotos} photos · ${t.photoHint}`}
+          </div>
+        </div>
+      )}
+
+      <input
+        ref={fileRef} type="file" accept="image/*" multiple
+        style={{ display:"none" }}
+        onChange={e => { if (e.target.files?.length) handleFiles(e.target.files); e.target.value = ""; }}
+      />
+
+      {photos.length > 1 && (
+        <div style={{ fontSize:11, color:"var(--muted)", marginTop:6 }}>
+          {lang==="tr" ? "📌 Sürükleyerek sıralayabilirsiniz. İlk fotoğraf kapak görseli olur." : "📌 Drag to reorder. The first photo becomes the cover image."}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 function PostAnimalForm({ lang, t, onSubmit, requireContact }) {
   const [f, setF] = useState({
     name:"", species:"Dog", breed:"", age:"", gender:"Female",
@@ -2331,8 +2770,7 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact }) {
     canFoster:false, canAdopt:true, desc:"",
     isNeutered:"", vaccinatedParasite:"", vaccinatedRabies:"",
   });
-  const [animalPhoto, setAnimalPhoto] = useState(null);
-  const animalFileRef = useRef();
+  const [photos, setPhotos] = useState([]);
 
   const sp = lang==="tr"
     ? ["Köpek","Kedi","Tavşan","Kuş","Hamster","Diğer"]
@@ -2487,39 +2925,26 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact }) {
         <textarea className="fta" placeholder={lang==="tr"?"Hayvanın karakteri, sağlık durumu, geçmişi…":"Animal's personality, health, history…"} value={f.desc} onChange={e=>setF(x=>({...x,desc:e.target.value}))} />
       </div>
 
-      {/* Photo — mandatory */}
+      {/* Photos — 1 to 5, mandatory */}
       <div className="fg">
-        <label className="flabel">{lang==="tr"?"Fotoğraf *":"Photo *"}</label>
-        {animalPhoto && <div className="photo-prev"><img src={animalPhoto} style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:8}} /></div>}
-        <div className="photo-drop" onClick={()=>animalFileRef.current.click()}>
-          <div style={{ fontSize:22, marginBottom:5 }}>📷</div>
-          <div style={{ fontSize:12, fontWeight:500, color:"var(--muted)" }}>{animalPhoto ? "✓ Photo uploaded" : t.uploadPhoto}</div>
-          <div style={{ fontSize:11, color:"var(--muted)", marginTop:2 }}>{t.photoHint}</div>
-        </div>
-        <input ref={animalFileRef} type="file" accept="image/*" style={{ display:"none" }} onChange={async e=>{
-          const file = e.target.files[0];
-          if (!file) return;
-          const result = await uploadPhoto(file, "animals");
-          if (result.error === "inappropriate" || result.error === "not_animal") { alert(photoErrorMsg(result.error, lang)); return; }
-          if (result.error) { alert("Upload failed"); return; }
-          setAnimalPhoto(result.url);
-        }} />
+        <label className="flabel">{lang==="tr"?"Fotoğraflar * (1–5)":"Photos * (1–5)"}</label>
+        <MultiPhotoUpload photos={photos} setPhotos={setPhotos} folder="animals" lang={lang} t={t} maxPhotos={5} />
       </div>
 
       <button className="btn btn-dark btn-full" onClick={() => {
         if (!f.name) { alert(lang==="tr"?"Hayvanın adını girin":"Please enter animal name"); return; }
         if (!f.city) { alert(lang==="tr"?"Şehir girin":"Please enter city"); return; }
         if (!f.desc) { alert(lang==="tr"?"Açıklama girin":"Please enter description"); return; }
-        if (!animalPhoto) { alert(lang==="tr"?"Lütfen fotoğraf yükleyin":"Please upload a photo"); return; }
+        if (photos.length === 0) { alert(lang==="tr"?"Lütfen en az 1 fotoğraf yükleyin":"Please upload at least 1 photo"); return; }
         if (!f.canAdopt && !f.canFoster) { alert(lang==="tr"?"En az bir ilan türü seçin":"Please select at least one listing type"); return; }
         if (!f.isNeutered || !f.vaccinatedParasite || !f.vaccinatedRabies) { alert(lang==="tr"?"Lütfen sağlık bilgilerinin tamamını doldurun":"Please fill in all health information"); return; }
         requireContact(async (contact) => {
-          console.log("requireContact onConfirm called, contact:", contact);
           const speciesEn = spMap[f.species] || f.species;
           const fullDesc = f.address ? `${f.desc}\n📍 ${f.address}` : f.desc;
+          const emoji = speciesEn==="Dog"?"🐕":speciesEn==="Cat"?"🐈":speciesEn==="Rabbit"?"🐇":speciesEn==="Bird"?"🐦":speciesEn==="Hamster"?"🐹":"🐾";
           const insertPayload = {
             name: f.name,
-            emoji: speciesEn==="Dog"?"🐕":speciesEn==="Cat"?"🐈":speciesEn==="Rabbit"?"🐇":speciesEn==="Bird"?"🐦":speciesEn==="Hamster"?"🐹":"🐾",
+            emoji,
             species: speciesEn,
             breed: f.breed || null,
             age: f.age || null,
@@ -2531,7 +2956,8 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact }) {
             can_adopt: f.canAdopt,
             desc_en: fullDesc,
             desc_tr: fullDesc,
-            photo_url: animalPhoto,
+            photo_url: photos[0],
+            photo_urls: photos,
             submitter_email: contact.email,
             status: "active",
             urgent: false,
@@ -2540,17 +2966,40 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact }) {
             vaccinated_parasite: f.vaccinatedParasite || null,
             vaccinated_rabies: f.vaccinatedRabies || null,
           };
-          console.log("Inserting animal payload:", insertPayload);
           const { data, error } = await db.from("animals").insert([insertPayload]).select();
-          console.log("Insert result — data:", data, "error:", error);
           if (error) {
             console.error("Animal insert error:", error);
             alert((lang==="tr"?"Kayıt hatası: ":"Insert error: ") + error.message);
             return;
           }
-          onSubmit(f.name);
+          // Build the mapped object the rest of the app expects, so it can be shown immediately
+          const inserted = data?.[0];
+          const newAnimal = inserted ? {
+            id: inserted.id,
+            name: inserted.name || "",
+            emoji: inserted.emoji || emoji,
+            species:  { en: inserted.species || speciesEn, tr: inserted.species || speciesEn },
+            breed:    { en: inserted.breed   || "", tr: inserted.breed   || "" },
+            age:      { en: inserted.age     || "", tr: inserted.age     || "" },
+            gender:   { en: inserted.gender  || "", tr: inserted.gender  || "" },
+            country:  inserted.country  || "",
+            province: inserted.province || "",
+            city:     inserted.city     || "",
+            tags:     { en: [], tr: [] },
+            urgent:   inserted.urgent   || false,
+            isNew:    inserted.is_new   || false,
+            canFoster: inserted.can_foster || false,
+            canAdopt:  inserted.can_adopt  !== false,
+            desc:     { en: inserted.desc_en || "", tr: inserted.desc_tr || "" },
+            photo_url: inserted.photo_url || (inserted.photo_urls && inserted.photo_urls[0]) || null,
+            photo_urls: inserted.photo_urls || (inserted.photo_url ? [inserted.photo_url] : []),
+            isNeutered: inserted.is_neutered || "unknown",
+            vaccinatedParasite: inserted.vaccinated_parasite || "unknown",
+            vaccinatedRabies: inserted.vaccinated_rabies || "unknown",
+          } : null;
+          onSubmit(f.name, newAnimal);
           setF({ name:"", species:"Dog", breed:"", age:"", gender:"Female", country:"Türkiye", province:"İstanbul", city:"", address:"", canFoster:false, canAdopt:true, desc:"", isNeutered:"", vaccinatedParasite:"", vaccinatedRabies:"" });
-          setAnimalPhoto(null);
+          setPhotos([]);
         });
       }}>
         {lang==="tr"?"İlanı Gönder":"Submit Listing"}
