@@ -1350,31 +1350,14 @@ export default function App() {
 
         {/* ══════════════════════════════ HOME ══════════════════════════════ */}
         {tab === "home" && <>
-          <div style={{ display:"flex", alignItems:"stretch", borderBottom:"1px solid var(--border)", flexWrap:"wrap" }}>
-
-            {/* LEFT: hero text */}
-            <div className="hero" style={{ flex:"1 1 320px", borderBottom:"none" }}>
-              <div className="hero-label">{t.tagline}</div>
-              <h1 className="hero-h1">{t.heroH1}<br /><em>{t.heroH1Em}</em></h1>
-              <p className="hero-p">{t.heroP}</p>
-              <div className="hero-cta">
-                <button className="btn btn-dark" onClick={() => goTab("animals")}>{t.browseAnimals}</button>
-                <button className="btn btn-outline" onClick={() => goTab("help")}>🚨 {t.reportAnimal}</button>
-              </div>
+          <div className="hero">
+            <div className="hero-label">{t.tagline}</div>
+            <h1 className="hero-h1">{t.heroH1}<br /><em>{t.heroH1Em}</em></h1>
+            <p className="hero-p">{t.heroP}</p>
+            <div className="hero-cta">
+              <button className="btn btn-dark" onClick={() => goTab("animals")}>{t.browseAnimals}</button>
+              <button className="btn btn-outline" onClick={() => goTab("help")}>🚨 {t.reportAnimal}</button>
             </div>
-
-            {/* RIGHT: brand illustration */}
-            <div style={{
-              flex:"1 1 280px", minHeight:240, maxHeight:380, display:"flex",
-              alignItems:"center", justifyContent:"center", background:"#FBF1E4", overflow:"hidden",
-            }}>
-              <img
-                src="https://uyuqcpttdbejaakbwzyl.supabase.co/storage/v1/object/public/paweero-photos/banner/hero-p.png"
-                alt="Paweero"
-                style={{ height:"100%", width:"100%", objectFit:"contain", display:"block", padding:"16px" }}
-              />
-            </div>
-
           </div>
 
           <div className="stats">
@@ -1499,15 +1482,6 @@ export default function App() {
           <div className="ph">
             <div className="ph-title">{t.lostFound}</div>
             <div className="ph-sub">{t.lostFoundSub}</div>
-            {(fProvince !== "All Provinces" || fCity !== "All Cities") && (
-              <div style={{ fontSize:11, color:"var(--amber)", fontWeight:600, marginBottom:8 }}>
-                📍 {[fCity !== "All Cities" ? fCity : null, fProvince !== "All Provinces" ? fProvince : null].filter(Boolean).join(", ")}
-                {" · "}
-                <span style={{ color:"var(--muted)", fontWeight:500, textDecoration:"underline", cursor:"pointer" }} onClick={() => goTab("animals")}>
-                  {lang==="tr" ? "konumu değiştir" : "change location"}
-                </span>
-              </div>
-            )}
             <div className="stabs">
               <button className={`stab ${lfSub === "board" ? "on" : ""}`} onClick={() => setLFSub("board")}>
                 {t.browse} <span style={{ fontSize:11, color:"var(--muted)", marginLeft:4 }}>({filteredLF.filter(i=>i.status==="open").length} {t.openListings})</span>
@@ -1517,6 +1491,9 @@ export default function App() {
               </button>
             </div>
           </div>
+
+          {/* Global location filter — same selection as Animals page, applies here too */}
+          {lfSub === "board" && <LocFilters />}
 
           {lfSub === "board" && (
             <div className="wrap" style={{ paddingTop:16 }}>
@@ -1685,16 +1662,7 @@ export default function App() {
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
               <div>
                 <div className="ph-title">{t.helpAnimals}</div>
-                <div className="ph-sub" style={{ marginBottom:0, paddingBottom: (fProvince !== "All Provinces" || fCity !== "All Cities") ? 4 : 12 }}>{t.helpSub}</div>
-                {(fProvince !== "All Provinces" || fCity !== "All Cities") && (
-                  <div style={{ fontSize:11, color:"var(--amber)", fontWeight:600, paddingBottom:12 }}>
-                    📍 {[fCity !== "All Cities" ? fCity : null, fProvince !== "All Provinces" ? fProvince : null].filter(Boolean).join(", ")}
-                    {" · "}
-                    <span style={{ color:"var(--muted)", fontWeight:500, textDecoration:"underline", cursor:"pointer" }} onClick={() => goTab("animals")}>
-                      {lang==="tr" ? "konumu değiştir" : "change location"}
-                    </span>
-                  </div>
-                )}
+                <div className="ph-sub" style={{ marginBottom:0, paddingBottom:12 }}>{t.helpSub}</div>
               </div>
               <button className="btn btn-red btn-sm" style={{ flexShrink:0, marginLeft:12 }} onClick={() => setShowReportForm(true)}>
                 🚨 {lang==="tr"?"Yardım İste":"Report"}
@@ -1709,6 +1677,9 @@ export default function App() {
               </button>
             </div>
           </div>
+
+          {/* Global location filter — same selection as Animals page, applies here too */}
+          <LocFilters />
 
           <div className="wrap" style={{ paddingTop:16 }}>
             {helpSub === "active" && (
