@@ -130,6 +130,56 @@ const CITIES = {
   "Umm Al Quwain":   ["All Cities","UAQ City","Falaj Al Mualla"],
 };
 
+// ─── PROVINCE COORDINATES (approximate centers, for geolocation matching) ───
+const PROVINCE_COORDS = {
+  // Türkiye
+  "Adana":[37.00,35.32],"Adıyaman":[37.76,38.28],"Afyonkarahisar":[38.76,30.54],"Ağrı":[39.72,43.05],
+  "Amasya":[40.65,35.83],"Ankara":[39.93,32.86],"Antalya":[36.90,30.71],"Artvin":[41.18,41.82],
+  "Aydın":[37.85,27.85],"Balıkesir":[39.65,27.89],"Bilecik":[40.15,29.98],"Bingöl":[38.89,40.50],
+  "Bitlis":[38.40,42.11],"Bolu":[40.74,31.61],"Burdur":[37.72,30.29],"Bursa":[40.18,29.07],
+  "Çanakkale":[40.15,26.41],"Çankırı":[40.60,33.61],"Çorum":[40.55,34.95],"Denizli":[37.78,29.10],
+  "Diyarbakır":[37.91,40.24],"Edirne":[41.68,26.56],"Elazığ":[38.68,39.22],"Erzincan":[39.75,39.49],
+  "Erzurum":[39.90,41.27],"Eskişehir":[39.78,30.52],"Gaziantep":[37.07,37.38],"Giresun":[40.92,38.39],
+  "Gümüşhane":[40.46,39.48],"Hakkari":[37.58,43.74],"Hatay":[36.40,36.35],"Isparta":[37.77,30.55],
+  "Mersin":[36.81,34.64],"İstanbul":[41.01,28.98],"İzmir":[38.42,27.14],"Kars":[40.61,43.10],
+  "Kastamonu":[41.39,33.78],"Kayseri":[38.73,35.49],"Kırklareli":[41.73,27.22],"Kırşehir":[39.15,34.16],
+  "Kocaeli":[40.85,29.88],"Konya":[37.87,32.49],"Kütahya":[39.42,29.99],"Malatya":[38.36,38.32],
+  "Manisa":[38.61,27.43],"Kahramanmaraş":[37.58,36.93],"Mardin":[37.31,40.74],"Muğla":[37.22,28.36],
+  "Muş":[38.74,41.49],"Nevşehir":[38.62,34.71],"Niğde":[37.97,34.68],"Ordu":[40.98,37.88],
+  "Rize":[41.02,40.52],"Sakarya":[40.78,30.40],"Samsun":[41.29,36.33],"Siirt":[37.93,41.94],
+  "Sinop":[42.03,35.15],"Sivas":[39.75,37.02],"Tekirdağ":[40.98,27.51],"Tokat":[40.31,36.55],
+  "Trabzon":[41.00,39.72],"Tunceli":[39.11,39.55],"Şanlıurfa":[37.16,38.79],"Uşak":[38.68,29.41],
+  "Van":[38.49,43.38],"Yozgat":[39.82,34.81],"Zonguldak":[41.46,31.79],"Aksaray":[38.37,34.03],
+  "Bayburt":[40.26,40.22],"Karaman":[37.18,33.22],"Kırıkkale":[39.84,33.51],"Batman":[37.88,41.13],
+  "Şırnak":[37.52,42.46],"Bartın":[41.64,32.34],"Ardahan":[41.11,42.70],"Iğdır":[39.92,44.05],
+  "Yalova":[40.65,29.27],"Karabük":[41.20,32.62],"Kilis":[36.72,37.12],"Osmaniye":[37.07,36.25],
+  "Düzce":[40.84,31.16],
+  // Kuzey Kıbrıs
+  "Lefkoşa":[35.19,33.36],"Gazimağusa":[35.12,33.95],"Girne":[35.34,33.32],
+  "Güzelyurt":[35.20,32.99],"İskele":[35.29,33.89],"Lefke":[35.11,32.85],
+  // BAE
+  "Dubai":[25.20,55.27],"Abu Dhabi":[24.45,54.38],"Sharjah":[25.35,55.40],
+  "Ajman":[25.41,55.44],"Ras Al Khaimah":[25.79,55.94],"Fujairah":[25.12,56.33],"Umm Al Quwain":[25.57,55.55],
+};
+
+// Haversine-ish nearest-province lookup (good enough at province scale)
+function findNearestProvince(lat, lon) {
+  let best = null, bestDist = Infinity;
+  for (const [name, [plat, plon]] of Object.entries(PROVINCE_COORDS)) {
+    const dLat = lat - plat, dLon = lon - plon;
+    const dist = dLat * dLat + dLon * dLon; // squared distance is fine for comparison
+    if (dist < bestDist) { bestDist = dist; best = name; }
+  }
+  return best;
+}
+
+function findCountryForProvince(province) {
+  for (const [country, list] of Object.entries(PROVINCES)) {
+    if (list.includes(province)) return country;
+  }
+  return null;
+}
+
 const ADOPTERS = [
   { id:101, name:"Yılmaz Family",  emoji:"👨‍👩‍👧", looking:{en:"Dog",         tr:"Köpek"},        city:"İstanbul", tags:{en:["Has yard","Experienced","Kid-friendly"], tr:["Bahçe var","Deneyimli","Çocuk dostu"]}, desc:{en:"Family of 4 with a large garden. Looking for a medium to large breed dog.",            tr:"Büyük bahçeli, 4 kişilik bir aile. Orta-büyük ırk köpek arıyoruz."} },
   { id:102, name:"Elif K.",        emoji:"👩",     looking:{en:"Cat",          tr:"Kedi"},         city:"Ankara",   tags:{en:["Works from home","Apartment","First pet"], tr:["Evden çalışıyor","Daire","İlk pet"]},  desc:{en:"Young professional working from home. Looking for an affectionate cat.",              tr:"Evden çalışan genç profesyonel. Sevecen bir kedi arıyor."} },
@@ -1079,6 +1129,31 @@ export default function App() {
     loadFromDB();
   }, []);
 
+  // If the browser already has location permission granted (from a previous visit),
+  // silently pre-select the nearest province/country without prompting again.
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    if (navigator.permissions?.query) {
+      navigator.permissions.query({ name: "geolocation" }).then((status) => {
+        if (status.state === "granted") {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              const { latitude, longitude } = pos.coords;
+              const province = findNearestProvince(latitude, longitude);
+              const country  = province ? findCountryForProvince(province) : null;
+              if (country && province) {
+                setFC(country);
+                setFP(province);
+              }
+            },
+            () => {}, // permission already granted but failed silently — no UI noise
+            { timeout: 6000 }
+          );
+        }
+      }).catch(() => {});
+    }
+  }, []);
+
   const [toast, setToast] = useState({ show:false, msg:"" });
 
   const [helpedFor, setHelpedFor] = useState(null);
@@ -1155,7 +1230,7 @@ export default function App() {
   const helpProofRef = useRef();
 
   const say   = (msg) => { setToast({ show:true, msg }); setTimeout(() => setToast({ show:false, msg:"" }), 2800); };
-  const goTab = (t)   => { setTab(t); setSearch(""); setSpecies("All"); setFC("All Countries"); setFP("All Provinces"); setFCi("All Cities"); };
+  const goTab = (t)   => { setTab(t); setSearch(""); setSpecies("All"); };
 
   // filtered animals
   const filtered = animals.filter(a => {
@@ -1170,13 +1245,72 @@ export default function App() {
     return okS && okQ && okC && okP && okCi && okType;
   });
 
-  const filteredLF = lfItems.filter(item =>
-    lfTypeFilter === "all" || item.type === lfTypeFilter
-  );
+  // Lost & Found — filtered by type AND the global location filter.
+  // lf_listings.city actually stores the province (set at submission time),
+  // and area holds the neighbourhood/open-address text.
+  const filteredLF = lfItems.filter(item => {
+    const okType = lfTypeFilter === "all" || item.type === lfTypeFilter;
+    const okP    = fProvince === "All Provinces" || item.city === fProvince;
+    const okCi   = fCity     === "All Cities"    || (item.area || "").toLowerCase().includes(fCity.toLowerCase());
+    return okType && okP && okCi;
+  });
+
+  // Help/Reports — filtered by the global location filter.
+  // reports.location is a free-text string (e.g. "Street, Area, Province, Country"),
+  // so we match it loosely against the selected province/city.
+  const filteredReports = reports.filter(r => {
+    const okP  = fProvince === "All Provinces" || (r.location || "").toLowerCase().includes(fProvince.toLowerCase());
+    const okCi = fCity     === "All Cities"    || (r.location || "").toLowerCase().includes(fCity.toLowerCase());
+    return okP && okCi;
+  });
 
   // location filter bar (reused in Adopt & Foster)
+  const [locating, setLocating] = useState(false);
+
+  const useMyLocation = () => {
+    if (!navigator.geolocation) {
+      say(lang==="tr" ? "Tarayıcınız konum desteklemiyor" : "Your browser doesn't support location");
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        const province = findNearestProvince(latitude, longitude);
+        const country  = province ? findCountryForProvince(province) : null;
+        if (country && province) {
+          setFC(country);
+          setFP(province);
+          setFCi("All Cities");
+          say(`📍 ${province}${lang==="tr" ? " seçildi" : " selected"}`);
+        } else {
+          say(lang==="tr" ? "Konum bulunamadı" : "Couldn't determine your location");
+        }
+        setLocating(false);
+      },
+      () => {
+        setLocating(false);
+        say(lang==="tr" ? "Konum izni verilmedi" : "Location permission denied");
+      },
+      { timeout: 8000 }
+    );
+  };
+
   const LocFilters = () => (
     <div className="filter-bar">
+      <button
+        style={{
+          background:"var(--off)", border:"1px solid var(--border)", borderRadius:7,
+          padding:"7px 10px", fontSize:14, cursor: locating ? "default" : "pointer",
+          minHeight:34, minWidth:34, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center",
+          opacity: locating ? 0.6 : 1,
+        }}
+        onClick={useMyLocation}
+        disabled={locating}
+        title={lang==="tr" ? "Konumumu kullan" : "Use my location"}
+      >
+        {locating ? "…" : "📍"}
+      </button>
       <select className={`loc-select ${fCountry !== "All Countries" ? "on" : ""}`} value={fCountry} onChange={e => { setFC(e.target.value); setFP("All Provinces"); setFCi("All Cities"); }}>
         {COUNTRIES.map(c => <option key={c}>{c}</option>)}
       </select>
@@ -1216,14 +1350,31 @@ export default function App() {
 
         {/* ══════════════════════════════ HOME ══════════════════════════════ */}
         {tab === "home" && <>
-          <div className="hero">
-            <div className="hero-label">{t.tagline}</div>
-            <h1 className="hero-h1">{t.heroH1}<br /><em>{t.heroH1Em}</em></h1>
-            <p className="hero-p">{t.heroP}</p>
-            <div className="hero-cta">
-              <button className="btn btn-dark" onClick={() => goTab("animals")}>{t.browseAnimals}</button>
-              <button className="btn btn-outline" onClick={() => goTab("help")}>🚨 {t.reportAnimal}</button>
+          <div style={{ display:"flex", alignItems:"stretch", borderBottom:"1px solid var(--border)", flexWrap:"wrap" }}>
+
+            {/* LEFT: hero text */}
+            <div className="hero" style={{ flex:"1 1 320px", borderBottom:"none" }}>
+              <div className="hero-label">{t.tagline}</div>
+              <h1 className="hero-h1">{t.heroH1}<br /><em>{t.heroH1Em}</em></h1>
+              <p className="hero-p">{t.heroP}</p>
+              <div className="hero-cta">
+                <button className="btn btn-dark" onClick={() => goTab("animals")}>{t.browseAnimals}</button>
+                <button className="btn btn-outline" onClick={() => goTab("help")}>🚨 {t.reportAnimal}</button>
+              </div>
             </div>
+
+            {/* RIGHT: brand illustration */}
+            <div style={{
+              flex:"1 1 280px", minHeight:240, maxHeight:380, display:"flex",
+              alignItems:"center", justifyContent:"center", background:"#FBF1E4", overflow:"hidden",
+            }}>
+              <img
+                src="https://uyuqcpttdbejaakbwzyl.supabase.co/storage/v1/object/public/paweero-photos/banner/hero-p.png"
+                alt="Paweero"
+                style={{ height:"100%", width:"100%", objectFit:"contain", display:"block", padding:"16px" }}
+              />
+            </div>
+
           </div>
 
           <div className="stats">
@@ -1284,7 +1435,11 @@ export default function App() {
             </div>
           </div>
 
-          {/* Species chips + location filters — only for adopt/foster */}
+          {/* Global location filter — applies to Adopt, Foster, Lost & Found, and Help.
+              Hidden only on the Post Animal sub-tab since that's a submission form, not a listing view. */}
+          {animalSub !== "post" && <LocFilters />}
+
+          {/* Species chips — only meaningful for adopt/foster listings */}
           {animalSub !== "post" && (
           <div style={{ background:"#fff", borderBottom:"1px solid #ebebeb", padding:"10px 16px 0" }}>
             <div className="chips-wrap" style={{ margin:0, padding:"0 0 10px" }}>
@@ -1302,7 +1457,6 @@ export default function App() {
             </div>
           </div>
           )}
-          {animalSub !== "post" && <LocFilters />}
 
           <div className="wrap" style={{ paddingTop:14 }}>
             {animalSub === "post" && (
@@ -1345,9 +1499,18 @@ export default function App() {
           <div className="ph">
             <div className="ph-title">{t.lostFound}</div>
             <div className="ph-sub">{t.lostFoundSub}</div>
+            {(fProvince !== "All Provinces" || fCity !== "All Cities") && (
+              <div style={{ fontSize:11, color:"var(--amber)", fontWeight:600, marginBottom:8 }}>
+                📍 {[fCity !== "All Cities" ? fCity : null, fProvince !== "All Provinces" ? fProvince : null].filter(Boolean).join(", ")}
+                {" · "}
+                <span style={{ color:"var(--muted)", fontWeight:500, textDecoration:"underline", cursor:"pointer" }} onClick={() => goTab("animals")}>
+                  {lang==="tr" ? "konumu değiştir" : "change location"}
+                </span>
+              </div>
+            )}
             <div className="stabs">
               <button className={`stab ${lfSub === "board" ? "on" : ""}`} onClick={() => setLFSub("board")}>
-                {t.browse} <span style={{ fontSize:11, color:"var(--muted)", marginLeft:4 }}>({lfItems.filter(i=>i.status==="open").length} {t.openListings})</span>
+                {t.browse} <span style={{ fontSize:11, color:"var(--muted)", marginLeft:4 }}>({filteredLF.filter(i=>i.status==="open").length} {t.openListings})</span>
               </button>
               <button className={`stab ${lfSub === "post" ? "on" : ""}`} onClick={() => setLFSub("post")}>
                 {t.postListing}
@@ -1522,7 +1685,16 @@ export default function App() {
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
               <div>
                 <div className="ph-title">{t.helpAnimals}</div>
-                <div className="ph-sub" style={{ marginBottom:0, paddingBottom:12 }}>{t.helpSub}</div>
+                <div className="ph-sub" style={{ marginBottom:0, paddingBottom: (fProvince !== "All Provinces" || fCity !== "All Cities") ? 4 : 12 }}>{t.helpSub}</div>
+                {(fProvince !== "All Provinces" || fCity !== "All Cities") && (
+                  <div style={{ fontSize:11, color:"var(--amber)", fontWeight:600, paddingBottom:12 }}>
+                    📍 {[fCity !== "All Cities" ? fCity : null, fProvince !== "All Provinces" ? fProvince : null].filter(Boolean).join(", ")}
+                    {" · "}
+                    <span style={{ color:"var(--muted)", fontWeight:500, textDecoration:"underline", cursor:"pointer" }} onClick={() => goTab("animals")}>
+                      {lang==="tr" ? "konumu değiştir" : "change location"}
+                    </span>
+                  </div>
+                )}
               </div>
               <button className="btn btn-red btn-sm" style={{ flexShrink:0, marginLeft:12 }} onClick={() => setShowReportForm(true)}>
                 🚨 {lang==="tr"?"Yardım İste":"Report"}
@@ -1530,10 +1702,10 @@ export default function App() {
             </div>
             <div className="stabs">
               <button className={`stab ${helpSub === "active" ? "on" : ""}`} onClick={() => setHelpSub("active")}>
-                {t.activeReports} <span style={{ fontSize:11, color:"var(--muted)", marginLeft:4 }}>({reports.filter(r => r.status === "active").length})</span>
+                {t.activeReports} <span style={{ fontSize:11, color:"var(--muted)", marginLeft:4 }}>({filteredReports.filter(r => r.status === "active").length})</span>
               </button>
               <button className={`stab ${helpSub === "helped" ? "on" : ""}`} onClick={() => setHelpSub("helped")}>
-                {t.helpedTab} <span style={{ fontSize:11, color:"var(--muted)", marginLeft:4 }}>({reports.filter(r => r.status === "helped" || r.status === "resolved").length})</span>
+                {t.helpedTab} <span style={{ fontSize:11, color:"var(--muted)", marginLeft:4 }}>({filteredReports.filter(r => r.status === "helped" || r.status === "resolved").length})</span>
               </button>
             </div>
           </div>
@@ -1544,7 +1716,7 @@ export default function App() {
                 <div style={{ fontSize:13, fontWeight:600, color:"var(--dark)" }}>
                   {t.activeReports}
                   <span style={{ fontWeight:400, color:"var(--muted)", marginLeft:6 }}>
-                    ({reports.filter(r => r.status === "active").length} {t.needingHelp})
+                    ({filteredReports.filter(r => r.status === "active").length} {t.needingHelp})
                   </span>
                 </div>
               </div>
@@ -1554,7 +1726,7 @@ export default function App() {
                 <div style={{ fontSize:13, fontWeight:600, color:"var(--dark)" }}>
                   {t.helpedTab}
                   <span style={{ fontWeight:400, color:"var(--muted)", marginLeft:6 }}>
-                    ({reports.filter(r => r.status === "helped" || r.status === "resolved").length} {t.helpedAnimals})
+                    ({filteredReports.filter(r => r.status === "helped" || r.status === "resolved").length} {t.helpedAnimals})
                   </span>
                 </div>
               </div>
@@ -1562,7 +1734,7 @@ export default function App() {
 
             {/* ── Reports list — filtered by active sub-tab ── */}
             <div className="r-list" style={{ marginBottom:24 }}>
-              {[...reports]
+              {[...filteredReports]
                 .filter(r => helpSub === "active" ? r.status === "active" : (r.status === "helped" || r.status === "resolved"))
                 .sort((a,b) => {
                   const order = { active:0, helped:1, resolved:2 };
@@ -1649,7 +1821,7 @@ export default function App() {
                     </div>
                   );
                 })}
-              {reports.filter(r => helpSub === "active" ? r.status === "active" : (r.status === "helped" || r.status === "resolved")).length === 0 && (
+              {filteredReports.filter(r => helpSub === "active" ? r.status === "active" : (r.status === "helped" || r.status === "resolved")).length === 0 && (
                 <div style={{ textAlign:"center", padding:"40px 0", color:"var(--muted)", fontSize:13 }}>
                   {helpSub === "active"
                     ? (lang==="tr"?"Şu anda aktif ihbar yok.":"No active reports right now.")
