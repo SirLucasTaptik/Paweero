@@ -732,13 +732,44 @@ const CSS = `
   .tag  { background:var(--light); color:var(--muted); font-size:10px; font-weight:600; padding:2px 7px; border-radius:4px; }
 
   /* ─ BUTTONS ─ */
-  .btn { font-family:var(--font); font-size:14px; font-weight:600; border-radius:var(--r); padding:11px 20px; cursor:pointer; transition:all 0.12s; border:1px solid transparent; display:inline-flex; align-items:center; gap:6px; white-space:nowrap; line-height:1; min-height:44px; -webkit-tap-highlight-color:transparent; letter-spacing:-0.1px; }
-  .btn:active { opacity:0.8; transform:scale(0.98); }
+  /* ─ BUTTONS — single design system for all primary CTAs ─
+     Every button shares: height, padding, font, radius, icon spacing,
+     and hover/active/focus/disabled behavior. Color is the only thing
+     that changes between variants. */
+  .btn {
+    font-family:var(--font); font-size:14px; font-weight:600; letter-spacing:-0.1px;
+    border-radius:var(--r); padding:11px 20px; min-height:44px;
+    border:1px solid transparent; cursor:pointer; line-height:1;
+    display:inline-flex; align-items:center; justify-content:center; gap:7px;
+    white-space:nowrap; -webkit-tap-highlight-color:transparent;
+    transition:background-color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.1s, opacity 0.15s;
+  }
+  .btn:active { transform:scale(0.98); }
+  .btn:focus-visible { outline:none; box-shadow:0 0 0 3px rgba(212,134,43,0.35); }
+  .btn:disabled, .btn[disabled] { opacity:0.45; cursor:not-allowed; transform:none; box-shadow:none; }
+
+  /* Primary — the platform's single highest-emphasis CTA style.
+     A deepened amber (darker than the brand accent) so white text clears
+     WCAG AA contrast (4.5:1+) while still reading as "on-brand". */
+  .btn-primary {
+    background:#9C5F1A; color:#fff; border-color:#9C5F1A;
+    box-shadow:0 2px 8px rgba(156,95,26,0.35);
+  }
+  @media (hover:hover) { .btn-primary:hover { background:#834F15; border-color:#834F15; box-shadow:0 3px 10px rgba(156,95,26,0.45); } }
+  .btn-primary:active { background:#704512; box-shadow:0 1px 4px rgba(156,95,26,0.35); }
+  .btn-primary:focus-visible { box-shadow:0 0 0 3px rgba(156,95,26,0.35), 0 2px 8px rgba(156,95,26,0.35); }
+
   .btn-dark   { background:var(--dark);  color:#fff;         border-color:var(--dark);   }
+  @media (hover:hover) { .btn-dark:hover { background:#000; border-color:#000; } }
   .btn-outline { background:var(--white); color:var(--dark); border-color:var(--border); }
-  .btn-red    { background:var(--red);   color:#fff;         border-color:var(--red);    }
+  @media (hover:hover) { .btn-outline:hover { background:var(--off); border-color:#ccc; } }
+  .btn-red    { background:var(--red);   color:#fff;         border-color:var(--red);    box-shadow:0 2px 8px rgba(192,57,43,0.3); }
+  @media (hover:hover) { .btn-red:hover { background:#a8332a; border-color:#a8332a; box-shadow:0 3px 10px rgba(192,57,43,0.4); } }
+  .btn-red:focus-visible { box-shadow:0 0 0 3px rgba(192,57,43,0.3), 0 2px 8px rgba(192,57,43,0.3); }
   .btn-green  { background:var(--green); color:#fff;         border-color:var(--green);  }
+  @media (hover:hover) { .btn-green:hover { background:#256640; border-color:#256640; } }
   .btn-blue   { background:var(--blue);  color:#fff;         border-color:var(--blue);   }
+  @media (hover:hover) { .btn-blue:hover { background:#1d4ed8; border-color:#1d4ed8; } }
   .btn-sm  { padding:7px 13px; font-size:12px; min-height:36px; border-radius:7px; }
   .btn-full { width:100%; justify-content:center; }
 
@@ -1374,7 +1405,7 @@ export default function App() {
             <p className="hero-p">{t.heroP}</p>
             <div className="hero-cta">
               <button className="btn btn-dark" onClick={() => goTab("animals")}>{t.browseAnimals}</button>
-              <button className="btn btn-outline" onClick={() => goTab("help")}>🚨 {t.reportAnimal}</button>
+              <button className="btn btn-red" onClick={() => goTab("help")}>🚨 {t.reportAnimal}</button>
             </div>
           </div>
 
@@ -1702,15 +1733,14 @@ export default function App() {
         {tab === "help" && <>
           <div className="emerg-bar">{t.emergencyBar}</div>
           <div className="ph" style={{ position:"sticky" }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-              <div>
-                <div className="ph-title">{t.helpAnimals}</div>
-                <div className="ph-sub" style={{ marginBottom:0, paddingBottom:12 }}>{t.helpSub}</div>
-              </div>
-              <button className="btn btn-red btn-sm" style={{ flexShrink:0, marginLeft:12 }} onClick={() => setShowReportForm(true)}>
-                🚨 {lang==="tr"?"Yardım İste":"Report"}
-              </button>
-            </div>
+            <div className="ph-title">{t.helpAnimals}</div>
+            <div className="ph-sub" style={{ paddingBottom:14 }}>{t.helpSub}</div>
+
+            {/* Primary CTA — sized and elevated to stand out as THE action on this page */}
+            <button className="btn btn-red btn-full" style={{ marginBottom:16, padding:"13px 20px" }} onClick={() => setShowReportForm(true)}>
+              🚨 {lang==="tr"?"Yardım İste":"Report an Animal in Need"}
+            </button>
+
             <div className="stabs">
               <button className={`stab ${helpSub === "active" ? "on" : ""}`} onClick={() => setHelpSub("active")}>
                 {t.activeReports} <span style={{ fontSize:11, color:"var(--muted)", marginLeft:4 }}>({filteredReports.filter(r => r.status === "active").length})</span>
