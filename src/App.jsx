@@ -1208,7 +1208,7 @@ export default function App() {
   const [helpedFor, setHelpedFor] = useState(null);
   const [helpProof, setHelpProof] = useState(null);
   const [etaFor, setEtaFor]       = useState(null);   // report to volunteer for
-  const [myName]                  = useState("You");   // in real app: logged-in user
+  // (myName removed — volunteer identity is now the verified contactInfo.email)
   const [showReportForm, setShowReportForm] = useState(false);
 
   // ── Email OTP verification ──
@@ -1785,7 +1785,7 @@ export default function App() {
                   return (order[a.status]??1) - (order[b.status]??1);
                 })
                 .map(r => {
-                  const isVolunteer = r.volunteers?.some(v => v.name === myName);
+                  const isVolunteer = contactInfo.email && r.volunteers?.some(v => v.name === contactInfo.email);
                   return (
                     <div key={r.id} className={`rcard ${r.status === "helped" ? "helped" : r.status === "resolved" ? "resolved" : ""}`}>
                       {/* Top row: icon/photo + title + status pill */}
@@ -1828,10 +1828,15 @@ export default function App() {
                             .map((v, i) => {
                               const opt = ETA_OPTIONS.find(o => o.label === v.eta);
                               const displayEta = lang === "tr" ? (opt?.labelTR || v.eta) : v.eta;
+                              const isMe = contactInfo.email && v.name === contactInfo.email;
+                              // Privacy: never show another volunteer's raw email — just a masked label.
+                              const displayName = isMe
+                                ? (lang==="tr" ? "Sen" : "You")
+                                : (lang==="tr" ? "Bir gönüllü" : "A volunteer");
                               return (
                                 <div key={i} className="r-vol-item">
                                   <div className="r-vol-dot" style={{ background: v.etaOrder === 99 ? "var(--amber)" : "var(--blue)" }} />
-                                  <span style={{ fontWeight:600 }}>{v.name}</span>
+                                  <span style={{ fontWeight:600 }}>{displayName}</span>
                                   <span className="r-vol-eta">· {displayEta}</span>
                                 </div>
                               );
@@ -1850,7 +1855,7 @@ export default function App() {
                           {isVolunteer && r.status !== "helped" && (
                             <>
                               <div style={{ fontSize:11, color:"var(--blue)", fontWeight:600 }}>
-                                {t.youAreResponding} — {(() => { const v=r.volunteers.find(v=>v.name===myName); const opt=ETA_OPTIONS.find(o=>o.label===v?.eta); return lang==="tr"?(opt?.labelTR||v?.eta):v?.eta; })()}
+                                {t.youAreResponding} — {(() => { const v=r.volunteers.find(v=>v.name===contactInfo.email); const opt=ETA_OPTIONS.find(o=>o.label===v?.eta); return lang==="tr"?(opt?.labelTR||v?.eta):v?.eta; })()}
                               </div>
                               <button className="btn btn-blue btn-sm" onClick={() => { setHelpedFor(r); setHelpProof(null); }}>
                                 {t.markAsHelped}
@@ -2204,10 +2209,10 @@ export default function App() {
               <div style={{ fontSize:13, color:"var(--muted)", marginBottom:16, lineHeight:1.6 }}>{t.chooseEta}</div>
               <div className="eta-grid">
                 {ETA_OPTIONS.map(opt => (
-                  <button key={opt.label} className="eta-btn" onClick={async () => {
+                  <button key={opt.label} className="eta-btn" onClick={() => requireContact(async (contact) => {
                     const { error } = await db.from("volunteers").insert([{
                       report_id: etaFor.id,
-                      name: myName,
+                      name: contact.email,
                       eta: opt.label,
                       eta_order: opt.order,
                     }]);
@@ -2218,7 +2223,7 @@ export default function App() {
                     } else {
                       say(lang==="tr"?"Hata oluştu":"Error occurred");
                     }
-                  }}>
+                  })}>
                     <div className="eta-icon">{opt.icon}</div>
                     <div>
                       <div className="eta-label">{lang==="tr" ? opt.labelTR : opt.label}</div>
