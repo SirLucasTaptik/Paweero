@@ -1308,9 +1308,11 @@ export default function App() {
   // reports.location is a free-text string (e.g. "Street, Area, Province, Country"),
   // so we match it loosely against the selected province/city.
   const filteredReports = reports.filter(r => {
-    const okP  = fProvince === "All Provinces" || (r.location || "").toLowerCase().includes(fProvince.toLowerCase());
-    const okCi = fCity     === "All Cities"    || (r.location || "").toLowerCase().includes(fCity.toLowerCase());
-    return okP && okCi;
+    const loc = (r.location || "").toLowerCase();
+    const okCo = fCountry  === "All Countries"  || loc.includes(fCountry.toLowerCase());
+    const okP  = fProvince === "All Provinces"  || loc.includes(fProvince.toLowerCase());
+    const okCi = fCity     === "All Cities"     || loc.includes(fCity.toLowerCase());
+    return okCo && okP && okCi;
   });
 
   // location filter bar (reused in Adopt & Foster)
