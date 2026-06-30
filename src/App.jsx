@@ -2778,6 +2778,7 @@ function RehomeForm({ lang, t, onSubmit, requireContact }) {
 // ─── IMAGE CAROUSEL (swipeable gallery with dot pagination) ────────────────
 function ImageCarousel({ photos, emoji, height = 220 }) {
   const [idx, setIdx] = useState(0);
+  const [lightbox, setLightbox] = useState(false);
   const touchStartX = useRef(null);
   const list = (photos && photos.length > 0) ? photos : null;
 
@@ -2804,11 +2805,15 @@ function ImageCarousel({ photos, emoji, height = 220 }) {
   return (
     <div style={{ position:"relative", marginBottom:12 }}>
       <div
-        style={{ height, borderRadius:10, overflow:"hidden", background:"var(--off)", position:"relative" }}
+        style={{ height, borderRadius:10, overflow:"hidden", background:"var(--off)", position:"relative", cursor:"zoom-in" }}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
       >
-        <img src={list[idx]} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
+        <img
+          src={list[idx]}
+          onClick={() => setLightbox(true)}
+          style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }}
+        />
 
         {list.length > 1 && (
           <>
@@ -2846,6 +2851,13 @@ function ImageCarousel({ photos, emoji, height = 220 }) {
             </div>
           </>
         )}
+
+        {/* expand hint icon */}
+        <div style={{
+          position:"absolute", bottom:8, right:8, background:"rgba(0,0,0,0.45)", color:"#fff",
+          width:26, height:26, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center",
+          fontSize:13, pointerEvents:"none",
+        }}>⛶</div>
       </div>
 
       {list.length > 1 && (
@@ -2862,6 +2874,71 @@ function ImageCarousel({ photos, emoji, height = 220 }) {
               }}
             />
           ))}
+        </div>
+      )}
+
+      {/* FULL-SCREEN LIGHTBOX */}
+      {lightbox && (
+        <div
+          onClick={() => setLightbox(false)}
+          style={{
+            position:"fixed", inset:0, zIndex:1000, background:"rgba(0,0,0,0.92)",
+            display:"flex", alignItems:"center", justifyContent:"center",
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setLightbox(false)}
+            style={{
+              position:"absolute", top:16, right:16, width:38, height:38, borderRadius:"50%",
+              background:"rgba(255,255,255,0.15)", color:"#fff", border:"none", fontSize:18,
+              display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer",
+            }}
+          >✕</button>
+
+          <img
+            src={list[idx]}
+            onClick={e => e.stopPropagation()}
+            onTouchStart={onTouchStart}
+            onTouchEnd={onTouchEnd}
+            style={{ maxWidth:"92vw", maxHeight:"86vh", objectFit:"contain", display:"block" }}
+          />
+
+          {list.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={e => { e.stopPropagation(); goTo(idx - 1); }}
+                disabled={idx === 0}
+                style={{
+                  position:"absolute", top:"50%", left:16, transform:"translateY(-50%)",
+                  width:42, height:42, borderRadius:"50%", border:"none",
+                  background:"rgba(255,255,255,0.15)", color:"#fff", fontSize:20,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  cursor:"pointer", opacity: idx===0 ? 0.3 : 1,
+                }}
+              >‹</button>
+              <button
+                type="button"
+                onClick={e => { e.stopPropagation(); goTo(idx + 1); }}
+                disabled={idx === list.length - 1}
+                style={{
+                  position:"absolute", top:"50%", right:16, transform:"translateY(-50%)",
+                  width:42, height:42, borderRadius:"50%", border:"none",
+                  background:"rgba(255,255,255,0.15)", color:"#fff", fontSize:20,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  cursor:"pointer", opacity: idx===list.length-1 ? 0.3 : 1,
+                }}
+              >›</button>
+              <div style={{
+                position:"absolute", bottom:20, left:"50%", transform:"translateX(-50%)",
+                background:"rgba(255,255,255,0.15)", color:"#fff", fontSize:12, fontWeight:600,
+                padding:"4px 12px", borderRadius:999,
+              }}>
+                {idx + 1} / {list.length}
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
