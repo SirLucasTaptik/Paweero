@@ -1153,6 +1153,7 @@ export default function App() {
             desc:     { en: a.desc_en || "", tr: a.desc_tr || "" },
             photo_url: a.photo_url || (a.photo_urls && a.photo_urls[0]) || null,
             photo_urls: a.photo_urls || (a.photo_url ? [a.photo_url] : []),
+            submitter_email: a.submitter_email || "",
             isNeutered: a.is_neutered || "unknown",
             vaccinatedParasite: a.vaccinated_parasite || "unknown",
             vaccinatedRabies: a.vaccinated_rabies || "unknown",
@@ -2389,6 +2390,8 @@ function AdoptAppSheet({ animal, mode, lang, t, onClose }) {
       await db.from("applications").insert([{
         ref_code: refCode,
         mode: mode,
+        animal_id: animal.id,
+        owner_email: animal.submitter_email,
         first_name: app.firstName, last_name: app.lastName,
         email: app.email, phone: app.phone,
         age: app.age, occupation: app.occupation,
@@ -2403,6 +2406,42 @@ function AdoptAppSheet({ animal, mode, lang, t, onClose }) {
         long_term_plan: app.longTermPlan, status: "pending",
       }]);
     } catch(err) { console.error("Başvuru kaydedilemedi:", err); }
+
+    // ── E-posta gönder (notify-owner Edge Function) ──
+    try {
+      await db.functions.invoke("notify-owner", {
+        body: {
+          ownerEmail:       animal.submitter_email,
+          lang:             lang,
+          mode:             mode,
+          animalName:       animal.name || "",
+          refCode:          refCode,
+          applicantName:    `${app.firstName} ${app.lastName}`,
+          applicantEmail:   app.email,
+          applicantPhone:   app.phone,
+          age:              app.age,
+          occupation:       app.occupation,
+          homeType:         app.homeType,
+          ownRent:          app.ownRent,
+          hasYard:          app.hasYard,
+          hasChildren:      app.hasChildren,
+          childrenAges:     app.childrenAges,
+          householdSize:    app.householdSize,
+          hoursHome:        app.hoursHome,
+          activityLevel:    app.activityLevel,
+          travelFreq:       app.travelFreq,
+          petCare:          app.petCare,
+          allergies:        app.allergies,
+          hadPetsBefore:    app.hadPetsBefore,
+          currentPets:      app.currentPets,
+          currentPetDetails:app.currentPetDetails,
+          vetReference:     app.vetReference,
+          whyAdopt:         app.whyAdopt,
+          longTermPlan:     app.longTermPlan,
+        },
+      });
+    } catch(err) { console.error("E-posta gönderilemedi:", err); }
+
     setSub(true);
   };
   const E = (k) => errors[k] ? <div className="err">{errors[k]}</div> : null;
@@ -2560,10 +2599,10 @@ function FosterAppSheet({ animal, lang, t, onClose }) {
       await db.from("applications").insert([{
         ref_code: refCode,
         mode: "foster",
+        animal_id: animal.id,
+        owner_email: animal.submitter_email,
         first_name: app.firstName, last_name: app.lastName,
         email: app.email, phone: app.phone,
-        // Map onto the existing applications schema where it makes sense —
-        // experience/availability go into the free-text fields we already have.
         had_pets_before: app.hasPetExperience,
         current_pet_details: app.experienceNote,
         long_term_plan: app.availableFrom + (app.fosterDuration ? ` (${app.fosterDuration})` : ""),
@@ -2573,6 +2612,31 @@ function FosterAppSheet({ animal, lang, t, onClose }) {
     } catch (err) {
       console.error("Foster başvurusu kaydedilemedi:", err);
     }
+
+    // ── E-posta gönder (notify-owner Edge Function) ──
+    try {
+      await db.functions.invoke("notify-owner", {
+        body: {
+          ownerEmail:        animal.submitter_email,
+          lang:              lang,
+          mode:              "foster",
+          animalName:        animal.name || "",
+          refCode:           refCode,
+          applicantName:     `${app.firstName} ${app.lastName}`,
+          applicantEmail:    app.email,
+          applicantPhone:    app.phone,
+          hasPetExperience:  app.hasPetExperience,
+          experienceNote:    app.experienceNote,
+          availableFrom:     app.availableFrom,
+          fosterDuration:    app.fosterDuration,
+          canProvideCare:    app.canProvideCare,
+          notes:             app.notes,
+        },
+      });
+    } catch (err) {
+      console.error("E-posta gönderilemedi:", err);
+    }
+
     setSubmitting(false);
     setSub(true);
   };
