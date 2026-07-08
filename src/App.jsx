@@ -2243,6 +2243,12 @@ export default function App() {
               <div className="d-acts">
                 <button className="btn btn-dark btn-full" onClick={() => { setApplyFor(detailAnimal); setDetailA(null); }}>{t.applyAdopt}</button>
                 {detailAnimal.canFoster && <button className="btn btn-green btn-full" onClick={() => { setFosterFor(detailAnimal); setDetailA(null); }}>{t.applyFoster}</button>}
+                <WhatsAppShareButton lang={lang} t={t} text={
+                  `🐾 ${detailAnimal.name} — ${detailAnimal.breed[lang]} · ${detailAnimal.age[lang]} · ${detailAnimal.gender[lang]}\n` +
+                  `📍 ${detailAnimal.city}, ${detailAnimal.province}\n` +
+                  `${detailAnimal.desc?.[lang] || ""}\n\n` +
+                  `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?`${window.location.origin}${window.location.pathname}?animal=${detailAnimal.id}`:""}`
+                } />
               </div>
             </div>
           </div>
@@ -2277,6 +2283,14 @@ export default function App() {
                 {detailLF.status !== "reunited" && (
                   <button className="btn btn-dark btn-full" onClick={() => { setDetailLF(null); say(t.contactCopied); }}>📞 {t.contactInfo} {detailLF.contact}</button>
                 )}
+                <WhatsAppShareButton lang={lang} t={t} text={
+                  `${detailLF.type === "found"
+                    ? (lang==="tr"?"🐾 Bulunan hayvan":"🐾 Found animal")
+                    : (lang==="tr"?"🐾 Kayıp hayvan":"🐾 Lost animal")}: ${detailLF.name === "Unknown" ? detailLF.species[lang] : detailLF.name}\n` +
+                  `📍 ${[detailLF.area, detailLF.city].filter(Boolean).join(", ")}\n` +
+                  `${detailLF.desc[lang] || ""}\n\n` +
+                  `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?`${window.location.origin}${window.location.pathname}?lf=${detailLF.id}`:""}`
+                } />
                 <button className="btn btn-outline btn-full" onClick={() => setDetailLF(null)}>{t.close}</button>
               </div>
             </div>
@@ -2298,9 +2312,38 @@ export default function App() {
               <div className="d-pills">
                 <span className="d-pill">📍 {detailReport.location}</span>
                 <span className="d-pill">🕐 {detailReport.time[lang] || detailReport.time}</span>
+                <span className={`d-pill spill ${detailReport.status === "active" ? "sp-a" : detailReport.status === "helped" ? "sp-h" : detailReport.status === "resolved" ? "sp-r" : "sp-p"}`}>
+                  {detailReport.status}
+                </span>
               </div>
               <div className="d-desc">{detailReport.desc[lang] || detailReport.desc}</div>
+
+              {/* Status indicator and help actions */}
+              {detailReport.status === "helped" && (
+                <div style={{ fontSize:12, color:"var(--blue)", fontWeight:500, marginBottom:12, padding:"8px 12px", background:"var(--light)", borderRadius:8, textAlign:"center" }}>
+                  {t.animalHasBeenHelped}
+                </div>
+              )}
+
               <div className="d-acts">
+                {detailReport.status === "active" && (() => {
+                  const isVolunteer = contactInfo.email && detailReport.volunteers?.some(v => v.name === contactInfo.email);
+                  return !isVolunteer ? (
+                    <button className="btn btn-dark btn-full" onClick={() => { setEtaFor(detailReport); setDetailReport(null); }}>
+                      {t.iCanHelp}
+                    </button>
+                  ) : (
+                    <button className="btn btn-blue btn-full" onClick={() => { setHelpedFor(detailReport); setHelpProof(null); setDetailReport(null); }}>
+                      {t.markAsHelped}
+                    </button>
+                  );
+                })()}
+                <WhatsAppShareButton lang={lang} t={t} text={
+                  `🚨 ${lang==="tr"?"Yardıma ihtiyacı olan hayvan":"Animal in need of help"}: ${detailReport.title[lang]||detailReport.title}\n` +
+                  `📍 ${detailReport.location}\n` +
+                  `${detailReport.desc[lang]||detailReport.desc||""}\n\n` +
+                  `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?`${window.location.origin}${window.location.pathname}?report=${detailReport.id}`:""}`
+                } />
                 <button className="btn btn-outline btn-full" onClick={() => setDetailReport(null)}>{t.close}</button>
               </div>
             </div>
