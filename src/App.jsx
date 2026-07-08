@@ -55,6 +55,30 @@ const photoErrorMsg = (errorCode, lang) => {
     : "This photo may contain inappropriate or harmful content. Please upload a suitable photo of the animal.";
 };
 
+// ─── WHATSAPP SHARE ──────────────────────────────────────────────────────────
+// Opens WhatsApp with a pre-filled message so users can share a listing.
+const shareOnWhatsApp = (text) => {
+  const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+  window.open(url, "_blank", "noopener,noreferrer");
+};
+
+// Reusable small WhatsApp share button used across every listing type.
+function WhatsAppShareButton({ text, lang, t }) {
+  return (
+    <button
+      className="btn btn-sm"
+      style={{ background:"#25D366", color:"#fff", border:"none", display:"inline-flex", alignItems:"center", gap:5 }}
+      title={lang === "tr" ? "WhatsApp'ta paylaş" : "Share on WhatsApp"}
+      onClick={e => { e.stopPropagation(); shareOnWhatsApp(text); }}
+    >
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="#fff" style={{ flexShrink:0 }}>
+        <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38c1.45.79 3.08 1.21 4.79 1.21h.01c5.46 0 9.91-4.45 9.91-9.91C21.96 6.45 17.5 2 12.04 2zm5.8 14.16c-.24.68-1.42 1.31-1.96 1.36-.5.05-1.14.07-1.84-.12-.42-.13-.97-.31-1.67-.61-2.94-1.27-4.86-4.23-5.01-4.43-.15-.2-1.2-1.6-1.2-3.05 0-1.45.76-2.16 1.03-2.46.27-.3.59-.37.79-.37.2 0 .39.002.56.01.18.008.42-.07.66.5.24.58.82 2.01.89 2.16.07.15.12.32.02.52-.1.2-.15.32-.3.5-.15.18-.31.39-.44.53-.15.15-.3.31-.13.6.17.3.76 1.25 1.63 2.03 1.12 1 2.07 1.31 2.36 1.46.29.15.46.13.63-.08.17-.2.72-.84.91-1.13.19-.29.39-.24.66-.15.27.1 1.7.8 1.99.95.29.15.48.22.55.34.07.12.07.7-.17 1.38z"/>
+      </svg>
+      {t?.shareWA || (lang === "tr" ? "Paylaş" : "Share")}
+    </button>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // DATA
 // ─────────────────────────────────────────────────────────────────────────────
@@ -251,7 +275,7 @@ const T = {
     // hero
     heroH1:"Every animal deserves", heroH1Em:"a loving home.",
     heroP:"Adopt, foster, find a pet sitter, post a lost & found, or report animals in distress.",
-    browseAnimals:"Browse Animals", reportAnimal:"Report Animal in Need",
+    browseAnimals:"Browse Animals", postAnimal:"Post an Animal", reportAnimal:"Report Animal in Need", shareWA:"Share",
     // stats
     adopted:"Adopted", waiting:"Waiting", rescues:"Rescue", shelters:"Shelters", helped:"Helped",
     // home quick links
@@ -431,7 +455,7 @@ const T = {
     // hero
     heroH1:"Her hayvan hak ediyor", heroH1Em:"sevgi dolu bir yuva.",
     heroP:"Sahiplen, geçici bakım ver, bakıcı bul, kayıp ilanı ver ya da tehlikedeki hayvanları bildir.",
-    browseAnimals:"Hayvanlara Göz At", reportAnimal:"Tehlikedeki Hayvan Bildir",
+    browseAnimals:"Hayvanlara Göz At", postAnimal:"Hayvan İlanı Ver", reportAnimal:"Tehlikedeki Hayvan Bildir", shareWA:"Paylaş",
     // istatistikler
     adopted:"Sahiplenilen", waiting:"Bekleyen", rescues:"Kurtarma", shelters:"Barınak", helped:"Yardım Edildi",
     // hızlı bağlantılar
@@ -1407,7 +1431,7 @@ export default function App() {
             <h1 className="hero-h1">{t.heroH1}<br /><em>{t.heroH1Em}</em></h1>
             <p className="hero-p">{t.heroP}</p>
             <div className="hero-cta">
-              <button className="btn btn-dark" onClick={() => goTab("animals")}>{t.browseAnimals}</button>
+              <button className="btn btn-dark" onClick={() => { goTab("help"); setShowReportForm(true); }}>{t.postAnimal}</button>
               <button className="btn btn-red" onClick={() => goTab("help")}>🚨 {t.reportAnimal}</button>
             </div>
           </div>
@@ -1578,19 +1602,29 @@ export default function App() {
                     <div className="lf-desc">{item.desc[lang]}</div>
                     <div className="lf-foot">
                       <span className="lf-contact">📞 {item.contact}</span>
-                      {item.status !== "reunited" && (
-                        <button className="btn btn-sm btn-outline" onClick={e => {
-                          e.stopPropagation();
-                          if (item.contact_pref === "phone" && item.contact_phone) {
-                            window.location.href = `tel:${item.contact_phone}`;
-                          } else if (item.contact_email) {
-                            window.location.href = `mailto:${item.contact_email}`;
-                          } else if (item.contact) {
-                            const c = item.contact;
-                            window.location.href = c.includes("@") ? `mailto:${c}` : `tel:${c}`;
-                          }
-                        }}>{t.contact}</button>
-                      )}
+                      <div style={{ display:"flex", gap:6 }}>
+                        <WhatsAppShareButton lang={lang} t={t} text={
+                          `${item.type === "found"
+                            ? (lang==="tr"?"🐾 Bulunan hayvan":"🐾 Found animal")
+                            : (lang==="tr"?"🐾 Kayıp hayvan":"🐾 Lost animal")}: ${item.name === "Unknown" ? item.species[lang] : item.name}\n` +
+                          `📍 ${[item.area, item.city].filter(Boolean).join(", ")}\n` +
+                          `${item.desc[lang] || ""}\n\n` +
+                          `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?window.location.href:""}`
+                        } />
+                        {item.status !== "reunited" && (
+                          <button className="btn btn-sm btn-outline" onClick={e => {
+                            e.stopPropagation();
+                            if (item.contact_pref === "phone" && item.contact_phone) {
+                              window.location.href = `tel:${item.contact_phone}`;
+                            } else if (item.contact_email) {
+                              window.location.href = `mailto:${item.contact_email}`;
+                            } else if (item.contact) {
+                              const c = item.contact;
+                              window.location.href = c.includes("@") ? `mailto:${c}` : `tel:${c}`;
+                            }
+                          }}>{t.contact}</button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -1870,6 +1904,16 @@ export default function App() {
                           )}
                         </div>
                       )}
+
+                      {/* WhatsApp share — available on every report */}
+                      <div style={{ marginTop:10, display:"flex", justifyContent:"flex-end" }}>
+                        <WhatsAppShareButton lang={lang} t={t} text={
+                          `🚨 ${lang==="tr"?"Yardıma ihtiyacı olan hayvan":"Animal in need of help"}: ${r.title[lang]||r.title}\n` +
+                          `📍 ${r.location}\n` +
+                          `${r.desc[lang]||r.desc||""}\n\n` +
+                          `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?window.location.href:""}`
+                        } />
+                      </div>
                     </div>
                   );
                 })}
@@ -1948,6 +1992,32 @@ export default function App() {
                   photo_urls: photos,
                 }]);
                 if (error) { say(lang==="tr"?"Hata oluştu, tekrar dene":"Error occurred, please try again"); return; }
+
+                // Also publish this animal as a "found" listing in Lost & Found,
+                // so a posted animal automatically appears under the Found tab too.
+                const speciesFromEmoji = { "🐕":"Dog", "🐈":"Cat", "🐦":"Bird", "🐄":"Cattle", "🐎":"Horse" }[rf.animal] || "Other";
+                const lfArea = [rf.rAddress, rf.rCity].filter(Boolean).join(", ");
+                const lfDesc = [rf.title, rf.desc].filter(Boolean).join(" — ");
+                await db.from("lf_listings").insert([{
+                  type: "found",
+                  name: null,
+                  species: speciesFromEmoji,
+                  breed: null,
+                  color: null,
+                  area: lfArea,
+                  city: rf.rProvince,
+                  contact: contact.contactPref === "phone" ? contact.phone : contact.email,
+                  contact_email: contact.email,
+                  contact_phone: contact.phone || null,
+                  contact_pref: contact.contactPref || "email",
+                  reward: null,
+                  desc_en: lfDesc,
+                  desc_tr: lfDesc,
+                  status: "open",
+                  photo_url: photos[0] || null,
+                  photo_urls: photos,
+                }]);
+
                 setRf({ title:"", location:"", desc:"", type:"Injured", animal:"", rCountry:"Türkiye", rProvince:"İstanbul", rCity:"", rAddress:"" });
                 setPhotos([]); setShowReportForm(false);
                 say(lang==="tr"?"İhbar gönderildi — kurtarma ekibi bildirildi":"Report submitted — responders notified");
@@ -2345,7 +2415,15 @@ function ACard({ a, mode, lang, onClick }) {
         <div className="tags">{a.tags[lang].slice(0,2).map(tg => <span key={tg} className="tag">{tg}</span>)}</div>
         <div className="acard-foot">
           <span className="acard-loc">📍 {a.city}, {a.province}</span>
-          <span style={{ fontSize:11, fontWeight:600, color:"var(--muted)" }}>{lang==="tr"?"Gör →":"View →"}</span>
+          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            <WhatsAppShareButton lang={lang} text={
+              `🐾 ${a.name} — ${a.breed[lang]} · ${a.age[lang]} · ${a.gender[lang]}\n` +
+              `📍 ${a.city}, ${a.province}\n` +
+              `${a.desc?.[lang] || ""}\n\n` +
+              `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?window.location.href:""}`
+            } />
+            <span style={{ fontSize:11, fontWeight:600, color:"var(--muted)" }}>{lang==="tr"?"Gör →":"View →"}</span>
+          </div>
         </div>
       </div>
     </div>
