@@ -1005,8 +1005,55 @@ const CSS = `
 // ─────────────────────────────────────────────────────────────────────────────
 export default function App() {
   // ── language ──
-  const [lang, setLang] = useState("en");
+  // Başlangıç dili: kullanıcı daha önce elle seçtiyse onu koru,
+  // yoksa geçici olarak tarayıcı saat dilimine göre tahmin et (Türkiye → tr).
+  const [lang, setLang] = useState(() => {
+    try {
+      const saved = localStorage.getItem("paweero_lang");
+      if (saved === "tr" || saved === "en") return saved;
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+      if (tz === "Europe/Istanbul" || tz === "Asia/Istanbul") return "tr";
+    } catch (e) {}
+    return "en";
+  });
   const t = T[lang];  // translation shortcut
+
+  // Dili elle değiştirmek için sarmalayıcı: seçim localStorage'a kaydedilir
+  // böylece otomatik konum tespiti bunu ezmez.
+  const changeLang = (l) => {
+    try { localStorage.setItem("paweero_lang", l); } catch (e) {}
+    setLang(l);
+  };
+
+  // ── Konuma göre otomatik dil seçimi ──
+  // Türkiye'de sayfayı otomatik TR, diğer her yerde EN olarak aç.
+  // Kullanıcı daha önce elle bir dil seçtiyse (localStorage) buna dokunma.
+  useEffect(() => {
+    let cancelled = false;
+    try {
+      const saved = localStorage.getItem("paweero_lang");
+      if (saved === "tr" || saved === "en") return; // elle seçim önceliklidir
+    } catch (e) {}
+
+    (async () => {
+      try {
+        const res = await fetch("https://ipapi.co/json/");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled) return;
+        // country_code: ISO ülke kodu (Türkiye = TR)
+        if (data && data.country_code === "TR") {
+          setLang("tr");
+        } else if (data && data.country_code) {
+          setLang("en");
+        }
+      } catch (e) {
+        // IP tespiti başarısız olursa saat dilimi tahmini geçerli kalır
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, []);
 
   // ── navigation ──
   const [tab, setTab]         = useState("home");
@@ -1414,8 +1461,8 @@ export default function App() {
           ))}
         </nav>
         <div className="lang-sel">
-          <button className={`lang-btn ${lang==="en"?"on":""}`} onClick={()=>setLang("en")}>EN</button>
-          <button className={`lang-btn ${lang==="tr"?"on":""}`} onClick={()=>setLang("tr")}>TR</button>
+          <button className={`lang-btn ${lang==="en"?"on":""}`} onClick={()=>changeLang("en")}>EN</button>
+          <button className={`lang-btn ${lang==="tr"?"on":""}`} onClick={()=>changeLang("tr")}>TR</button>
         </div>
       </header>
 
