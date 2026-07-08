@@ -1250,6 +1250,46 @@ export default function App() {
     loadFromDB();
   }, []);
 
+  // ── URL parametrelerine göre direkt post aç ──
+  // WhatsApp'tan paylaşılan linkler ?animal=X, ?lf=Y veya ?report=Z içerir.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    
+    // Hayvan ilanı için ?animal=ID
+    const animalId = params.get("animal");
+    if (animalId) {
+      const found = animals.find(a => String(a.id) === animalId);
+      if (found) {
+        setDetailA(found);
+        goTab("animals");
+        return;
+      }
+    }
+
+    // Lost & Found ilanı için ?lf=ID
+    const lfId = params.get("lf");
+    if (lfId) {
+      const found = lfItems.find(item => String(item.id) === lfId);
+      if (found) {
+        setDetailLF(found);
+        goTab("lostfound");
+        return;
+      }
+    }
+
+    // Yardım raporu için ?report=ID
+    const reportId = params.get("report");
+    if (reportId) {
+      const found = reports.find(r => String(r.id) === reportId);
+      if (found) {
+        setDetailReport(found);
+        goTab("help");
+        return;
+      }
+    }
+  }, [animals, lfItems, reports]); // Veriler yüklendikten sonra kontrol et
+
   // If the browser already has location permission granted (from a previous visit),
   // silently pre-select the nearest province/country without prompting again.
   useEffect(() => {
@@ -1656,7 +1696,7 @@ export default function App() {
                             : (lang==="tr"?"🐾 Kayıp hayvan":"🐾 Lost animal")}: ${item.name === "Unknown" ? item.species[lang] : item.name}\n` +
                           `📍 ${[item.area, item.city].filter(Boolean).join(", ")}\n` +
                           `${item.desc[lang] || ""}\n\n` +
-                          `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?window.location.href:""}`
+                          `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?`${window.location.origin}${window.location.pathname}?lf=${item.id}`:""}`
                         } />
                         {item.status !== "reunited" && (
                           <button className="btn btn-sm btn-outline" onClick={e => {
@@ -1958,7 +1998,7 @@ export default function App() {
                           `🚨 ${lang==="tr"?"Yardıma ihtiyacı olan hayvan":"Animal in need of help"}: ${r.title[lang]||r.title}\n` +
                           `📍 ${r.location}\n` +
                           `${r.desc[lang]||r.desc||""}\n\n` +
-                          `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?window.location.href:""}`
+                          `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?`${window.location.origin}${window.location.pathname}?report=${r.id}`:""}`
                         } />
                       </div>
                     </div>
@@ -2467,7 +2507,7 @@ function ACard({ a, mode, lang, onClick }) {
               `🐾 ${a.name} — ${a.breed[lang]} · ${a.age[lang]} · ${a.gender[lang]}\n` +
               `📍 ${a.city}, ${a.province}\n` +
               `${a.desc?.[lang] || ""}\n\n` +
-              `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?window.location.href:""}`
+              `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?`${window.location.origin}${window.location.pathname}?animal=${a.id}`:""}`
             } />
             <span style={{ fontSize:11, fontWeight:600, color:"var(--muted)" }}>{lang==="tr"?"Gör →":"View →"}</span>
           </div>
