@@ -43,33 +43,6 @@ const uploadPhoto = async (file, folder) => {
   return { url: publicUrl, error: null };
 };
 
-
-// ─── DYNAMIC DRAWER HEIGHT UTILITY ────────────────────────────────────────
-// Calculates drawer height based on image aspect ratio
-// Portrait images (ratio < 0.8) → 85vh; Landscape/Square → 70vh
-const getDrawerHeightByImageAspectRatio = (imageUrl) => {
-  return new Promise((resolve) => {
-    if (!imageUrl) {
-      console.log("No image URL provided, using default drawer height 70vh");
-      resolve(70); // 70vh as fallback
-      return;
-    }
-    const img = new Image();
-    img.onload = () => {
-      const aspectRatio = img.width / img.height;
-      const height = aspectRatio < 0.8 ? 85 : 70;
-      console.log(`Image loaded: ${img.width}x${img.height}, aspect ratio: ${aspectRatio.toFixed(2)}, drawer height: ${height}vh`);
-      resolve(height);
-    };
-    img.onerror = () => {
-      console.warn("Failed to load image for aspect ratio calculation, using default 70vh");
-      resolve(70); // fallback
-    };
-    img.src = imageUrl;
-  });
-};
-
-
 // ─── PHOTO ERROR MESSAGE HELPER ─────────────────────────────────────────────
 const photoErrorMsg = (errorCode, lang) => {
   if (errorCode === "not_animal") {
@@ -2596,9 +2569,6 @@ function AppSheet({ animal, mode, lang, t, onClose }) {
 
 // ─── ADOPT APPLICATION — full multi-step screening form ─────────────────────
 function AdoptAppSheet({ animal, mode, lang, t, onClose }) {
-  // ENHANCEMENT: Step 2 validation with error field focus and scrolling
-  const [focusFirstError, setFocusFirstError] = useState(false);
-  
   const [step, setStep]     = useState(1);
   const [app, setApp]       = useState(EMPTY_APP);
   const [errors, setErr]    = useState({});
@@ -2648,17 +2618,7 @@ function AdoptAppSheet({ animal, mode, lang, t, onClose }) {
 
     // ── E-posta gönder (notify-owner Edge Function) ──
     try {
-    // DEBUG LOG: About to send email notification
-    const emailPayload = {
-      animal_id: selectedAnimal.id,
-      animal_name: selectedAnimal.name,
-      applicant_email: formData.email,
-      applicant_name: formData.firstName + " " + formData.lastName,
-      application_ref: ref
-    };
-    console.log("Email payload being sent:", emailPayload);
-    
-          await db.functions.invoke("notify-owner", {
+      await db.functions.invoke("notify-owner", {
         body: {
           ownerEmail:       animal.submitter_email,
           lang:             lang,
@@ -2689,13 +2649,7 @@ function AdoptAppSheet({ animal, mode, lang, t, onClose }) {
           longTermPlan:     app.longTermPlan,
         },
       });
-    
-    if (emailError) {
-      console.error("ERROR sending email notification:", emailError);
-      console.log("Failed payload was:", emailPayload);
-    } else {
-      console.log("Email notification sent successfully");
-    }} catch(err) { console.error("E-posta gönderilemedi:", err); }
+    } catch(err) { console.error("E-posta gönderilemedi:", err); }
 
     setSub(true);
   };
