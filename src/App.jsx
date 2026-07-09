@@ -43,6 +43,33 @@ const uploadPhoto = async (file, folder) => {
   return { url: publicUrl, error: null };
 };
 
+
+// ─── DYNAMIC DRAWER HEIGHT UTILITY ────────────────────────────────────────
+// Calculates drawer height based on image aspect ratio
+// Portrait images (ratio < 0.8) → 85vh; Landscape/Square → 70vh
+const getDrawerHeightByImageAspectRatio = (imageUrl) => {
+  return new Promise((resolve) => {
+    if (!imageUrl) {
+      console.log("No image URL provided, using default drawer height 70vh");
+      resolve(70); // 70vh as fallback
+      return;
+    }
+    const img = new Image();
+    img.onload = () => {
+      const aspectRatio = img.width / img.height;
+      const height = aspectRatio < 0.8 ? 85 : 70;
+      console.log(`Image loaded: ${img.width}x${img.height}, aspect ratio: ${aspectRatio.toFixed(2)}, drawer height: ${height}vh`);
+      resolve(height);
+    };
+    img.onerror = () => {
+      console.warn("Failed to load image for aspect ratio calculation, using default 70vh");
+      resolve(70); // fallback
+    };
+    img.src = imageUrl;
+  });
+};
+
+
 // ─── PHOTO ERROR MESSAGE HELPER ─────────────────────────────────────────────
 const photoErrorMsg = (errorCode, lang) => {
   if (errorCode === "not_animal") {
@@ -918,7 +945,12 @@ const CSS = `
   .photo-drop { border:1.5px dashed var(--border); border-radius:var(--r); padding:22px; text-align:center; cursor:pointer; background:var(--off); }
   .photo-drop:active { border-color:var(--dark); }
   .photo-prev { height:80px; border-radius:8px; border:1px solid var(--border); background:var(--off); display:flex; align-items:center; justify-content:center; font-size:40px; margin-bottom:10px; }
-  .err       { font-size:11px; color:var(--red); margin-top:3px; font-weight:600; }
+  .err       { font-size:13px; color:var(--red); margin-top:5px; font-weight:800; display:flex; align-items:center; gap:5px; letter-spacing:0.1px; animation:errShake 0.32s ease; }
+  .err::before { content:"⚠"; font-size:13px; line-height:1; }
+  @keyframes errShake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-4px)} 40%,80%{transform:translateX(4px)} }
+  .fg .err ~ * , .fg.has-err .fi { }
+  .fi.fi-err, .fta.fi-err { border-color:var(--red) !important; box-shadow:0 0 0 3px rgba(220,53,69,0.14); }
+  .opt-group.opt-err { outline:2px solid rgba(220,53,69,0.35); outline-offset:3px; border-radius:12px; }
   .info-pill { display:inline-flex; align-items:center; gap:5px; background:rgba(45,122,79,0.08); color:var(--green); font-size:12px; font-weight:600; padding:4px 10px; border-radius:999px; margin-bottom:14px; }
   .divider   { height:1px; background:var(--border); margin:20px 0; }
   .toggle-btn { padding:6px 12px; border-radius:999px; border:1px solid var(--border); font-size:12px; font-weight:500; cursor:pointer; background:var(--off); color:var(--body); transition:all 0.12s; font-family:var(--font); }
@@ -926,7 +958,7 @@ const CSS = `
 
   /* ─ SHEET MODAL ─ */
   .sheet-overlay { position:fixed; inset:0; z-index:200; background:rgba(0,0,0,0.3); display:flex; align-items:flex-end; }
-  @media (min-width:640px) { .sheet-overlay { align-items:center; justify-content:center; } }
+  @media (min-width:640px) { .sheet-overlay { align-items:center; justify-content:center; padding:24px; } }
   .sheet { background:var(--white); border-radius:16px 16px 0 0; width:100%; max-height:92vh; display:flex; flex-direction:column; overflow:hidden; animation:slideUp 0.25s cubic-bezier(0.32,0.72,0,1); }
   @media (min-width:640px) { .sheet { border-radius:14px; max-width:580px; max-height:88vh; animation:fadeScale 0.18s ease; } }
   @keyframes loadbar { 0%{transform:scaleX(0);transform-origin:left} 50%{transform:scaleX(1);transform-origin:left} 51%{transform:scaleX(1);transform-origin:right} 100%{transform:scaleX(0);transform-origin:right} }
@@ -1076,6 +1108,30 @@ export default function App() {
   const [detailSitter, setDetailS]  = useState(null);
   const [detailLF, setDetailLF]     = useState(null);
   const [detailReport, setDetailReport] = useState(null);
+
+  // ── Dinamik drawer yüksekliği (görsel en/boy oranına göre) ──
+  // Dikey (portrait) görseller → 85vh, yatay/kare → 70vh
+  const [detailAHeight, setDetailAHeight]   = useState(70);
+  const [detailLFHeight, setDetailLFHeight] = useState(70);
+  const [detailReportHeight, setDetailReportHeight] = useState(70);
+
+  useEffect(() => {
+    if (!detailAnimal) { setDetailAHeight(70); return; }
+    const url = detailAnimal.photo_url || (detailAnimal.photo_urls && detailAnimal.photo_urls[0]) || null;
+    getDrawerHeightByImageAspectRatio(url).then(setDetailAHeight);
+  }, [detailAnimal]);
+
+  useEffect(() => {
+    if (!detailLF) { setDetailLFHeight(70); return; }
+    const url = detailLF.photo_url || (detailLF.photo_urls && detailLF.photo_urls[0]) || null;
+    getDrawerHeightByImageAspectRatio(url).then(setDetailLFHeight);
+  }, [detailLF]);
+
+  useEffect(() => {
+    if (!detailReport) { setDetailReportHeight(70); return; }
+    const url = detailReport.photo_url || (detailReport.photo_urls && detailReport.photo_urls[0]) || null;
+    getDrawerHeightByImageAspectRatio(url).then(setDetailReportHeight);
+  }, [detailReport]);
   const [applyFor, setApplyFor]     = useState(null);
   const [fosterFor, setFosterFor]   = useState(null);
 
@@ -1927,15 +1983,15 @@ export default function App() {
                         </div>
                         <div style={{ flex:1, minWidth:0 }}>
                           <div style={{ display:"flex", justifyContent:"space-between", gap:6, flexWrap:"wrap", marginBottom:3 }}>
-                            <div className="r-title">{r.title[lang]||r.title}</div>
+                            <div className="r-title">{typeof r.title === "object" ? (r.title[lang] || r.title.en || "") : (r.title || "")}</div>
                             <span className={`spill ${r.status === "active" ? "sp-a" : r.status === "helped" ? "sp-h" : r.status === "resolved" ? "sp-r" : "sp-p"}`}>
                               {r.status}
                             </span>
                           </div>
-                          <div className="r-desc">{r.desc[lang]||r.desc}</div>
+                          <div className="r-desc">{typeof r.desc === "object" ? (r.desc[lang] || r.desc.en || "") : (r.desc || "")}</div>
                           <div className="r-meta">
                             <span className="r-mi">📍 {r.location}</span>
-                            <span className="r-mi">{r.time[lang]||r.time}</span>
+                            <span className="r-mi">{typeof r.time === "object" ? (r.time[lang] || r.time.en || "") : (r.time || "")}</span>
                             <span className="r-mi">{t.reportedBy} {r.reporter}</span>
                           </div>
                         </div>
@@ -1995,9 +2051,9 @@ export default function App() {
                       {/* WhatsApp share — available on every report */}
                       <div style={{ marginTop:10, display:"flex", justifyContent:"flex-end" }}>
                         <WhatsAppShareButton lang={lang} t={t} text={
-                          `🚨 ${lang==="tr"?"Yardıma ihtiyacı olan hayvan":"Animal in need of help"}: ${r.title[lang]||r.title}\n` +
+                          `🚨 ${lang==="tr"?"Yardıma ihtiyacı olan hayvan":"Animal in need of help"}: ${typeof r.title === "object" ? (r.title[lang] || r.title.en || "") : (r.title || "")}\n` +
                           `📍 ${r.location}\n` +
-                          `${r.desc[lang]||r.desc||""}\n\n` +
+                          `${typeof r.desc === "object" ? (r.desc[lang] || r.desc.en || "") : (r.desc || "")}\n\n` +
                           `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?`${window.location.origin}${window.location.pathname}?report=${r.id}`:""}`
                         } />
                       </div>
@@ -2226,11 +2282,11 @@ export default function App() {
       {/* ANIMAL DETAIL SHEET */}
       {detailAnimal && (
         <div className="sheet-overlay" onClick={() => setDetailA(null)}>
-          <div className="sheet" onClick={e => e.stopPropagation()}>
+          <div className="sheet" style={{ maxHeight:`${detailAHeight}vh` }} onClick={e => e.stopPropagation()}>
             <div className="sh-handle" />
             <div className="sh-hd"><div className="sh-title">{t.animalProfile}</div><button className="sh-close" onClick={() => setDetailA(null)}>✕</button></div>
             <div className="sh-body">
-              <ImageCarousel photos={detailAnimal.photo_urls} emoji={detailAnimal.emoji} height={220} />
+              <ImageCarousel photos={detailAnimal.photo_urls} emoji={detailAnimal.emoji} height={detailAHeight >= 85 ? 360 : 220} fit={detailAHeight >= 85 ? "contain" : "cover"} />
               <div className="d-name">{detailAnimal.name}</div>
               <div className="d-sub">{detailAnimal.breed[lang]} · {detailAnimal.species[lang]}</div>
               <div className="d-pills">
@@ -2258,14 +2314,14 @@ export default function App() {
       {/* LOST & FOUND DETAIL SHEET */}
       {detailLF && (
         <div className="sheet-overlay" onClick={() => setDetailLF(null)}>
-          <div className="sheet" onClick={e => e.stopPropagation()}>
+          <div className="sheet" style={{ maxHeight:`${detailLFHeight}vh` }} onClick={e => e.stopPropagation()}>
             <div className="sh-handle" />
             <div className="sh-hd">
               <div className="sh-title">{detailLF.type === "lost" ? t.lostPetSheet : t.foundAnimalSheet}</div>
               <button className="sh-close" onClick={() => setDetailLF(null)}>✕</button>
             </div>
             <div className="sh-body">
-              <ImageCarousel photos={detailLF.photo_urls} emoji={detailLF.emoji} height={220} />
+              <ImageCarousel photos={detailLF.photo_urls} emoji={detailLF.emoji} height={detailLFHeight >= 85 ? 360 : 220} fit={detailLFHeight >= 85 ? "contain" : "cover"} />
               <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
                 <div className="d-name">{detailLF.name === "Unknown" ? (lang==="tr"?`Bulunan ${detailLF.species.tr}`:`Found ${detailLF.species.en}`) : detailLF.name}</div>
                 <span className={`lf-type ${detailLF.status === "reunited" ? "lf-reunited" : detailLF.type === "lost" ? "lf-lost" : "lf-found"}`} style={{ position:"static" }}>
@@ -2301,14 +2357,14 @@ export default function App() {
       {/* REPORT DETAIL SHEET (gallery view) */}
       {detailReport && (
         <div className="sheet-overlay" onClick={() => setDetailReport(null)}>
-          <div className="sheet" onClick={e => e.stopPropagation()}>
+          <div className="sheet" style={{ maxHeight:`${detailReportHeight}vh` }} onClick={e => e.stopPropagation()}>
             <div className="sh-handle" />
             <div className="sh-hd">
               <div className="sh-title">{detailReport.title[lang] || detailReport.title}</div>
               <button className="sh-close" onClick={() => setDetailReport(null)}>✕</button>
             </div>
             <div className="sh-body">
-              <ImageCarousel photos={detailReport.photo_urls} emoji={detailReport.emoji} height={220} />
+              <ImageCarousel photos={detailReport.photo_urls} emoji={detailReport.emoji} height={detailReportHeight >= 85 ? 360 : 220} fit={detailReportHeight >= 85 ? "contain" : "cover"} />
               <div className="d-pills">
                 <span className="d-pill">📍 {detailReport.location}</span>
                 <span className="d-pill">🕐 {detailReport.time[lang] || detailReport.time}</span>
@@ -2419,11 +2475,44 @@ export default function App() {
                       eta: opt.label,
                       eta_order: opt.order,
                     }]);
-                    setEtaFor(null);
                     if (!error) {
+                      // ── Rapor sahibine gönüllü bildirimi gönder (notify-owner Edge Function) ──
+                      // Bir gönüllü yardıma geldiğinde ihbarı açan kişiye e-posta gider.
+                      try {
+                        const reporterEmail = (etaFor.reporter && /\S+@\S+\.\S+/.test(etaFor.reporter))
+                          ? etaFor.reporter
+                          : null;
+                        const notifyPayload = {
+                          ownerEmail:     reporterEmail,   // notify-owner bu alanı alıcı olarak kullanır
+                          reporterEmail:  reporterEmail,
+                          lang:           lang,
+                          mode:           "volunteer",
+                          animalName:     etaFor.title?.[lang] || etaFor.title || "",
+                          reportTitle:    etaFor.title?.[lang] || etaFor.title || "",
+                          reportLocation: etaFor.location || "",
+                          volunteerEmail: contact.email,
+                          volunteerPhone: contact.phone || "",
+                          eta:            lang==="tr" ? (opt.labelTR || opt.label) : opt.label,
+                        };
+                        console.log("[notify-owner][volunteer] Gönderilen bildirim yükü:", notifyPayload);
+                        if (reporterEmail) {
+                          const { data: vData, error: vErr } = await db.functions.invoke("notify-owner", { body: notifyPayload });
+                          if (vErr) {
+                            console.error("[notify-owner][volunteer] Bildirim HATASI:", vErr);
+                          } else {
+                            console.log("[notify-owner][volunteer] Bildirim başarıyla gönderildi:", vData);
+                          }
+                        } else {
+                          console.warn("[notify-owner][volunteer] Rapor sahibinin geçerli e-postası yok, bildirim atlandı.");
+                        }
+                      } catch (err) {
+                        console.error("[notify-owner][volunteer] Bildirim gönderilemedi (exception):", err);
+                      }
+                      setEtaFor(null);
                       say("✓ " + (lang==="tr" ? opt.labelTR : opt.label));
                       await loadFromDB();
                     } else {
+                      setEtaFor(null);
                       say(lang==="tr"?"Hata oluştu":"Error occurred");
                     }
                   })}>
@@ -2569,6 +2658,9 @@ function AppSheet({ animal, mode, lang, t, onClose }) {
 
 // ─── ADOPT APPLICATION — full multi-step screening form ─────────────────────
 function AdoptAppSheet({ animal, mode, lang, t, onClose }) {
+  // ENHANCEMENT: Step 2 validation with error field focus and scrolling
+  const [focusFirstError, setFocusFirstError] = useState(false);
+  
   const [step, setStep]     = useState(1);
   const [app, setApp]       = useState(EMPTY_APP);
   const [errors, setErr]    = useState({});
@@ -2590,8 +2682,24 @@ function AdoptAppSheet({ animal, mode, lang, t, onClose }) {
 
   const next = async () => {
     const e=validate(step);
-    if(Object.keys(e).length){setErr(e);return;}
+    if(Object.keys(e).length){
+      setErr(e);
+      setFocusFirstError(true);
+      // İlk hatalı alana otomatik kaydır ve odaklan
+      setTimeout(() => {
+        const sheetEl = document.querySelector(".sheet .sh-body");
+        const firstErr = sheetEl ? sheetEl.querySelector(".err") : document.querySelector(".sheet .err");
+        if (firstErr) {
+          firstErr.scrollIntoView({ behavior: "smooth", block: "center" });
+          const group = firstErr.closest(".fg");
+          const field = group && group.querySelector("input, textarea, select");
+          if (field) { try { field.focus({ preventScroll: true }); } catch { field.focus(); } }
+        }
+      }, 60);
+      return;
+    }
     setErr({});
+    setFocusFirstError(false);
     if(step<5){ setStep(s=>s+1); return; }
     // Son adım — Supabase'e kaydet
     try {
@@ -2618,38 +2726,51 @@ function AdoptAppSheet({ animal, mode, lang, t, onClose }) {
 
     // ── E-posta gönder (notify-owner Edge Function) ──
     try {
-      await db.functions.invoke("notify-owner", {
-        body: {
-          ownerEmail:       animal.submitter_email,
-          lang:             lang,
-          mode:             mode,
-          animalName:       animal.name || "",
-          refCode:          refCode,
-          applicantName:    `${app.firstName} ${app.lastName}`,
-          applicantEmail:   app.email,
-          applicantPhone:   app.phone,
-          age:              app.age,
-          occupation:       app.occupation,
-          homeType:         app.homeType,
-          ownRent:          app.ownRent,
-          hasYard:          app.hasYard,
-          hasChildren:      app.hasChildren,
-          childrenAges:     app.childrenAges,
-          householdSize:    app.householdSize,
-          hoursHome:        app.hoursHome,
-          activityLevel:    app.activityLevel,
-          travelFreq:       app.travelFreq,
-          petCare:          app.petCare,
-          allergies:        app.allergies,
-          hadPetsBefore:    app.hadPetsBefore,
-          currentPets:      app.currentPets,
-          currentPetDetails:app.currentPetDetails,
-          vetReference:     app.vetReference,
-          whyAdopt:         app.whyAdopt,
-          longTermPlan:     app.longTermPlan,
-        },
+      // DEBUG LOG: gönderilecek e-posta yükünü konsola yaz
+      const emailPayload = {
+        ownerEmail:       animal.submitter_email,
+        lang:             lang,
+        mode:             mode,
+        animalName:       animal.name || "",
+        refCode:          refCode,
+        applicantName:    `${app.firstName} ${app.lastName}`,
+        applicantEmail:   app.email,
+        applicantPhone:   app.phone,
+        age:              app.age,
+        occupation:       app.occupation,
+        homeType:         app.homeType,
+        ownRent:          app.ownRent,
+        hasYard:          app.hasYard,
+        hasChildren:      app.hasChildren,
+        childrenAges:     app.childrenAges,
+        householdSize:    app.householdSize,
+        hoursHome:        app.hoursHome,
+        activityLevel:    app.activityLevel,
+        travelFreq:       app.travelFreq,
+        petCare:          app.petCare,
+        allergies:        app.allergies,
+        hadPetsBefore:    app.hadPetsBefore,
+        currentPets:      app.currentPets,
+        currentPetDetails:app.currentPetDetails,
+        vetReference:     app.vetReference,
+        whyAdopt:         app.whyAdopt,
+        longTermPlan:     app.longTermPlan,
+      };
+      console.log("[notify-owner] Gönderilen e-posta yükü:", emailPayload);
+
+      const { data: emailData, error: emailError } = await db.functions.invoke("notify-owner", {
+        body: emailPayload,
       });
-    } catch(err) { console.error("E-posta gönderilemedi:", err); }
+
+      if (emailError) {
+        console.error("[notify-owner] E-posta gönderim HATASI:", emailError);
+        console.log("[notify-owner] Başarısız olan yük:", emailPayload);
+      } else {
+        console.log("[notify-owner] E-posta bildirimi başarıyla gönderildi:", emailData);
+      }
+    } catch(err) {
+      console.error("[notify-owner] E-posta gönderilemedi (exception):", err);
+    }
 
     setSub(true);
   };
@@ -2699,12 +2820,12 @@ function AdoptAppSheet({ animal, mode, lang, t, onClose }) {
               <div className="frow"><div className="fg"><label className="flabel">{t.ageField2}</label><input className="fi" placeholder="28" value={app.age} onChange={e=>set("age",e.target.value)}/>{E("age")}</div><div className="fg"><label className="flabel">{t.occupationField}</label><input className="fi" placeholder={lang==="tr"?"Öğretmen":"Teacher"} value={app.occupation} onChange={e=>set("occupation",e.target.value)}/>{E("occupation")}</div></div>
             </>}
             {step===2&&<><div style={{fontSize:15,fontWeight:600,marginBottom:3}}>{t.homeTitle}</div><div style={{fontSize:12,color:"var(--muted)",marginBottom:16}}>{t.homeSub}</div>
-              <div className="fg"><label className="flabel">{t.homeType}</label><div className="opt-group"><Opt name="homeType" value="apartment" label={t.apartment} hint={t.apartmentHint}/><Opt name="homeType" value="house" label={t.house} hint={t.houseHint}/><Opt name="homeType" value="farmhouse" label={t.farmhouse} hint={t.farmhouseHint}/><Opt name="homeType" value="other" label={t.other}/></div>{E("homeType")}</div>
-              <div className="fg"><label className="flabel">{t.ownRentQ}</label><div className="opt-group"><Opt name="ownRent" value="own" label={t.own}/><Opt name="ownRent" value="rent" label={t.rent} hint={t.rentHint}/></div>{E("ownRent")}</div>
-              <div className="fg"><label className="flabel">{t.outdoorQ}</label><div className="opt-group"><Opt name="hasYard" value="yes_fenced" label={t.fenced}/><Opt name="hasYard" value="yes_unfenced" label={t.unfenced}/><Opt name="hasYard" value="no" label={t.noOutdoor}/></div>{E("hasYard")}</div>
-              <div className="fg"><label className="flabel">{t.childrenQ}</label><div className="opt-group"><Opt name="hasChildren" value="no" label={t.noChildren}/><Opt name="hasChildren" value="yes" label={t.yesLive}/><Opt name="hasChildren" value="visit" label={t.yesVisit}/></div>{E("hasChildren")}</div>
-              {(app.hasChildren==="yes"||app.hasChildren==="visit")&&<div className="fg"><label className="flabel">{t.childAges}</label><input className="fi" placeholder={lang==="tr"?"örn. 4, 7, 12":"e.g. 4, 7, 12"} value={app.childrenAges} onChange={e=>set("childrenAges",e.target.value)}/></div>}
-              <div className="fg"><label className="flabel">{t.householdSize}</label><input className="fi" placeholder="3" value={app.householdSize} onChange={e=>set("householdSize",e.target.value)}/>{E("householdSize")}</div>
+              <div className={`fg ${errors.homeType?"has-err":""}`}><label className="flabel">{t.homeType}</label><div className={`opt-group ${errors.homeType?"opt-err":""}`}><Opt name="homeType" value="apartment" label={t.apartment} hint={t.apartmentHint}/><Opt name="homeType" value="house" label={t.house} hint={t.houseHint}/><Opt name="homeType" value="farmhouse" label={t.farmhouse} hint={t.farmhouseHint}/><Opt name="homeType" value="other" label={t.other}/></div>{E("homeType")}</div>
+              <div className={`fg ${errors.ownRent?"has-err":""}`}><label className="flabel">{t.ownRentQ}</label><div className={`opt-group ${errors.ownRent?"opt-err":""}`}><Opt name="ownRent" value="own" label={t.own}/><Opt name="ownRent" value="rent" label={t.rent} hint={t.rentHint}/></div>{E("ownRent")}</div>
+              <div className={`fg ${errors.hasYard?"has-err":""}`}><label className="flabel">{t.outdoorQ}</label><div className={`opt-group ${errors.hasYard?"opt-err":""}`}><Opt name="hasYard" value="yes_fenced" label={t.fenced}/><Opt name="hasYard" value="yes_unfenced" label={t.unfenced}/><Opt name="hasYard" value="no" label={t.noOutdoor}/></div>{E("hasYard")}</div>
+              <div className={`fg ${errors.hasChildren?"has-err":""}`}><label className="flabel">{t.childrenQ}</label><div className={`opt-group ${errors.hasChildren?"opt-err":""}`}><Opt name="hasChildren" value="no" label={t.noChildren}/><Opt name="hasChildren" value="yes" label={t.yesLive}/><Opt name="hasChildren" value="visit" label={t.yesVisit}/></div>{E("hasChildren")}</div>
+              {(app.hasChildren==="yes"||app.hasChildren==="visit")&&<div className="fg"><label className="flabel">{t.childAges}</label><input name="childrenAges" className="fi" placeholder={lang==="tr"?"örn. 4, 7, 12":"e.g. 4, 7, 12"} value={app.childrenAges} onChange={e=>set("childrenAges",e.target.value)}/></div>}
+              <div className="fg"><label className="flabel">{t.householdSize}</label><input name="householdSize" className={`fi ${errors.householdSize?"fi-err":""}`} placeholder="3" value={app.householdSize} onChange={e=>set("householdSize",e.target.value)}/>{E("householdSize")}</div>
             </>}
             {step===3&&<><div style={{fontSize:15,fontWeight:600,marginBottom:3}}>{t.lifestyleTitle}</div><div style={{fontSize:12,color:"var(--muted)",marginBottom:16}}>{t.lifestyleSub}</div>
               <div className="fg"><label className="flabel">{t.hoursQ}</label><div className="opt-group"><Opt name="hoursHome" value="0-4" label={t.h04} hint={t.h04hint}/><Opt name="hoursHome" value="4-8" label={t.h48} hint={t.h48hint}/><Opt name="hoursHome" value="8-12" label={t.h812} hint={t.h812hint}/><Opt name="hoursHome" value="12+" label={t.h12} hint={t.h12hint}/></div>{E("hoursHome")}</div>
@@ -3057,7 +3178,7 @@ function RehomeForm({ lang, t, onSubmit, requireContact }) {
 }
 
 // ─── IMAGE CAROUSEL (swipeable gallery with dot pagination) ────────────────
-function ImageCarousel({ photos, emoji, height = 220 }) {
+function ImageCarousel({ photos, emoji, height = 220, fit = "cover" }) {
   const [idx, setIdx] = useState(0);
   const [lightbox, setLightbox] = useState(false);
   const touchStartX = useRef(null);
@@ -3093,7 +3214,7 @@ function ImageCarousel({ photos, emoji, height = 220 }) {
         <img
           src={list[idx]}
           onClick={() => setLightbox(true)}
-          style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }}
+          style={{ width:"100%", height:"100%", objectFit:fit, display:"block" }}
         />
 
         {list.length > 1 && (
