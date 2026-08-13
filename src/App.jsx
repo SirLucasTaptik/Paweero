@@ -303,7 +303,7 @@ const T = {
     postChooserTitle:"What would you like to do?",
     postChooserSub:"Choose the option that matches your situation — this makes sure your post reaches the right people.",
     postAdoptFosterTitle:"List an Animal",
-    postAdoptFosterDesc:"Post an animal that's looking for adoption or a foster home.",
+    postAdoptFosterDesc:"Post an animal — it can be up for adoption, foster, and/or help, all at once.",
     postLostTitle:"I Lost My Pet",
     postLostDesc:"Create a lost pet report to help find them.",
     postFoundTitle:"I Found an Animal",
@@ -315,6 +315,27 @@ const T = {
     helpFormWrongPlace:"Not an emergency?",
     helpFormRedirectAdopt:"Post for adoption/foster instead →",
     helpFormRedirectLF:"Report a lost or found pet instead →",
+    // Take Action sheet — multi-select purposes on a single listing
+    takeAction:"Take Action",
+    takeActionSub_pre:"How would you like to help",
+    takeActionSelectPurpose:"Select at least one — you can choose more than one.",
+    purposeAdopt:"🏠 Adopt", purposeAdoptDesc:"I want to give this animal a permanent home.",
+    purposeFoster:"🛏️ Foster", purposeFosterDesc:"I can provide temporary care.",
+    purposeHelp:"🆘 Offer Help", purposeHelpDesc:"I can support in another way (funds, transport, supplies…).",
+    selectAtLeastOnePurpose:"Please select at least one option.",
+    taContactTitle:"Your Contact Details",
+    taAdoptSection:"Adoption Details",
+    taFosterSection:"Foster Details",
+    taHelpSection:"Help Details",
+    helpTypeQ:"How can you help? *",
+    helpTypeFinancial:"Financial support", helpTypeTransport:"Transport", helpTypeShelter:"Temporary shelter",
+    helpTypeMedical:"Medical assistance", helpTypeSupplies:"Food / supplies", helpTypeOther:"Other",
+    helpAvailability:"When can you help? (optional)", helpAvailabilityPh:"e.g. Today, this weekend…",
+    helpMessage:"Message (optional)", helpMessagePh:"Anything the poster should know…",
+    taSubmit:"Send", taSubmitting:"Sending...",
+    taSuccessTitle:"Sent!",
+    taSuccessDesc:"Your response has been sent to the poster. They'll reach out to you directly.",
+    taSuccessFor:"You registered interest for:",
     // hero
     heroH1:"Every animal deserves", heroH1Em:"a loving home.",
     heroP:"Adopt, foster, find a pet sitter, post a lost & found, or report animals in distress.",
@@ -499,7 +520,7 @@ const T = {
     postChooserTitle:"Ne yapmak istiyorsun?",
     postChooserSub:"Durumuna uygun seçeneği seç — bu sayede ilanın doğru kişilere ulaşır.",
     postAdoptFosterTitle:"Hayvan İlanı Ver",
-    postAdoptFosterDesc:"Sahiplenme veya geçici bakım arayan bir hayvan için ilan ver.",
+    postAdoptFosterDesc:"Bir hayvan için ilan ver — aynı anda sahiplenme, geçici bakım ve/veya yardım için uygun olabilir.",
     postLostTitle:"Hayvanımı Kaybettim",
     postLostDesc:"Hayvanını bulmana yardımcı olacak bir kayıp ilanı oluştur.",
     postFoundTitle:"Bir Hayvan Buldum",
@@ -511,6 +532,27 @@ const T = {
     helpFormWrongPlace:"Acil bir durum değil mi?",
     helpFormRedirectAdopt:"Bunun yerine sahiplenme/geçici bakım ilanı ver →",
     helpFormRedirectLF:"Bunun yerine kayıp/bulunan ilanı ver →",
+    // Aksiyon Al ekranı — tek ilanda çoklu amaç seçimi
+    takeAction:"Aksiyon Al",
+    takeActionSub_pre:"Nasıl yardımcı olmak istersin:",
+    takeActionSelectPurpose:"En az birini seç — birden fazlasını seçebilirsin.",
+    purposeAdopt:"🏠 Sahiplen", purposeAdoptDesc:"Bu hayvana kalıcı bir yuva vermek istiyorum.",
+    purposeFoster:"🛏️ Geçici Bakım", purposeFosterDesc:"Geçici bakım verebilirim.",
+    purposeHelp:"🆘 Yardım Teklif Et", purposeHelpDesc:"Başka bir şekilde destek olabilirim (bağış, ulaşım, malzeme…).",
+    selectAtLeastOnePurpose:"Lütfen en az bir seçenek işaretle.",
+    taContactTitle:"İletişim Bilgilerin",
+    taAdoptSection:"Sahiplenme Detayları",
+    taFosterSection:"Geçici Bakım Detayları",
+    taHelpSection:"Yardım Detayları",
+    helpTypeQ:"Nasıl yardımcı olabilirsin? *",
+    helpTypeFinancial:"Maddi destek", helpTypeTransport:"Ulaşım", helpTypeShelter:"Geçici barınak",
+    helpTypeMedical:"Tıbbi yardım", helpTypeSupplies:"Mama / malzeme", helpTypeOther:"Diğer",
+    helpAvailability:"Ne zaman yardım edebilirsin? (opsiyonel)", helpAvailabilityPh:"örn. Bugün, bu hafta sonu…",
+    helpMessage:"Mesaj (opsiyonel)", helpMessagePh:"İlan sahibinin bilmesi gereken bir şey var mı…",
+    taSubmit:"Gönder", taSubmitting:"Gönderiliyor...",
+    taSuccessTitle:"Gönderildi!",
+    taSuccessDesc:"Yanıtın ilan sahibine iletildi. Seninle doğrudan iletişime geçecekler.",
+    taSuccessFor:"Şunlar için ilgini kaydettik:",
     // hero
     heroH1:"Her hayvan hak ediyor", heroH1Em:"sevgi dolu bir yuva.",
     heroP:"Sahiplen, geçici bakım ver, bakıcı bul, kayıp ilanı ver ya da tehlikedeki hayvanları bildir.",
@@ -1084,6 +1126,14 @@ const CSS = `
   .chooser-title { font-size:14px; font-weight:600; color:var(--dark); margin-bottom:2px; }
   .chooser-desc  { font-size:11.5px; color:var(--muted); line-height:1.4; }
   .chooser-chev  { font-size:18px; color:var(--border); flex-shrink:0; }
+
+  /* ─ PURPOSE BADGES — animal-first: every card shows all active purposes at once ─ */
+  .purpose-badge { font-size:9.5px; font-weight:700; padding:2px 7px; border-radius:4px; letter-spacing:0.2px; }
+  .purpose-lost   { background:rgba(192,57,43,0.12);  color:var(--red);   }
+  .purpose-found  { background:rgba(45,122,79,0.12);  color:var(--green); }
+  .purpose-help   { background:rgba(192,57,43,0.12);  color:var(--red);   }
+  .purpose-foster { background:rgba(37,99,235,0.12);  color:var(--blue);  }
+  .purpose-adopt  { background:rgba(212,134,43,0.14); color:var(--amber); }
 `;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1186,8 +1236,7 @@ export default function App() {
     const url = detailReport.photo_url || (detailReport.photo_urls && detailReport.photo_urls[0]) || null;
     getDrawerHeightByImageAspectRatio(url).then(setDetailReportHeight);
   }, [detailReport]);
-  const [applyFor, setApplyFor]     = useState(null);
-  const [fosterFor, setFosterFor]   = useState(null);
+  const [takeActionFor, setTakeActionFor] = useState(null); // animal object — unified Adopt/Foster/Help sheet
 
   // ── data state ──
   const [reports, setReports] = useState([]);
@@ -1331,6 +1380,17 @@ export default function App() {
             isNew:    a.is_new   || false,
             canFoster: a.can_foster || false,
             canAdopt:  a.can_adopt  !== false,
+            needsHelp: a.needs_help || false,
+            helpSituation: a.help_situation || "",
+            helpUrgency: a.help_urgency || "",
+            isLost: a.is_lost || false,
+            isFound: a.is_found || false,
+            colour: a.colour || "",
+            lostLastSeenLocation: a.lost_last_seen_location || "",
+            lostCollarAccessories: a.lost_collar_accessories || "",
+            lostIdentifyingCharacteristics: a.lost_identifying_characteristics || "",
+            foundHow: a.found_how || "",
+            foundIdentifyingCharacteristics: a.found_identifying_characteristics || "",
             desc:     { en: a.desc_en || "", tr: a.desc_tr || "" },
             photo_url: a.photo_url || (a.photo_urls && a.photo_urls[0]) || null,
             photo_urls: a.photo_urls || (a.photo_url ? [a.photo_url] : []),
@@ -1432,7 +1492,7 @@ export default function App() {
   const [etaFor, setEtaFor]       = useState(null);   // report to volunteer for
   // (myName removed — volunteer identity is now the verified contactInfo.email)
   const [showReportForm, setShowReportForm] = useState(false);
-  const [showPostChooser, setShowPostChooser] = useState(false);
+  const [showCreateReport, setShowCreateReport] = useState(false);
 
   // ── Email OTP verification ──
   const [contactModal, setContactModal] = useState(null); // { onConfirm }
@@ -1538,6 +1598,34 @@ export default function App() {
     return okCo && okP && okCi;
   });
 
+  // Animal listings posted with the "Help" purpose selected also show up here,
+  // reshaped into the same card format as classic standalone reports.
+  // A listing can be Adopt + Foster + Help all at once — it isn't removed from
+  // the Help tab just because it's also adoptable.
+  const helpFromAnimals = animals.filter(a => {
+    if (!a.needsHelp) return false;
+    const okCo = fCountry  === "All Countries"  || a.country  === fCountry;
+    const okP  = fProvince === "All Provinces"  || a.province === fProvince;
+    const okCi = fCity     === "All Cities"     || a.city     === fCity;
+    return okCo && okP && okCi;
+  }).map(a => ({
+    id: `animal-${a.id}`,
+    emoji: a.emoji,
+    title: { en: a.name, tr: a.name },
+    desc: a.desc,
+    location: [a.city, a.province, a.country].filter(Boolean).join(", "),
+    time: { en: "", tr: "" },
+    status: "active",
+    reporter: a.submitter_email || "",
+    photo_url: a.photo_url,
+    photo_urls: a.photo_urls,
+    volunteers: [],
+    fromAnimalListing: true,
+    animalRef: a,
+  }));
+
+  const helpItems = [...filteredReports, ...helpFromAnimals];
+
   // location filter bar (reused in Adopt & Foster)
   const [locating, setLocating] = useState(false);
 
@@ -1629,7 +1717,7 @@ export default function App() {
             <h1 className="hero-h1">{t.heroH1}<br /><em>{t.heroH1Em}</em></h1>
             <p className="hero-p">{t.heroP}</p>
             <div className="hero-cta">
-              <button className="btn btn-dark" onClick={() => setShowPostChooser(true)}>{t.postAnimal}</button>
+              <button className="btn btn-dark" onClick={() => setShowCreateReport(true)}>{t.postAnimal}</button>
               <button className="btn btn-red" onClick={() => goTab("help")}>🚨 {t.reportAnimal}</button>
             </div>
           </div>
@@ -1718,9 +1806,12 @@ export default function App() {
           <div className="wrap" style={{ paddingTop:14 }}>
             {animalSub === "post" && (
               <PostAnimalForm lang={lang} t={t} onSubmit={async (name, newAnimal) => {
-                // Redirect to the relevant listings tab (Adopt or Foster) based on what was submitted
-                const targetSub = newAnimal?.canAdopt ? "adopt" : "foster";
-                setASub(targetSub);
+                // Redirect to the most relevant tab based on which purposes were selected.
+                // A listing can serve multiple purposes at once — this just decides where
+                // to land the user right after posting, not which tabs the listing appears in.
+                if (newAnimal?.canAdopt) { setASub("adopt"); }
+                else if (newAnimal?.canFoster) { setASub("foster"); }
+                else if (newAnimal?.needsHelp) { setTab("help"); }
                 // Show the new listing immediately at the top, even while it's the only thing visible
                 if (newAnimal) {
                   setAnimals(prev => [newAnimal, ...prev.filter(a => a.id !== newAnimal.id)]);
@@ -1978,10 +2069,10 @@ export default function App() {
 
             <div className="stabs">
               <button className={`stab ${helpSub === "active" ? "on" : ""}`} onClick={() => setHelpSub("active")}>
-                {t.activeReports} <span style={{ fontSize:11, color:"var(--muted)", marginLeft:4 }}>({filteredReports.filter(r => r.status === "active").length})</span>
+                {t.activeReports} <span style={{ fontSize:11, color:"var(--muted)", marginLeft:4 }}>({helpItems.filter(r => r.status === "active").length})</span>
               </button>
               <button className={`stab ${helpSub === "helped" ? "on" : ""}`} onClick={() => setHelpSub("helped")}>
-                {t.helpedTab} <span style={{ fontSize:11, color:"var(--muted)", marginLeft:4 }}>({filteredReports.filter(r => r.status === "helped" || r.status === "resolved").length})</span>
+                {t.helpedTab} <span style={{ fontSize:11, color:"var(--muted)", marginLeft:4 }}>({helpItems.filter(r => r.status === "helped" || r.status === "resolved").length})</span>
               </button>
             </div>
           </div>
@@ -1995,7 +2086,7 @@ export default function App() {
                 <div style={{ fontSize:13, fontWeight:600, color:"var(--dark)" }}>
                   {t.activeReports}
                   <span style={{ fontWeight:400, color:"var(--muted)", marginLeft:6 }}>
-                    ({filteredReports.filter(r => r.status === "active").length} {t.needingHelp})
+                    ({helpItems.filter(r => r.status === "active").length} {t.needingHelp})
                   </span>
                 </div>
               </div>
@@ -2005,7 +2096,7 @@ export default function App() {
                 <div style={{ fontSize:13, fontWeight:600, color:"var(--dark)" }}>
                   {t.helpedTab}
                   <span style={{ fontWeight:400, color:"var(--muted)", marginLeft:6 }}>
-                    ({filteredReports.filter(r => r.status === "helped" || r.status === "resolved").length} {t.helpedAnimals})
+                    ({helpItems.filter(r => r.status === "helped" || r.status === "resolved").length} {t.helpedAnimals})
                   </span>
                 </div>
               </div>
@@ -2013,7 +2104,7 @@ export default function App() {
 
             {/* ── Reports list — filtered by active sub-tab ── */}
             <div className="r-list" style={{ marginBottom:24 }}>
-              {[...filteredReports]
+              {[...helpItems]
                 .filter(r => helpSub === "active" ? r.status === "active" : (r.status === "helped" || r.status === "resolved"))
                 .sort((a,b) => {
                   const order = { active:0, helped:1, resolved:2 };
@@ -2047,7 +2138,12 @@ export default function App() {
                           <div className="r-meta">
                             <span className="r-mi">📍 {r.location}</span>
                             <span className="r-mi">{typeof r.time === "object" ? (r.time[lang] || r.time.en || "") : (r.time || "")}</span>
-                            <span className="r-mi">{t.reportedBy} {r.reporter}</span>
+                            {!r.fromAnimalListing && <span className="r-mi">{t.reportedBy} {r.reporter}</span>}
+                            {r.fromAnimalListing && (r.animalRef?.canAdopt || r.animalRef?.canFoster) && (
+                              <span className="r-mi" style={{ color:"var(--amber)", fontWeight:600 }}>
+                                {[r.animalRef?.canAdopt && (lang==="tr"?"🏠 Sahiplenilebilir":"🏠 Adoptable"), r.animalRef?.canFoster && (lang==="tr"?"🛏️ Geçici bakım da mümkün":"🛏️ Also fosterable")].filter(Boolean).join(" · ")}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -2082,24 +2178,32 @@ export default function App() {
                       {/* Action row */}
                       {r.status !== "resolved" && (
                         <div className="r-actions">
-                          {!isVolunteer && r.status !== "helped" && (
-                            <button className="btn btn-outline btn-sm" onClick={() => setEtaFor(r)}>
-                              {t.iCanHelp}
+                          {r.fromAnimalListing ? (
+                            // Multi-purpose listing — opens the unified Take Action sheet
+                            // (Adopt / Foster / Help, whichever this listing supports).
+                            <button className="btn btn-outline btn-sm" onClick={() => setTakeActionFor(r.animalRef)}>
+                              {t.takeAction}
                             </button>
-                          )}
-                          {isVolunteer && r.status !== "helped" && (
-                            <>
-                              <div style={{ fontSize:11, color:"var(--blue)", fontWeight:600 }}>
-                                {t.youAreResponding} — {(() => { const v=r.volunteers.find(v=>v.name===contactInfo.email); const opt=ETA_OPTIONS.find(o=>o.label===v?.eta); return lang==="tr"?(opt?.labelTR||v?.eta):v?.eta; })()}
-                              </div>
-                              <button className="btn btn-blue btn-sm" onClick={() => { setHelpedFor(r); setHelpProof(null); }}>
-                                {t.markAsHelped}
+                          ) : (<>
+                            {!isVolunteer && r.status !== "helped" && (
+                              <button className="btn btn-outline btn-sm" onClick={() => setEtaFor(r)}>
+                                {t.iCanHelp}
                               </button>
-                            </>
-                          )}
-                          {r.status === "helped" && (
-                            <div style={{ fontSize:11, color:"var(--blue)", fontWeight:500 }}>{t.animalHasBeenHelped}</div>
-                          )}
+                            )}
+                            {isVolunteer && r.status !== "helped" && (
+                              <>
+                                <div style={{ fontSize:11, color:"var(--blue)", fontWeight:600 }}>
+                                  {t.youAreResponding} — {(() => { const v=r.volunteers.find(v=>v.name===contactInfo.email); const opt=ETA_OPTIONS.find(o=>o.label===v?.eta); return lang==="tr"?(opt?.labelTR||v?.eta):v?.eta; })()}
+                                </div>
+                                <button className="btn btn-blue btn-sm" onClick={() => { setHelpedFor(r); setHelpProof(null); }}>
+                                  {t.markAsHelped}
+                                </button>
+                              </>
+                            )}
+                            {r.status === "helped" && (
+                              <div style={{ fontSize:11, color:"var(--blue)", fontWeight:500 }}>{t.animalHasBeenHelped}</div>
+                            )}
+                          </>)}
                         </div>
                       )}
 
@@ -2115,7 +2219,7 @@ export default function App() {
                     </div>
                   );
                 })}
-              {filteredReports.filter(r => helpSub === "active" ? r.status === "active" : (r.status === "helped" || r.status === "resolved")).length === 0 && (
+              {helpItems.filter(r => helpSub === "active" ? r.status === "active" : (r.status === "helped" || r.status === "resolved")).length === 0 && (
                 <div style={{ textAlign:"center", padding:"40px 0", color:"var(--muted)", fontSize:13 }}>
                   {helpSub === "active"
                     ? (lang==="tr"?"Şu anda aktif ihbar yok.":"No active reports right now.")
@@ -2337,67 +2441,44 @@ export default function App() {
         </div>
       )}
 
-      {/* GLOBAL "+" POST BUTTON — single entry point for every posting action.
-          Fixes the historical confusion where people posting an Adopt/Found
-          listing ended up submitting to the Emergency form instead. */}
+      {/* GLOBAL "+" POST BUTTON — the single entry point for creating an animal report.
+          No module choice, no chooser — this opens the one unified form directly,
+          which itself lets the user multi-select every purpose that applies. */}
       <button
         className="fab-post"
-        onClick={() => setShowPostChooser(true)}
+        onClick={() => setShowCreateReport(true)}
         title={t.postFabLabel}
       >
         <span style={{ fontSize:24, lineHeight:1 }}>+</span>
       </button>
 
-      {/* POST CHOOSER SHEET */}
-      {showPostChooser && (
-        <div className="sheet-overlay" onClick={() => setShowPostChooser(false)}>
+      {/* CREATE AN ANIMAL REPORT SHEET — one entry point, one animal record,
+          multiple purposes selected inside PostAnimalForm itself. */}
+      {showCreateReport && (
+        <div className="sheet-overlay" onClick={() => setShowCreateReport(false)}>
           <div className="sheet" onClick={e => e.stopPropagation()}>
             <div className="sh-handle" />
             <div className="sh-hd">
-              <div className="sh-title">{t.postChooserTitle}</div>
-              <button className="sh-close" onClick={() => setShowPostChooser(false)}>✕</button>
+              <div className="sh-title">{lang==="tr"?"Hayvan Raporu Oluştur":"Create an Animal Report"}</div>
+              <button className="sh-close" onClick={() => setShowCreateReport(false)}>✕</button>
             </div>
             <div className="sh-body">
-              <div style={{ fontSize:12, color:"var(--muted)", marginBottom:18, lineHeight:1.6 }}>{t.postChooserSub}</div>
-              <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-
-                <button className="chooser-card" onClick={() => { setShowPostChooser(false); setTab("animals"); setASub("post"); }}>
-                  <div className="chooser-icon" style={{ background:"rgba(212,134,43,0.12)" }}>🏡</div>
-                  <div style={{ flex:1, textAlign:"left" }}>
-                    <div className="chooser-title">{t.postAdoptFosterTitle}</div>
-                    <div className="chooser-desc">{t.postAdoptFosterDesc}</div>
-                  </div>
-                  <div className="chooser-chev">›</div>
-                </button>
-
-                <button className="chooser-card" onClick={() => { setShowPostChooser(false); setTab("lostfound"); setLFSub("post"); setLFForm(f => ({ ...f, type:"lost" })); }}>
-                  <div className="chooser-icon" style={{ background:"rgba(192,57,43,0.1)" }}>🔍</div>
-                  <div style={{ flex:1, textAlign:"left" }}>
-                    <div className="chooser-title">{t.postLostTitle}</div>
-                    <div className="chooser-desc">{t.postLostDesc}</div>
-                  </div>
-                  <div className="chooser-chev">›</div>
-                </button>
-
-                <button className="chooser-card" onClick={() => { setShowPostChooser(false); setTab("lostfound"); setLFSub("post"); setLFForm(f => ({ ...f, type:"found" })); }}>
-                  <div className="chooser-icon" style={{ background:"rgba(45,122,79,0.1)" }}>📍</div>
-                  <div style={{ flex:1, textAlign:"left" }}>
-                    <div className="chooser-title">{t.postFoundTitle}</div>
-                    <div className="chooser-desc">{t.postFoundDesc}</div>
-                  </div>
-                  <div className="chooser-chev">›</div>
-                </button>
-
-                <button className="chooser-card" onClick={() => { setShowPostChooser(false); setTab("help"); setShowReportForm(true); }}>
-                  <div className="chooser-icon" style={{ background:"rgba(192,57,43,0.1)" }}>🚨</div>
-                  <div style={{ flex:1, textAlign:"left" }}>
-                    <div className="chooser-title">{t.postEmergencyTitle}</div>
-                    <div className="chooser-desc">{t.postEmergencyDesc}</div>
-                  </div>
-                  <div className="chooser-chev">›</div>
-                </button>
-
-              </div>
+              <PostAnimalForm lang={lang} t={t} requireContact={requireContact} onSubmit={async (name, newAnimal) => {
+                setShowCreateReport(false);
+                // Land the user on whichever browse tab best matches what they selected.
+                if (newAnimal?.isLost || newAnimal?.isFound) { setTab("lostfound"); }
+                else if (newAnimal?.needsHelp) { setTab("help"); }
+                else if (newAnimal?.canAdopt) { setTab("animals"); setASub("adopt"); }
+                else if (newAnimal?.canFoster) { setTab("animals"); setASub("foster"); }
+                if (newAnimal) {
+                  setAnimals(prev => [newAnimal, ...prev.filter(a => a.id !== newAnimal.id)]);
+                }
+                say(`✓ ${name} ${lang==="tr"?"eklendi — listede görünüyor":"submitted — now showing in listings"}`);
+                await loadFromDB();
+                if (newAnimal) {
+                  setAnimals(prev => [newAnimal, ...prev.filter(a => a.id !== newAnimal.id)]);
+                }
+              }} />
             </div>
           </div>
         </div>
@@ -2432,8 +2513,7 @@ export default function App() {
               <div className="tags">{detailAnimal.tags[lang].map(tg => <span key={tg} className="tag">{tg}</span>)}</div>
               <div className="d-desc">{detailAnimal.desc[lang]}</div>
               <div className="d-acts">
-                <button className="btn btn-dark btn-full" onClick={() => { setApplyFor(detailAnimal); setDetailA(null); }}>{t.applyAdopt}</button>
-                {detailAnimal.canFoster && <button className="btn btn-green btn-full" onClick={() => { setFosterFor(detailAnimal); setDetailA(null); }}>{t.applyFoster}</button>}
+                <button className="btn btn-dark btn-full" onClick={() => { setTakeActionFor(detailAnimal); setDetailA(null); }}>{t.takeAction}</button>
                 <WhatsAppShareButton lang={lang} t={t} text={
                   `🐾 ${detailAnimal.name} — ${detailAnimal.breed[lang]} · ${detailAnimal.age[lang]} · ${detailAnimal.gender[lang]}\n` +
                   `📍 ${detailAnimal.city}, ${detailAnimal.province}\n` +
@@ -2583,9 +2663,9 @@ export default function App() {
         </div>
       )}
 
-      {/* ADOPTION / FOSTER SHEET */}
-      {(applyFor || fosterFor) && (
-        <AppSheet animal={applyFor || fosterFor} mode={applyFor ? "adopt" : "foster"} lang={lang} t={t} onClose={() => { setApplyFor(null); setFosterFor(null); }} />
+      {/* TAKE ACTION SHEET — unified Adopt / Foster / Help, multi-select, one submission */}
+      {takeActionFor && (
+        <TakeActionSheet animal={takeActionFor} lang={lang} t={t} onClose={() => setTakeActionFor(null)} />
       )}
 
       {/* ETA PICKER SHEET */}
@@ -2766,6 +2846,15 @@ function ACard({ a, mode, lang, onClick }) {
       <div className="acard-body">
         <div className="acard-name">{a.name}</div>
         <div className="acard-meta">{a.breed[lang]} · {a.age[lang]} · {a.gender[lang]}</div>
+        <div className="tags" style={{ marginBottom:5 }}>
+          {[
+            a.isLost    && { label: lang==="tr"?"Kayıp":"Lost",           cls:"purpose-lost" },
+            a.isFound   && { label: lang==="tr"?"Bulunan":"Found",        cls:"purpose-found" },
+            a.needsHelp && { label: lang==="tr"?"Yardım Gerekiyor":"Needs Help", cls:"purpose-help" },
+            a.canFoster && { label: lang==="tr"?"Geçici Bakım":"Foster",  cls:"purpose-foster" },
+            a.canAdopt  && { label: lang==="tr"?"Sahiplenilebilir":"Adoptable", cls:"purpose-adopt" },
+          ].filter(Boolean).map(p => <span key={p.cls} className={`purpose-badge ${p.cls}`}>{p.label}</span>)}
+        </div>
         <div className="tags">{a.tags[lang].slice(0,2).map(tg => <span key={tg} className="tag">{tg}</span>)}</div>
         <div className="acard-foot">
           <span className="acard-loc">📍 {a.city}, {a.province}</span>
@@ -2779,6 +2868,377 @@ function ACard({ a, mode, lang, onClick }) {
             <span style={{ fontSize:11, fontWeight:600, color:"var(--muted)" }}>{lang==="tr"?"Gör →":"View →"}</span>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── TAKE ACTION SHEET ────────────────────────────────────────────────────
+// Replaces the old "pick one path" Adopt/Foster flow. A single listing can
+// serve Adopt + Foster + Help at once, and a person can register interest in
+// any combination of them in one submission — each becomes its own record
+// downstream (Adoption Interest / Foster Interest / Help Offer), all linked
+// back to the same listing.
+function TakeActionSheet({ animal, lang, t, onClose }) {
+  const availablePurposes = {
+    adopt: !!animal.canAdopt,
+    foster: !!animal.canFoster,
+    help: !!animal.needsHelp,
+    sighting: !!animal.isLost,
+    claim: !!animal.isFound,
+  };
+
+  const [purposes, setPurposes] = useState({ adopt:false, foster:false, help:false, sighting:false, claim:false });
+  const togglePurpose = (key) => setPurposes(p => ({ ...p, [key]: !p[key] }));
+
+  const [form, setForm] = useState({
+    firstName:"", lastName:"", email:"", phone:"",
+    // adopt-specific (condensed)
+    homeType:"", ownRent:"", hasYard:"", hasChildren:"", whyAdopt:"",
+    // foster-specific
+    availableFrom:"", fosterDuration:"", canProvideCare:"", fosterNotes:"",
+    // help-specific
+    helpType:"", helpAvailability:"", helpMessage:"",
+    // sighting-specific (lost animal spotted)
+    sightingLocation:"", sightingWhen:"", sightingMessage:"",
+    // claim-specific (found animal — this might be my pet)
+    claimMessage:"",
+    agree:false,
+  });
+  const set = (k,v) => setForm(f => ({ ...f, [k]:v }));
+
+  const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [refCode] = useState(genRef);
+
+  const req = lang==="tr" ? "Zorunlu" : "Required";
+  const sel = lang==="tr" ? "Lütfen seçin" : "Please select";
+  const E = (k) => errors[k] ? <div className="err">{errors[k]}</div> : null;
+
+  const Opt = ({ name, value, label, hint, checked, onChange }) => (
+    <label className={`opt-item ${checked===value?"on":""}`}>
+      <input type="radio" checked={checked===value} onChange={onChange} />
+      <div><div className="opt-label">{label}</div>{hint&&<div className="opt-hint">{hint}</div>}</div>
+    </label>
+  );
+
+  const validate = () => {
+    const e = {};
+    const anyPurpose = purposes.adopt || purposes.foster || purposes.help || purposes.sighting || purposes.claim;
+    if (!anyPurpose) { e._purpose = t.selectAtLeastOnePurpose; return e; }
+    if (!form.firstName.trim()) e.firstName = req;
+    if (!form.lastName.trim())  e.lastName  = req;
+    if (!form.email.includes("@")) e.email = (lang==="tr"?"Geçerli e-posta girin":"Valid email required");
+    if (!form.phone.trim())     e.phone    = req;
+    if (purposes.adopt) {
+      if (!form.homeType) e.homeType = sel;
+      if (!form.ownRent)  e.ownRent  = sel;
+      if (!form.hasYard)  e.hasYard  = sel;
+      if (!form.whyAdopt.trim()) e.whyAdopt = req;
+    }
+    if (purposes.foster) {
+      if (!form.availableFrom.trim()) e.availableFrom = req;
+      if (!form.canProvideCare) e.canProvideCare = sel;
+    }
+    if (purposes.help) {
+      if (!form.helpType) e.helpType = sel;
+    }
+    if (purposes.sighting) {
+      if (!form.sightingLocation.trim()) e.sightingLocation = req;
+    }
+    if (!form.agree) e.agree = req;
+    return e;
+  };
+
+  const submit = async () => {
+    const e = validate();
+    if (Object.keys(e).length) { setErrors(e); return; }
+    setErrors({});
+    setSubmitting(true);
+
+    const selectedTypes = [];
+    if (purposes.adopt)    selectedTypes.push("adopt");
+    if (purposes.foster)   selectedTypes.push("foster");
+    if (purposes.help)     selectedTypes.push("help_offer");
+    if (purposes.sighting) selectedTypes.push("sighting");
+    if (purposes.claim)    selectedTypes.push("claim");
+
+    try {
+      // One independent record per selected purpose — not squashed into a single field.
+      for (const type of selectedTypes) {
+        const base = {
+          ref_code: refCode,
+          mode: type,
+          animal_id: animal.id,
+          animal_name: animal.name,
+          listing_owner_email: animal.submitter_email,
+          first_name: form.firstName, last_name: form.lastName,
+          applicant_email: form.email, phone: form.phone,
+          status: "pending",
+        };
+        const extra =
+          type === "adopt" ? {
+            home_type: form.homeType, own_rent: form.ownRent, has_yard: form.hasYard,
+            has_children: form.hasChildren, why_adopt: form.whyAdopt,
+          } :
+          type === "foster" ? {
+            long_term_plan: form.availableFrom + (form.fosterDuration ? ` (${form.fosterDuration})` : ""),
+            had_pets_before: form.canProvideCare, why_adopt: form.fosterNotes,
+          } :
+          type === "sighting" ? {
+            why_adopt: `${lang==="tr"?"Görülen konum":"Seen at"}: ${form.sightingLocation}${form.sightingWhen ? " · " + form.sightingWhen : ""}${form.sightingMessage ? "\n" + form.sightingMessage : ""}`,
+          } :
+          type === "claim" ? {
+            why_adopt: form.claimMessage || "",
+          } :
+          { // help_offer
+            why_adopt: `${form.helpType}${form.helpAvailability ? " · " + form.helpAvailability : ""}${form.helpMessage ? "\n" + form.helpMessage : ""}`,
+          };
+        await db.from("applications").insert([{ ...base, ...extra }]);
+      }
+
+      // Single combined notification to the poster listing everything that was selected.
+      await db.functions.invoke("notify-owner", {
+        body: {
+          mode: "multi_action",
+          purposes: selectedTypes,
+          ownerEmail: animal.submitter_email,
+          lang, animalName: animal.name, refCode,
+          applicantName: `${form.firstName} ${form.lastName}`,
+          applicantEmail: form.email, applicantPhone: form.phone,
+          homeType: form.homeType, ownRent: form.ownRent, hasYard: form.hasYard,
+          hasChildren: form.hasChildren, whyAdopt: form.whyAdopt,
+          availableFrom: form.availableFrom, fosterDuration: form.fosterDuration,
+          canProvideCare: form.canProvideCare, fosterNotes: form.fosterNotes,
+          helpType: form.helpType, helpAvailability: form.helpAvailability, helpMessage: form.helpMessage,
+          sightingLocation: form.sightingLocation, sightingWhen: form.sightingWhen, sightingMessage: form.sightingMessage,
+          claimMessage: form.claimMessage,
+        },
+      });
+    } catch (err) {
+      console.error("Take Action gönderilemedi:", err);
+    }
+
+    setSubmitting(false);
+    setSubmitted(true);
+  };
+
+  const purposeLabel = { adopt: t.purposeAdopt, foster: t.purposeFoster, help: t.purposeHelp, sighting: (lang==="tr"?"Gördüm":"I Saw This Animal"), claim: (lang==="tr"?"Benim Hayvanım Olabilir":"This Might Be My Pet") };
+
+  return (
+    <div className="sheet-overlay" onClick={onClose}>
+      <div className="sheet" onClick={e=>e.stopPropagation()}>
+        <div className="sh-handle" />
+        <div className="sh-hd">
+          <div className="sh-title">{t.takeAction}</div>
+          <button className="sh-close" onClick={onClose}>✕</button>
+        </div>
+
+        {!submitted ? <>
+          <div className="app-strip">
+            <div className="app-strip-emoji">{animal.emoji}</div>
+            <div>
+              <div className="app-strip-name">{animal.name}</div>
+              <div className="app-strip-meta">{animal.breed?.[lang] || ""} · {animal.city}, {animal.province}</div>
+            </div>
+          </div>
+
+          <div className="sh-body">
+            <div style={{ fontSize:13, color:"var(--muted)", marginBottom:6 }}>
+              {t.takeActionSub_pre} <strong style={{ color:"var(--dark)" }}>{animal.name}</strong>?
+            </div>
+            <div style={{ fontSize:11.5, color:"var(--muted)", marginBottom:14 }}>{t.takeActionSelectPurpose}</div>
+
+            {/* Purpose multi-select — only purposes this listing actually supports are shown */}
+            <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:8 }}>
+              {["sighting","claim","adopt","foster","help"].filter(k => availablePurposes[k]).map(k => (
+                <label key={k} className={`opt-item ${purposes[k]?"on":""}`} style={{ flex:"1 1 140px" }}>
+                  <input type="checkbox" checked={purposes[k]} onChange={() => togglePurpose(k)} />
+                  <div>
+                    <div className="opt-label">{purposeLabel[k]}</div>
+                    <div className="opt-hint">{k==="adopt"?t.purposeAdoptDesc:k==="foster"?t.purposeFosterDesc:k==="help"?t.purposeHelpDesc:k==="sighting"?(lang==="tr"?"Bu hayvanı bir yerde gördün":"You spotted this animal somewhere"):(lang==="tr"?"Bu hayvanın sahibi olabilirsin":"You might be the owner")}</div>
+                  </div>
+                </label>
+              ))}
+            </div>
+            {errors._purpose && <div className="err">{errors._purpose}</div>}
+
+            {(purposes.adopt || purposes.foster || purposes.help || purposes.sighting || purposes.claim) && <>
+              <div className="divider" />
+
+              {/* Contact — asked once, shared across every selected purpose */}
+              <div style={{ fontSize:13, fontWeight:600, marginBottom:10 }}>{t.taContactTitle}</div>
+              <div className="frow">
+                <div className="fg">
+                  <label className="flabel">{t.firstName}</label>
+                  <input className="fi" placeholder={lang==="tr"?"Zeynep":"Jane"} value={form.firstName} onChange={e=>set("firstName",e.target.value)} />
+                  {E("firstName")}
+                </div>
+                <div className="fg">
+                  <label className="flabel">{t.lastName}</label>
+                  <input className="fi" placeholder={lang==="tr"?"Yılmaz":"Mwangi"} value={form.lastName} onChange={e=>set("lastName",e.target.value)} />
+                  {E("lastName")}
+                </div>
+              </div>
+              <div className="fg">
+                <label className="flabel">{t.email}</label>
+                <input className="fi" type="email" placeholder="ornek@email.com" value={form.email} onChange={e=>set("email",e.target.value)} />
+                {E("email")}
+              </div>
+              <div className="fg">
+                <label className="flabel">{t.phoneField}</label>
+                <input className="fi" placeholder="+90 5XX XXX XX XX" value={form.phone} onChange={e=>set("phone",e.target.value)} />
+                {E("phone")}
+              </div>
+
+              {/* Adopt block — condensed screening */}
+              {purposes.adopt && <>
+                <div className="divider" />
+                <div style={{ fontSize:13, fontWeight:600, marginBottom:10, color:"var(--amber)" }}>🏠 {t.taAdoptSection}</div>
+                <div className="fg"><label className="flabel">{t.homeType}</label>
+                  <div className="opt-group">
+                    <Opt checked={form.homeType} value="apartment" label={t.apartment} hint={t.apartmentHint} onChange={()=>set("homeType","apartment")} />
+                    <Opt checked={form.homeType} value="house" label={t.house} hint={t.houseHint} onChange={()=>set("homeType","house")} />
+                    <Opt checked={form.homeType} value="farmhouse" label={t.farmhouse} onChange={()=>set("homeType","farmhouse")} />
+                  </div>{E("homeType")}
+                </div>
+                <div className="fg"><label className="flabel">{t.ownRentQ}</label>
+                  <div className="opt-group">
+                    <Opt checked={form.ownRent} value="own" label={t.own} onChange={()=>set("ownRent","own")} />
+                    <Opt checked={form.ownRent} value="rent" label={t.rent} hint={t.rentHint} onChange={()=>set("ownRent","rent")} />
+                  </div>{E("ownRent")}
+                </div>
+                <div className="fg"><label className="flabel">{t.outdoorQ}</label>
+                  <div className="opt-group">
+                    <Opt checked={form.hasYard} value="yes_fenced" label={t.fenced} onChange={()=>set("hasYard","yes_fenced")} />
+                    <Opt checked={form.hasYard} value="yes_unfenced" label={t.unfenced} onChange={()=>set("hasYard","yes_unfenced")} />
+                    <Opt checked={form.hasYard} value="no" label={t.noOutdoor} onChange={()=>set("hasYard","no")} />
+                  </div>{E("hasYard")}
+                </div>
+                <div className="fg"><label className="flabel">{t.childrenQ}</label>
+                  <div className="opt-group">
+                    <Opt checked={form.hasChildren} value="no" label={t.noChildren} onChange={()=>set("hasChildren","no")} />
+                    <Opt checked={form.hasChildren} value="yes" label={t.yesLive} onChange={()=>set("hasChildren","yes")} />
+                  </div>
+                </div>
+                <div className="fg"><label className="flabel">{t.whyAdopt_adopt} {animal.name}?</label>
+                  <textarea className="fta" placeholder={t.whyPlaceholder} value={form.whyAdopt} onChange={e=>set("whyAdopt",e.target.value)} />
+                  {E("whyAdopt")}
+                </div>
+              </>}
+
+              {/* Foster block */}
+              {purposes.foster && <>
+                <div className="divider" />
+                <div style={{ fontSize:13, fontWeight:600, marginBottom:10, color:"var(--green)" }}>🛏️ {t.taFosterSection}</div>
+                <div className="frow">
+                  <div className="fg">
+                    <label className="flabel">{lang==="tr"?"Ne Zaman Başlayabilirsin? *":"Available From *"}</label>
+                    <input className="fi" placeholder={lang==="tr"?"örn. Hemen":"e.g. Immediately"} value={form.availableFrom} onChange={e=>set("availableFrom",e.target.value)} />
+                    {E("availableFrom")}
+                  </div>
+                  <div className="fg">
+                    <label className="flabel">{lang==="tr"?"Süre":"Duration"}</label>
+                    <input className="fi" placeholder={lang==="tr"?"örn. 2–4 hafta":"e.g. 2–4 weeks"} value={form.fosterDuration} onChange={e=>set("fosterDuration",e.target.value)} />
+                  </div>
+                </div>
+                <div className="fg"><label className="flabel">{lang==="tr"?"Bakım Verebilir misin? *":"Can You Provide Care? *"}</label>
+                  <div className="opt-group">
+                    <Opt checked={form.canProvideCare} value="yes" label={lang==="tr"?"Evet, uygun alanım var":"Yes, I have a suitable space"} onChange={()=>set("canProvideCare","yes")} />
+                    <Opt checked={form.canProvideCare} value="not_sure" label={lang==="tr"?"Emin değilim":"Not sure — let's discuss"} onChange={()=>set("canProvideCare","not_sure")} />
+                  </div>{E("canProvideCare")}
+                </div>
+                <div className="fg"><label className="flabel">{lang==="tr"?"Not (opsiyonel)":"Notes (optional)"}</label>
+                  <textarea className="fta" style={{minHeight:60}} value={form.fosterNotes} onChange={e=>set("fosterNotes",e.target.value)} />
+                </div>
+              </>}
+
+              {/* Help block */}
+              {purposes.help && <>
+                <div className="divider" />
+                <div style={{ fontSize:13, fontWeight:600, marginBottom:10, color:"var(--red)" }}>🆘 {t.taHelpSection}</div>
+                <div className="fg"><label className="flabel">{t.helpTypeQ}</label>
+                  <select className="fs" value={form.helpType} onChange={e=>set("helpType",e.target.value)}>
+                    <option value="">{sel}</option>
+                    <option value="financial">{t.helpTypeFinancial}</option>
+                    <option value="transport">{t.helpTypeTransport}</option>
+                    <option value="shelter">{t.helpTypeShelter}</option>
+                    <option value="medical">{t.helpTypeMedical}</option>
+                    <option value="supplies">{t.helpTypeSupplies}</option>
+                    <option value="other">{t.helpTypeOther}</option>
+                  </select>
+                  {E("helpType")}
+                </div>
+                <div className="fg"><label className="flabel">{t.helpAvailability}</label>
+                  <input className="fi" placeholder={t.helpAvailabilityPh} value={form.helpAvailability} onChange={e=>set("helpAvailability",e.target.value)} />
+                </div>
+                <div className="fg"><label className="flabel">{t.helpMessage}</label>
+                  <textarea className="fta" style={{minHeight:60}} placeholder={t.helpMessagePh} value={form.helpMessage} onChange={e=>set("helpMessage",e.target.value)} />
+                </div>
+              </>}
+
+              {/* Sighting block — shown when reporting a sighting of a lost animal */}
+              {purposes.sighting && <>
+                <div className="divider" />
+                <div style={{ fontSize:13, fontWeight:600, marginBottom:10, color:"var(--red)" }}>🔴 {lang==="tr"?"Görülme Bilgisi":"Sighting Details"}</div>
+                <div className="fg"><label className="flabel">{lang==="tr"?"Nerede Gördün? *":"Where Did You See It? *"}</label>
+                  <input className="fi" placeholder={lang==="tr"?"örn. Bağdat Caddesi, Kadıköy":"e.g. Bağdat Avenue, Kadıköy"} value={form.sightingLocation} onChange={e=>set("sightingLocation",e.target.value)} />
+                  {E("sightingLocation")}
+                </div>
+                <div className="fg"><label className="flabel">{lang==="tr"?"Ne Zaman?":"When?"}</label>
+                  <input className="fi" placeholder={lang==="tr"?"örn. Bugün öğleden sonra":"e.g. This afternoon"} value={form.sightingWhen} onChange={e=>set("sightingWhen",e.target.value)} />
+                </div>
+                <div className="fg"><label className="flabel">{lang==="tr"?"Ek Bilgi":"Additional Info"}</label>
+                  <textarea className="fta" style={{minHeight:60}} placeholder={lang==="tr"?"Hayvanın durumu, hangi yöne gittiği…":"Animal's condition, which direction it went…"} value={form.sightingMessage} onChange={e=>set("sightingMessage",e.target.value)} />
+                </div>
+              </>}
+
+              {/* Claim block — shown when someone thinks a found animal is theirs */}
+              {purposes.claim && <>
+                <div className="divider" />
+                <div style={{ fontSize:13, fontWeight:600, marginBottom:10, color:"var(--green)" }}>📍 {lang==="tr"?"Sahiplik Bilgisi":"Ownership Details"}</div>
+                <div className="fg"><label className="flabel">{lang==="tr"?"Bu hayvanın senin olduğunu düşünüyorsan, ayırt edici özelliklerini anlat":"If you believe this is your pet, describe identifying details"}</label>
+                  <textarea className="fta" style={{minHeight:70}} placeholder={lang==="tr"?"örn. Tasmasındaki künye, doğum lekesi, davranışı…":"e.g. Collar tag details, birthmark, behaviour…"} value={form.claimMessage} onChange={e=>set("claimMessage",e.target.value)} />
+                </div>
+              </>}
+
+              <div className="divider" />
+              <div className="fg">
+                <label style={{display:"flex",alignItems:"flex-start",gap:10,cursor:"pointer"}}>
+                  <input type="checkbox" style={{marginTop:3,accentColor:"var(--dark)",width:15,height:15,flexShrink:0}} checked={form.agree} onChange={e=>set("agree",e.target.checked)} />
+                  <span style={{fontSize:12,color:"var(--muted)",lineHeight:1.6}}>{t.declaration}</span>
+                </label>
+                {E("agree")}
+              </div>
+            </>}
+          </div>
+
+          <div className="sh-foot">
+            <span className="step-count">
+              {[purposes.sighting&&purposeLabel.sighting, purposes.claim&&purposeLabel.claim, purposes.adopt&&t.purposeAdopt, purposes.foster&&t.purposeFoster, purposes.help&&t.purposeHelp].filter(Boolean).join(" + ") || "—"}
+            </span>
+            <button className="btn btn-dark btn-sm" onClick={submit} disabled={submitting}>
+              {submitting ? t.taSubmitting : t.taSubmit}
+            </button>
+          </div>
+        </> : (
+          <div className="sh-body">
+            <div className="success">
+              <div className="suc-i">✓</div>
+              <div className="suc-t">{t.taSuccessTitle}</div>
+              <div className="suc-d">{t.taSuccessDesc}</div>
+              <div className="suc-ref"><div className="suc-ref-l">{t.refLabel}</div><div className="suc-ref-c">{refCode}</div></div>
+              <div style={{ fontSize:12, color:"var(--muted)", marginBottom:18 }}>
+                {t.taSuccessFor}{" "}
+                <strong style={{ color:"var(--dark)" }}>
+                  {[purposes.sighting&&purposeLabel.sighting, purposes.claim&&purposeLabel.claim, purposes.adopt&&t.purposeAdopt, purposes.foster&&t.purposeFoster, purposes.help&&t.purposeHelp].filter(Boolean).join(" · ")}
+                </strong>
+              </div>
+              <button className="btn btn-dark btn-full" style={{maxWidth:240,margin:"0 auto"}} onClick={onClose}>{t.done}</button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -3595,9 +4055,12 @@ function MultiPhotoUpload({ photos, setPhotos, folder, lang, t, maxPhotos = 5 })
 
 function PostAnimalForm({ lang, t, onSubmit, requireContact }) {
   const [f, setF] = useState({
-    name:"", species:"Dog", breed:"", age:"", gender:"Female",
+    name:"", species:"Dog", breed:"", age:"", gender:"Female", colour:"",
     country:"Türkiye", province:"İstanbul", city:"",
-    canFoster:false, canAdopt:true, desc:"",
+    canFoster:false, canAdopt:true, needsHelp:false, isLost:false, isFound:false,
+    helpSituation:"", helpUrgency:"", desc:"",
+    lostLastSeenLocation:"", lostLastSeenAt:"", lostCollarAccessories:"", lostIdentifyingCharacteristics:"",
+    foundLocation:"", foundHow:"", foundIdentifyingCharacteristics:"",
     isNeutered:"", vaccinatedParasite:"", vaccinatedRabies:"",
   });
   const [photos, setPhotos] = useState([]);
@@ -3611,28 +4074,103 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact }) {
   return (
     <div>
       <div style={{ fontSize:15, fontWeight:600, marginBottom:4 }}>
-        {lang==="tr"?"Hayvan İlanı Ver":"Post an Animal"}
+        {lang==="tr"?"Hayvan Raporu Oluştur":"Create an Animal Report"}
       </div>
       <div style={{ fontSize:12, color:"var(--muted)", marginBottom:18, lineHeight:1.6 }}>
         {lang==="tr"
-          ? "Sahiplenme veya geçici bakım için hayvan ekleyin. İlanınız incelendikten sonra yayınlanacak."
-          : "Add an animal for adoption or fostering. Your listing will be reviewed before publishing."}
+          ? "Hayvan bilgilerini bir kez gir. Aynı ilan sahiplenme, geçici bakım, yardım, kayıp ve/veya bulunan amaçlarına aynı anda hizmet edebilir — durumuna uyan tüm seçenekleri işaretle."
+          : "Enter the animal's details once. A single report can serve adoption, foster, help, lost, and/or found purposes at the same time — select every option that applies."}
       </div>
 
-      {/* Listing type */}
+      {/* Purpose — multi-select, NOT mutually exclusive.
+          "What applies to this animal?" not "pick one listing type". */}
       <div className="fg">
-        <label className="flabel">{lang==="tr"?"İlan Türü *":"Listing Type *"}</label>
-        <div style={{ display:"flex", gap:8 }}>
-          <label className={`opt-item ${f.canAdopt?"on":""}`} style={{ flex:1 }}>
-            <input type="checkbox" checked={f.canAdopt} onChange={e => setF(x=>({...x, canAdopt:e.target.checked}))} />
-            <div><div className="opt-label">🏡 {lang==="tr"?"Sahiplenme":"Adoption"}</div></div>
+        <label className="flabel">{lang==="tr"?"Bu Hayvan İçin Ne Geçerli? *":"What Applies to This Animal? *"}</label>
+        <div style={{ fontSize:11, color:"var(--muted)", marginBottom:8 }}>
+          {lang==="tr" ? "Birden fazlasını seçebilirsin." : "You can select more than one."}
+        </div>
+        <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+          <label className={`opt-item ${f.isLost?"on":""}`} style={{ flex:"1 1 100px" }}>
+            <input type="checkbox" checked={f.isLost} onChange={e => setF(x=>({...x, isLost:e.target.checked}))} />
+            <div><div className="opt-label">🔴 {lang==="tr"?"Kayıp":"Lost"}</div></div>
           </label>
-          <label className={`opt-item ${f.canFoster?"on":""}`} style={{ flex:1 }}>
+          <label className={`opt-item ${f.isFound?"on":""}`} style={{ flex:"1 1 100px" }}>
+            <input type="checkbox" checked={f.isFound} onChange={e => setF(x=>({...x, isFound:e.target.checked}))} />
+            <div><div className="opt-label">📍 {lang==="tr"?"Bulunan":"Found"}</div></div>
+          </label>
+          <label className={`opt-item ${f.needsHelp?"on":""}`} style={{ flex:"1 1 100px" }}>
+            <input type="checkbox" checked={f.needsHelp} onChange={e => setF(x=>({...x, needsHelp:e.target.checked}))} />
+            <div><div className="opt-label">🆘 {lang==="tr"?"Yardım":"Help"}</div></div>
+          </label>
+          <label className={`opt-item ${f.canFoster?"on":""}`} style={{ flex:"1 1 100px" }}>
             <input type="checkbox" checked={f.canFoster} onChange={e => setF(x=>({...x, canFoster:e.target.checked}))} />
-            <div><div className="opt-label">🤝 {lang==="tr"?"Geçici Bakım":"Foster"}</div></div>
+            <div><div className="opt-label">🛏️ {lang==="tr"?"Geçici Bakım":"Foster"}</div></div>
+          </label>
+          <label className={`opt-item ${f.canAdopt?"on":""}`} style={{ flex:"1 1 100px" }}>
+            <input type="checkbox" checked={f.canAdopt} onChange={e => setF(x=>({...x, canAdopt:e.target.checked}))} />
+            <div><div className="opt-label">🏠 {lang==="tr"?"Sahiplenme":"Adopt"}</div></div>
           </label>
         </div>
       </div>
+
+      {/* Dynamically revealed — only shown when "Lost" purpose is selected */}
+      {f.isLost && (
+        <div className="fg" style={{ background:"rgba(192,57,43,0.05)", border:"1px solid rgba(192,57,43,0.2)", borderRadius:"var(--r)", padding:14 }}>
+          <label className="flabel" style={{ color:"var(--red)" }}>🔴 {lang==="tr"?"Kayıp Detayları":"Lost Details"}</label>
+          <div className="fg" style={{ marginTop:6, marginBottom:8 }}>
+            <label className="flabel">{lang==="tr"?"En Son Görüldüğü Yer":"Last Seen Location"}</label>
+            <input className="fi" placeholder={lang==="tr"?"örn. Kadıköy Moda sahili":"e.g. Near Moda beach"} value={f.lostLastSeenLocation} onChange={e=>setF(x=>({...x,lostLastSeenLocation:e.target.value}))} />
+          </div>
+          <div className="fg" style={{ marginBottom:8 }}>
+            <label className="flabel">{lang==="tr"?"Tasma / Aksesuar":"Collar / Accessories"}</label>
+            <input className="fi" placeholder={lang==="tr"?"örn. Mavi tasma, künye var":"e.g. Blue collar with tag"} value={f.lostCollarAccessories} onChange={e=>setF(x=>({...x,lostCollarAccessories:e.target.value}))} />
+          </div>
+          <div className="fg" style={{ marginBottom:0 }}>
+            <label className="flabel">{lang==="tr"?"Ayırt Edici Özellikler":"Identifying Characteristics"}</label>
+            <input className="fi" placeholder={lang==="tr"?"örn. Sol kulağında beyaz leke":"e.g. White patch on left ear"} value={f.lostIdentifyingCharacteristics} onChange={e=>setF(x=>({...x,lostIdentifyingCharacteristics:e.target.value}))} />
+          </div>
+        </div>
+      )}
+
+      {/* Dynamically revealed — only shown when "Found" purpose is selected */}
+      {f.isFound && (
+        <div className="fg" style={{ background:"rgba(45,122,79,0.05)", border:"1px solid rgba(45,122,79,0.2)", borderRadius:"var(--r)", padding:14 }}>
+          <label className="flabel" style={{ color:"var(--green)" }}>📍 {lang==="tr"?"Bulunan Hayvan Detayları":"Found Details"}</label>
+          <div className="fg" style={{ marginTop:6, marginBottom:8 }}>
+            <label className="flabel">{lang==="tr"?"Nerede / Nasıl Bulundu":"Where / How Found"}</label>
+            <input className="fi" placeholder={lang==="tr"?"örn. Sokakta tek başına dolaşırken":"e.g. Wandering alone on the street"} value={f.foundHow} onChange={e=>setF(x=>({...x,foundHow:e.target.value}))} />
+          </div>
+          <div className="fg" style={{ marginBottom:0 }}>
+            <label className="flabel">{lang==="tr"?"Ayırt Edici Özellikler":"Identifying Characteristics"}</label>
+            <input className="fi" placeholder={lang==="tr"?"örn. Ön patisinde yara var":"e.g. Injured front paw"} value={f.foundIdentifyingCharacteristics} onChange={e=>setF(x=>({...x,foundIdentifyingCharacteristics:e.target.value}))} />
+          </div>
+        </div>
+      )}
+      {f.needsHelp && (
+        <div className="fg" style={{ background:"rgba(192,57,43,0.05)", border:"1px solid rgba(192,57,43,0.2)", borderRadius:"var(--r)", padding:14 }}>
+          <label className="flabel" style={{ color:"var(--red)" }}>{lang==="tr"?"Yardım Detayları":"Help Details"}</label>
+          <div className="frow" style={{ marginTop:6 }}>
+            <div className="fg" style={{ marginBottom:8 }}>
+              <label className="flabel">{lang==="tr"?"Durum *":"Situation *"}</label>
+              <select className="fs" value={f.helpSituation} onChange={e=>setF(x=>({...x,helpSituation:e.target.value}))}>
+                <option value="">{lang==="tr"?"Seçin":"Select"}</option>
+                {lang==="tr"
+                  ? <><option>Yaralı</option><option>Hasta</option><option>Terk edilmiş</option><option>İstismar / İhmal</option><option>Diğer</option></>
+                  : <><option>Injured</option><option>Sick</option><option>Abandoned</option><option>Abuse / Neglect</option><option>Other</option></>}
+              </select>
+            </div>
+            <div className="fg" style={{ marginBottom:0 }}>
+              <label className="flabel">{lang==="tr"?"Aciliyet":"Urgency"}</label>
+              <select className="fs" value={f.helpUrgency} onChange={e=>setF(x=>({...x,helpUrgency:e.target.value}))}>
+                <option value="">{lang==="tr"?"Seçin":"Select"}</option>
+                {lang==="tr"
+                  ? <><option value="critical">Kritik — hemen yardım gerekiyor</option><option value="moderate">Orta — bugün içinde</option><option value="stable">Stabil — acil değil</option></>
+                  : <><option value="critical">Critical — needs help now</option><option value="moderate">Moderate — within today</option><option value="stable">Stable — not urgent</option></>}
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Basic info */}
       <div className="frow">
@@ -3659,15 +4197,21 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact }) {
         </div>
       </div>
 
-      <div className="fg">
-        <label className="flabel">{lang==="tr"?"Cinsiyet":"Gender"}</label>
-        <div style={{ display:"flex", gap:8 }}>
-          {[["Female", lang==="tr"?"Dişi":"Female","♀"],["Male",lang==="tr"?"Erkek":"Male","♂"]].map(([v,l,i])=>(
-            <label key={v} className={`opt-item ${f.gender===v?"on":""}`} style={{ flex:1 }}>
-              <input type="radio" name="gender" checked={f.gender===v} onChange={()=>setF(x=>({...x,gender:v}))} />
-              <div className="opt-label">{i} {l}</div>
-            </label>
-          ))}
+      <div className="frow">
+        <div className="fg">
+          <label className="flabel">{lang==="tr"?"Cinsiyet":"Gender"}</label>
+          <div style={{ display:"flex", gap:8 }}>
+            {[["Female", lang==="tr"?"Dişi":"Female","♀"],["Male",lang==="tr"?"Erkek":"Male","♂"]].map(([v,l,i])=>(
+              <label key={v} className={`opt-item ${f.gender===v?"on":""}`} style={{ flex:1 }}>
+                <input type="radio" name="gender" checked={f.gender===v} onChange={()=>setF(x=>({...x,gender:v}))} />
+                <div className="opt-label">{i} {l}</div>
+              </label>
+            ))}
+          </div>
+        </div>
+        <div className="fg">
+          <label className="flabel">{lang==="tr"?"Renk":"Colour"}</label>
+          <input className="fi" placeholder={lang==="tr"?"örn. Siyah-beyaz":"e.g. Black & white"} value={f.colour} onChange={e=>setF(x=>({...x,colour:e.target.value}))} />
         </div>
       </div>
 
@@ -3766,7 +4310,8 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact }) {
         if (!f.city) { alert(lang==="tr"?"Şehir girin":"Please enter city"); return; }
         if (!f.desc) { alert(lang==="tr"?"Açıklama girin":"Please enter description"); return; }
         if (photos.length === 0) { alert(lang==="tr"?"Lütfen en az 1 fotoğraf yükleyin":"Please upload at least 1 photo"); return; }
-        if (!f.canAdopt && !f.canFoster) { alert(lang==="tr"?"En az bir ilan türü seçin":"Please select at least one listing type"); return; }
+        if (!f.canAdopt && !f.canFoster && !f.needsHelp && !f.isLost && !f.isFound) { alert(lang==="tr"?"En az bir seçenek işaretle: Kayıp, Bulunan, Yardım, Geçici Bakım veya Sahiplenme":"Please select at least one: Lost, Found, Help, Foster, or Adopt"); return; }
+        if (f.needsHelp && !f.helpSituation) { alert(lang==="tr"?"Lütfen yardım durumunu seçin":"Please select the help situation"); return; }
         if (!f.isNeutered || !f.vaccinatedParasite || !f.vaccinatedRabies) { alert(lang==="tr"?"Lütfen sağlık bilgilerinin tamamını doldurun":"Please fill in all health information"); return; }
         requireContact(async (contact) => {
           const speciesEn = spMap[f.species] || f.species;
@@ -3779,18 +4324,29 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact }) {
             breed: f.breed || null,
             age: f.age || null,
             gender: f.gender,
+            colour: f.colour || null,
             country: f.country,
             province: f.province || "",
             city: f.city,
             can_foster: f.canFoster,
             can_adopt: f.canAdopt,
+            needs_help: f.needsHelp,
+            help_situation: f.needsHelp ? f.helpSituation : null,
+            help_urgency: f.needsHelp ? (f.helpUrgency || null) : null,
+            is_lost: f.isLost,
+            lost_last_seen_location: f.isLost ? (f.lostLastSeenLocation || null) : null,
+            lost_collar_accessories: f.isLost ? (f.lostCollarAccessories || null) : null,
+            lost_identifying_characteristics: f.isLost ? (f.lostIdentifyingCharacteristics || null) : null,
+            is_found: f.isFound,
+            found_how: f.isFound ? (f.foundHow || null) : null,
+            found_identifying_characteristics: f.isFound ? (f.foundIdentifyingCharacteristics || null) : null,
             desc_en: fullDesc,
             desc_tr: fullDesc,
             photo_url: photos[0],
             photo_urls: photos,
             submitter_email: contact.email,
             status: "active",
-            urgent: false,
+            urgent: f.needsHelp && f.helpUrgency === "critical",
             is_new: true,
             is_neutered: f.isNeutered || null,
             vaccinated_parasite: f.vaccinatedParasite || null,
@@ -3812,6 +4368,7 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact }) {
             breed:    { en: inserted.breed   || "", tr: inserted.breed   || "" },
             age:      { en: inserted.age     || "", tr: inserted.age     || "" },
             gender:   { en: inserted.gender  || "", tr: inserted.gender  || "" },
+            colour:   inserted.colour || "",
             country:  inserted.country  || "",
             province: inserted.province || "",
             city:     inserted.city     || "",
@@ -3820,20 +4377,26 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact }) {
             isNew:    inserted.is_new   || false,
             canFoster: inserted.can_foster || false,
             canAdopt:  inserted.can_adopt  !== false,
+            needsHelp: inserted.needs_help || false,
+            helpSituation: inserted.help_situation || "",
+            helpUrgency: inserted.help_urgency || "",
+            isLost: inserted.is_lost || false,
+            isFound: inserted.is_found || false,
+            lostLastSeenLocation: inserted.lost_last_seen_location || "",
+            foundHow: inserted.found_how || "",
             desc:     { en: inserted.desc_en || "", tr: inserted.desc_tr || "" },
             photo_url: inserted.photo_url || (inserted.photo_urls && inserted.photo_urls[0]) || null,
             photo_urls: inserted.photo_urls || (inserted.photo_url ? [inserted.photo_url] : []),
             isNeutered: inserted.is_neutered || "unknown",
             vaccinatedParasite: inserted.vaccinated_parasite || "unknown",
             vaccinatedRabies: inserted.vaccinated_rabies || "unknown",
+            submitter_email: inserted.submitter_email || "",
           } : null;
           onSubmit(f.name, newAnimal);
-          setF({ name:"", species:"Dog", breed:"", age:"", gender:"Female", country:"Türkiye", province:"İstanbul", city:"", address:"", canFoster:false, canAdopt:true, desc:"", isNeutered:"", vaccinatedParasite:"", vaccinatedRabies:"" });
+          setF({ name:"", species:"Dog", breed:"", age:"", gender:"Female", colour:"", country:"Türkiye", province:"İstanbul", city:"", address:"", canFoster:false, canAdopt:true, needsHelp:false, isLost:false, isFound:false, helpSituation:"", helpUrgency:"", lostLastSeenLocation:"", lostCollarAccessories:"", lostIdentifyingCharacteristics:"", foundHow:"", foundIdentifyingCharacteristics:"", desc:"", isNeutered:"", vaccinatedParasite:"", vaccinatedRabies:"" });
           setPhotos([]);
         });
-      }}>
-        {lang==="tr"?"İlanı Gönder":"Submit Listing"}
-      </button>
+      }}>{lang==="tr"?"Raporu Gönder":"Submit Report"}</button>
     </div>
   );
 }
