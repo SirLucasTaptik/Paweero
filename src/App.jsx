@@ -999,29 +999,74 @@ const CSS = `
   .sp-r  { background:rgba(45,122,79,0.1);  color:var(--green); }
 
   /* ─ FORMS ─ */
-  .fg { margin-bottom:14px; }
-  .flabel { display:block; font-size:11px; font-weight:600; color:var(--muted); letter-spacing:0.5px; text-transform:uppercase; margin-bottom:5px; }
-  .fi,.fs,.fta { width:100%; background:var(--off); border:1px solid var(--border); border-radius:var(--r); padding:10px 12px; font-family:var(--font); font-size:16px; color:var(--dark); outline:none; transition:border-color 0.12s; -webkit-appearance:none; appearance:none; }
-  .fi:focus,.fs:focus,.fta:focus { border-color:var(--dark); background:var(--white); }
-  .fta { resize:vertical; min-height:84px; font-size:14px; }
-  .frow { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .fg { margin-bottom:16px; }
+  .flabel { display:block; font-size:13px; font-weight:600; color:var(--dark); letter-spacing:-0.1px; margin-bottom:7px; }
+  .fi,.fs,.fta { width:100%; background:var(--off); border:none; border-radius:var(--r-sm); padding:13px 14px; font-family:var(--font); font-size:16px; color:var(--dark); outline:none; transition:box-shadow 0.15s, background 0.15s; -webkit-appearance:none; appearance:none; box-shadow:0 0 0 1.5px transparent inset; }
+  .fi:focus,.fs:focus,.fta:focus { background:var(--white); box-shadow:0 0 0 2px var(--dark) inset; }
+  .fi::placeholder,.fta::placeholder { color:#b3b3b6; }
+  .fta { resize:vertical; min-height:88px; font-size:15px; }
+  .frow { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
   @media (max-width:480px) { .frow { grid-template-columns:1fr; } }
-  .opt-group { display:flex; flex-direction:column; gap:7px; }
-  .opt-item  { display:flex; align-items:center; gap:10px; background:var(--off); border:1px solid var(--border); border-radius:var(--r); padding:11px 13px; cursor:pointer; min-height:46px; transition:all 0.12s; }
-  .opt-item:active { opacity:0.7; }
-  .opt-item.on { border-color:var(--dark); background:var(--white); }
-  .opt-item input { accent-color:var(--dark); width:15px; height:15px; flex-shrink:0; }
-  .opt-label { font-size:13px; font-weight:500; color:var(--dark); }
-  .opt-hint  { font-size:11px; color:var(--muted); margin-top:1px; }
+
+  /* ─ SELECTABLE OPTION CARDS — custom Apple-style indicator, no native checkbox/radio look ─ */
+  .opt-group { display:flex; flex-direction:column; gap:8px; }
+  .opt-item  {
+    display:flex; align-items:center; gap:12px; background:var(--off); border:1.5px solid transparent;
+    border-radius:var(--r-sm); padding:13px 14px; cursor:pointer; min-height:50px; transition:all 0.15s;
+    position:relative;
+  }
+  .opt-item:active { transform:scale(0.99); }
+  .opt-item.on { border-color:var(--dark); background:var(--white); box-shadow:var(--shadow-sm); }
+  /* Hide the native input entirely — it still handles state/click via the wrapping <label> */
+  .opt-item input { position:absolute; opacity:0; width:0; height:0; pointer-events:none; }
+  /* Custom indicator, drawn purely in CSS: empty ring by default, filled + checkmark when selected */
+  .opt-item::before {
+    content:""; flex-shrink:0; width:20px; height:20px; border-radius:50%;
+    border:1.5px solid #d1d1d4; background:var(--white); transition:all 0.15s;
+    order:99; /* indicator sits at the end, like iOS settings rows */
+  }
+  .opt-item.on::before {
+    border-color:var(--dark); background:var(--dark);
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M3.5 8.5l3 3 6-6.5'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:center;
+  }
+  .opt-item > input[type] + div { flex:1; min-width:0; }
+  .opt-label { font-size:14.5px; font-weight:600; color:var(--dark); flex:1; }
+  .opt-hint  { font-size:12px; color:var(--muted); margin-top:2px; font-weight:400; }
+
+  /* ─ PURPOSE CHIPS — compact grid variant of opt-item, used for multi-select "what applies" rows ─ */
+  .purpose-chip {
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+    background:var(--off); border:1.5px solid transparent; border-radius:var(--r-sm);
+    padding:14px 10px; cursor:pointer; transition:all 0.15s; text-align:center; position:relative;
+    flex:1 1 96px; min-height:78px;
+  }
+  .purpose-chip:active { transform:scale(0.97); }
+  .purpose-chip input { position:absolute; opacity:0; width:0; height:0; pointer-events:none; }
+  .purpose-chip .pc-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  .purpose-chip .pc-label { font-size:12.5px; font-weight:600; color:var(--dark); }
+  .purpose-chip.on { background:var(--white); box-shadow:var(--shadow-sm); }
+  .purpose-chip.on::after {
+    content:""; position:absolute; top:8px; right:8px; width:16px; height:16px; border-radius:50%;
+    background-color:var(--dark);
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23fff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' d='M3.5 8.5l3 3 6-6.5'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:center;
+  }
+  .purpose-chip.chip-lost.on   { border-color:var(--red); }
+  .purpose-chip.chip-found.on  { border-color:var(--green); }
+  .purpose-chip.chip-help.on   { border-color:var(--red); }
+  .purpose-chip.chip-foster.on { border-color:var(--blue); }
+  .purpose-chip.chip-adopt.on  { border-color:var(--amber); }
+
   .loc-row   { display:flex; gap:8px; }
   .loc-row .fi { flex:1; }
-  .loc-btn   { background:var(--dark); color:#fff; border:none; border-radius:var(--r); padding:10px 12px; font-size:17px; cursor:pointer; flex-shrink:0; min-height:44px; }
+  .loc-btn   { background:var(--dark); color:#fff; border:none; border-radius:var(--r-sm); padding:10px 12px; font-size:17px; cursor:pointer; flex-shrink:0; min-height:44px; }
   .type-row  { display:flex; gap:7px; flex-wrap:wrap; }
-  .tbtn { font-size:20px; padding:8px 10px; border:1px solid var(--border); border-radius:8px; background:var(--off); cursor:pointer; min-height:44px; min-width:44px; transition:all 0.12s; }
-  .tbtn.on { border-color:var(--dark); background:var(--dark); }
-  .photo-drop { border:1.5px dashed var(--border); border-radius:var(--r); padding:22px; text-align:center; cursor:pointer; background:var(--off); }
+  .tbtn { font-size:20px; padding:8px 10px; border:none; border-radius:12px; background:var(--off); cursor:pointer; min-height:44px; min-width:44px; transition:all 0.12s; }
+  .tbtn.on { background:var(--dark); }
+  .photo-drop { border:1.5px dashed #d1d1d4; border-radius:var(--r-sm); padding:26px; text-align:center; cursor:pointer; background:var(--off); }
   .photo-drop:active { border-color:var(--dark); }
-  .photo-prev { height:80px; border-radius:8px; border:1px solid var(--border); background:var(--off); display:flex; align-items:center; justify-content:center; font-size:40px; margin-bottom:10px; }
+  .photo-prev { height:88px; border-radius:12px; border:none; background:var(--off); display:flex; align-items:center; justify-content:center; font-size:40px; margin-bottom:10px; }
   .err       { font-size:13px; color:var(--red); margin-top:5px; font-weight:800; display:flex; align-items:center; gap:5px; letter-spacing:0.1px; animation:errShake 0.32s ease; }
   .err::before { content:"⚠"; font-size:13px; line-height:1; }
   @keyframes errShake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-4px)} 40%,80%{transform:translateX(4px)} }
@@ -4074,42 +4119,44 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact }) {
 
   return (
     <div>
-      <div style={{ fontSize:15, fontWeight:600, marginBottom:4 }}>
-        {lang==="tr"?"Hayvan Raporu Oluştur":"Create an Animal Report"}
-      </div>
-      <div style={{ fontSize:12, color:"var(--muted)", marginBottom:18, lineHeight:1.6 }}>
+      <div style={{ fontSize:13.5, color:"var(--muted)", marginBottom:22, lineHeight:1.6 }}>
         {lang==="tr"
-          ? "Hayvan bilgilerini bir kez gir. Aynı ilan sahiplenme, geçici bakım, yardım, kayıp ve/veya bulunan amaçlarına aynı anda hizmet edebilir — durumuna uyan tüm seçenekleri işaretle."
-          : "Enter the animal's details once. A single report can serve adoption, foster, help, lost, and/or found purposes at the same time — select every option that applies."}
+          ? "Hayvan bilgilerini bir kez gir. Aynı ilan sahiplenme, geçici bakım, yardım, kayıp ve/veya bulunan amaçlarına aynı anda hizmet edebilir."
+          : "Enter the animal's details once. A single report can serve adoption, foster, help, lost, and/or found purposes at the same time."}
       </div>
 
       {/* Purpose — multi-select, NOT mutually exclusive.
           "What applies to this animal?" not "pick one listing type". */}
       <div className="fg">
-        <label className="flabel">{lang==="tr"?"Bu Hayvan İçin Ne Geçerli? *":"What Applies to This Animal? *"}</label>
-        <div style={{ fontSize:11, color:"var(--muted)", marginBottom:8 }}>
+        <label className="flabel">{lang==="tr"?"Bu Hayvan İçin Ne Geçerli?":"What Applies to This Animal?"}</label>
+        <div style={{ fontSize:12.5, color:"var(--muted)", marginBottom:10 }}>
           {lang==="tr" ? "Birden fazlasını seçebilirsin." : "You can select more than one."}
         </div>
         <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-          <label className={`opt-item ${f.isLost?"on":""}`} style={{ flex:"1 1 100px" }}>
+          <label className={`purpose-chip chip-lost ${f.isLost?"on":""}`}>
             <input type="checkbox" checked={f.isLost} onChange={e => setF(x=>({...x, isLost:e.target.checked}))} />
-            <div><div className="opt-label">🔴 {lang==="tr"?"Kayıp":"Lost"}</div></div>
+            <div className="pc-dot" style={{ background:"var(--red)" }} />
+            <div className="pc-label">{lang==="tr"?"Kayıp":"Lost"}</div>
           </label>
-          <label className={`opt-item ${f.isFound?"on":""}`} style={{ flex:"1 1 100px" }}>
+          <label className={`purpose-chip chip-found ${f.isFound?"on":""}`}>
             <input type="checkbox" checked={f.isFound} onChange={e => setF(x=>({...x, isFound:e.target.checked}))} />
-            <div><div className="opt-label">📍 {lang==="tr"?"Bulunan":"Found"}</div></div>
+            <div className="pc-dot" style={{ background:"var(--green)" }} />
+            <div className="pc-label">{lang==="tr"?"Bulunan":"Found"}</div>
           </label>
-          <label className={`opt-item ${f.needsHelp?"on":""}`} style={{ flex:"1 1 100px" }}>
+          <label className={`purpose-chip chip-help ${f.needsHelp?"on":""}`}>
             <input type="checkbox" checked={f.needsHelp} onChange={e => setF(x=>({...x, needsHelp:e.target.checked}))} />
-            <div><div className="opt-label">🆘 {lang==="tr"?"Yardım":"Help"}</div></div>
+            <div className="pc-dot" style={{ background:"var(--red)" }} />
+            <div className="pc-label">{lang==="tr"?"Yardım":"Help"}</div>
           </label>
-          <label className={`opt-item ${f.canFoster?"on":""}`} style={{ flex:"1 1 100px" }}>
+          <label className={`purpose-chip chip-foster ${f.canFoster?"on":""}`}>
             <input type="checkbox" checked={f.canFoster} onChange={e => setF(x=>({...x, canFoster:e.target.checked}))} />
-            <div><div className="opt-label">🛏️ {lang==="tr"?"Geçici Bakım":"Foster"}</div></div>
+            <div className="pc-dot" style={{ background:"var(--blue)" }} />
+            <div className="pc-label">{lang==="tr"?"Geçici Bakım":"Foster"}</div>
           </label>
-          <label className={`opt-item ${f.canAdopt?"on":""}`} style={{ flex:"1 1 100px" }}>
+          <label className={`purpose-chip chip-adopt ${f.canAdopt?"on":""}`}>
             <input type="checkbox" checked={f.canAdopt} onChange={e => setF(x=>({...x, canAdopt:e.target.checked}))} />
-            <div><div className="opt-label">🏠 {lang==="tr"?"Sahiplenme":"Adopt"}</div></div>
+            <div className="pc-dot" style={{ background:"var(--amber)" }} />
+            <div className="pc-label">{lang==="tr"?"Sahiplenme":"Adopt"}</div>
           </label>
         </div>
       </div>
