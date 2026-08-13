@@ -9,6 +9,13 @@ const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 // ─── ADMIN ────────────────────────────────────────────────────────────────────
 const ADMIN_PASSWORD = "paweerohelpsin2026!";
 
+// ─── BRAND IMAGES ─────────────────────────────────────────────────────────────
+// Fallback photo used anywhere a listing has no uploaded image — upload the
+// Paweero favicon/logo to this exact path in the "pawero-photos" storage bucket.
+const FALLBACK_IMAGE = "https://uyuqcpttdbejaakbwzyl.supabase.co/storage/v1/object/public/pawero-photos/branding/favicon.png";
+// Hero banner image on the Home page — upload the Paweero brand photo to this path.
+const HERO_IMAGE = "https://uyuqcpttdbejaakbwzyl.supabase.co/storage/v1/object/public/pawero-photos/branding/hero.jpg";
+
 // ─── IMAGE MODERATION ────────────────────────────────────────────────────────
 const moderateImage = async (imageUrl) => {
   try {
@@ -808,6 +815,7 @@ const CSS = `
   .hero-h1 em { color:var(--amber); font-style:italic; }
   .hero-p  { font-size:15px; color:var(--muted); max-width:440px; line-height:1.65; margin-bottom:28px; }
   .hero-cta { display:flex; gap:10px; flex-wrap:wrap; }
+  .hero-banner-img { width:100%; max-height:280px; object-fit:cover; border-radius:var(--r-lg); margin-top:28px; display:block; }
 
   /* ─ STATS ─ */
   .stats { display:grid; grid-template-columns:repeat(3,1fr); border-bottom:1px solid var(--border); }
@@ -899,6 +907,9 @@ const CSS = `
   @media (hover:hover) { .btn-blue:hover { background:#1d4ed8; } }
   .btn-sm  { padding:8px 15px; font-size:13px; min-height:38px; border-radius:10px; }
   .btn-full { width:100%; justify-content:center; }
+  /* Full-width on mobile only — for page-header CTAs that shouldn't stretch edge-to-edge on desktop */
+  .btn-full-mobile { width:100%; justify-content:center; }
+  @media (min-width:768px) { .btn-full-mobile { width:auto; } }
 
   /* ─ ANIMAL CARDS ─ */
   .a-list { display:grid; grid-template-columns:1fr; gap:16px; }
@@ -1091,12 +1102,12 @@ const CSS = `
   @keyframes fadeScale { from{opacity:0;transform:scale(0.97)} to{opacity:1;transform:scale(1)} }
   .sh-handle { width:36px; height:4px; background:var(--border); border-radius:2px; margin:10px auto; flex-shrink:0; }
   @media (min-width:640px) { .sh-handle { display:none; } }
-  .sh-hd    { display:flex; align-items:center; justify-content:space-between; padding:0 16px 12px; border-bottom:1px solid var(--border); flex-shrink:0; }
+  .sh-hd    { display:flex; align-items:center; justify-content:space-between; padding:0 20px 14px; border-bottom:1px solid var(--border); flex-shrink:0; }
   .sh-title { font-size:15px; font-weight:600; color:var(--dark); letter-spacing:-0.2px; }
   .sh-close { background:var(--light); border:none; border-radius:6px; width:28px; height:28px; font-size:13px; color:var(--muted); display:flex; align-items:center; justify-content:center; cursor:pointer; }
-  .sh-body  { flex:1; overflow-y:auto; padding:16px; -webkit-overflow-scrolling:touch; }
-  .sh-foot  { padding:12px 16px; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; flex-shrink:0; padding-bottom:max(12px,env(safe-area-inset-bottom)); background:var(--white); }
-  .app-strip { display:flex; align-items:center; gap:10px; padding:10px 16px; border-bottom:1px solid var(--border); flex-shrink:0; flex-wrap:wrap; }
+  .sh-body  { flex:1; overflow-y:auto; padding:20px; -webkit-overflow-scrolling:touch; }
+  .sh-foot  { padding:14px 20px; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; flex-shrink:0; padding-bottom:max(14px,env(safe-area-inset-bottom)); background:var(--white); }
+  .app-strip { display:flex; align-items:center; gap:10px; padding:12px 20px; border-bottom:1px solid var(--border); flex-shrink:0; flex-wrap:wrap; }
   .app-strip-emoji { font-size:26px; width:42px; height:42px; border-radius:8px; background:var(--off); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
   .app-strip-name  { font-size:13px; font-weight:600; color:var(--dark); }
   .app-strip-meta  { font-size:11px; color:var(--muted); }
@@ -1322,6 +1333,8 @@ export default function App() {
             time: { en: new Date(r.created_at).toLocaleDateString("en"), tr: new Date(r.created_at).toLocaleDateString("tr") },
             status: r.status,
             reporter: r.reporter_name || "Anonymous",
+            reporterPhone: r.reporter_phone || "",
+            reporterPref: r.reporter_pref || "email",
             photo_url: r.photo_url || (r.photo_urls && r.photo_urls[0]) || null,
             photo_urls: r.photo_urls || (r.photo_url ? [r.photo_url] : []),
             volunteers: (r.volunteers || []).map(v => ({ name: v.name, eta: v.eta, etaOrder: v.eta_order })),
@@ -1446,6 +1459,8 @@ export default function App() {
             photo_url: a.photo_url || (a.photo_urls && a.photo_urls[0]) || null,
             photo_urls: a.photo_urls || (a.photo_url ? [a.photo_url] : []),
             submitter_email: a.submitter_email || "",
+            contactPhone: a.contact_phone || "",
+            contactPref: a.contact_pref || "email",
             isNeutered: a.is_neutered || "unknown",
             vaccinatedParasite: a.vaccinated_parasite || "unknown",
             vaccinatedRabies: a.vaccinated_rabies || "unknown",
@@ -1541,6 +1556,7 @@ export default function App() {
   const [helpedFor, setHelpedFor] = useState(null);
   const [helpProof, setHelpProof] = useState(null);
   const [etaFor, setEtaFor]       = useState(null);   // report to volunteer for
+  const [contactDrawerFor, setContactDrawerFor] = useState(null); // reporter contact info to show after ETA confirm
   // (myName removed — volunteer identity is now the verified contactInfo.email)
   const [showReportForm, setShowReportForm] = useState(false);
   const [showCreateReport, setShowCreateReport] = useState(false);
@@ -1668,6 +1684,8 @@ export default function App() {
     time: { en: "", tr: "" },
     status: "active",
     reporter: a.submitter_email || "",
+    reporterPhone: a.contactPhone || "",
+    reporterPref: a.contactPref || "email",
     photo_url: a.photo_url,
     photo_urls: a.photo_urls,
     volunteers: [],
@@ -1770,6 +1788,12 @@ export default function App() {
             <div className="hero-cta">
               <button className="btn btn-red" style={{ padding:"15px 28px", fontSize:15 }} onClick={() => setShowCreateReport(true)}>{t.postAnimal}</button>
             </div>
+            <img
+              src={HERO_IMAGE}
+              alt="Paweero"
+              className="hero-banner-img"
+              onError={(e) => { e.currentTarget.style.display = "none"; }}
+            />
           </div>
 
           <div className="stats">
@@ -2088,7 +2112,7 @@ export default function App() {
             <div className="ph-sub" style={{ paddingBottom:14 }}>{t.helpSub}</div>
 
             {/* Primary CTA — sized and elevated to stand out as THE action on this page */}
-            <button className="btn btn-red btn-full" style={{ marginBottom:16, padding:"13px 20px" }} onClick={() => setShowReportForm(true)}>
+            <button className="btn btn-red btn-full-mobile" style={{ marginBottom:16, padding:"13px 28px" }} onClick={() => setShowReportForm(true)}>
               🚨 {lang==="tr"?"Yardım İste":"Report an Animal in Need"}
             </button>
 
@@ -2146,9 +2170,8 @@ export default function App() {
                       <div className="acard-img" style={{ overflow:"hidden", cursor:"pointer" }} onClick={() => setDetailReport(r)}>
                         {r.photo_url
                           ? <img src={r.photo_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-                          : r.emoji
+                          : <img src={FALLBACK_IMAGE} style={{ width:"56%", height:"56%", objectFit:"contain", opacity:0.5 }} />
                         }
-                        {r.status === "active" && <span className="abadge ab-red">{lang==="tr"?"Acil":"Urgent"}</span>}
                         {r.photo_urls?.length > 1 && (
                           <span className="abadge ab-sp">+{r.photo_urls.length - 1}</span>
                         )}
@@ -2325,6 +2348,8 @@ export default function App() {
                   description: rf.desc || "",
                   location: fullLocation,
                   reporter_name: contact.email,
+                  reporter_phone: contact.phone || null,
+                  reporter_pref: contact.contactPref || "email",
                   status: "active",
                   photo_url: photos[0] || null,
                   photo_urls: photos,
@@ -2747,6 +2772,16 @@ export default function App() {
                       }
                       setEtaFor(null);
                       say("✓ " + (lang==="tr" ? opt.labelTR : opt.label));
+                      // Straight into the contact drawer — a volunteer who just committed
+                      // to an ETA should be able to reach the reporter immediately.
+                      setContactDrawerFor({
+                        title: etaFor.title?.[lang] || etaFor.title || "",
+                        location: etaFor.location || "",
+                        reporterEmail: etaFor.reporter || "",
+                        reporterPhone: etaFor.reporterPhone || "",
+                        reporterPref: etaFor.reporterPref || "email",
+                        eta: lang==="tr" ? opt.labelTR : opt.label,
+                      });
                       await loadFromDB();
                     } else {
                       setEtaFor(null);
@@ -2760,6 +2795,48 @@ export default function App() {
                     </div>
                   </button>
                 ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CONTACT DRAWER — opens automatically right after a volunteer confirms an ETA,
+          so they can immediately reach the person who reported the animal. */}
+      {contactDrawerFor && (
+        <div className="sheet-overlay" onClick={() => setContactDrawerFor(null)}>
+          <div className="sheet" onClick={e => e.stopPropagation()}>
+            <div className="sh-handle" />
+            <div className="sh-hd">
+              <div className="sh-title">{lang==="tr"?"İhbar Sahibiyle İletişime Geç":"Contact the Reporter"}</div>
+              <button className="sh-close" onClick={() => setContactDrawerFor(null)}>✕</button>
+            </div>
+            <div className="sh-body">
+              <div className="info-pill">✓ {contactDrawerFor.eta}</div>
+              <div style={{ fontSize:14, fontWeight:600, color:"var(--dark)", marginBottom:4 }}>{contactDrawerFor.title}</div>
+              <div style={{ fontSize:12, color:"var(--muted)", marginBottom:20 }}>📍 {contactDrawerFor.location}</div>
+              <div style={{ fontSize:13, color:"var(--muted)", marginBottom:16, lineHeight:1.6 }}>
+                {lang==="tr"
+                  ? "Yola çıkmadan önce ihbar sahibine haber vermek ister misin? Konum detayı veya hayvanın son durumu hakkında bilgi alabilirsin."
+                  : "Want to give the reporter a heads-up before you head out? You can confirm the exact location or get the latest on the animal's condition."}
+              </div>
+              <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                {contactDrawerFor.reporterPhone && (
+                  <button className="btn btn-dark btn-full" onClick={() => { window.location.href = `tel:${contactDrawerFor.reporterPhone}`; }}>
+                    📞 {lang==="tr"?"Ara":"Call"} {contactDrawerFor.reporterPhone}
+                  </button>
+                )}
+                {contactDrawerFor.reporterEmail && contactDrawerFor.reporterEmail.includes("@") && (
+                  <button className="btn btn-outline btn-full" onClick={() => { window.location.href = `mailto:${contactDrawerFor.reporterEmail}?subject=${encodeURIComponent((lang==="tr"?"Yardım geliyorum: ":"Help is on the way: ") + contactDrawerFor.title)}`; }}>
+                    ✉️ {lang==="tr"?"E-posta Gönder":"Send Email"}
+                  </button>
+                )}
+                {!contactDrawerFor.reporterPhone && !(contactDrawerFor.reporterEmail && contactDrawerFor.reporterEmail.includes("@")) && (
+                  <div style={{ fontSize:12, color:"var(--muted)", textAlign:"center", padding:"12px 0" }}>
+                    {lang==="tr" ? "İhbar sahibi için iletişim bilgisi bulunamadı." : "No contact details available for this reporter."}
+                  </div>
+                )}
+                <button className="btn btn-outline btn-full" onClick={() => setContactDrawerFor(null)}>{t.close}</button>
               </div>
             </div>
           </div>
@@ -2838,10 +2915,8 @@ function MiniCard({ a, lang, onClick }) {
       <div style={{ height:126, background:"var(--off)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:44, position:"relative", overflow:"hidden" }}>
         {a.photo_url
           ? <img src={a.photo_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-          : a.emoji
+          : <img src={FALLBACK_IMAGE} style={{ width:"50%", height:"50%", objectFit:"contain", opacity:0.5 }} />
         }
-        {a.urgent          && <span className="abadge ab-red">{lang==="tr"?"Acil":"Urgent"}</span>}
-        {!a.urgent&&a.isNew && <span className="abadge ab-grn">{lang==="tr"?"Yeni":"New"}</span>}
       </div>
       <div style={{ padding:"8px 10px" }}>
         <div style={{ fontSize:12, fontWeight:600, color:"var(--dark)", marginBottom:1 }}>{a.name}</div>
@@ -2859,10 +2934,8 @@ function ACard({ a, mode, lang, onClick }) {
       <div className="acard-img" style={{ overflow:"hidden" }}>
         {a.photo_url
           ? <img src={a.photo_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-          : a.emoji
+          : <img src={FALLBACK_IMAGE} style={{ width:"56%", height:"56%", objectFit:"contain", opacity:0.5 }} />
         }
-        {a.urgent           && <span className="abadge ab-red">{lang==="tr"?"Acil":"Urgent"}</span>}
-        {!a.urgent&&a.isNew && <span className="abadge ab-grn">{lang==="tr"?"Yeni":"New"}</span>}
         {a.species?.[lang] && <span className="abadge ab-sp">{a.species[lang]}</span>}
         {mode === "foster"  && <span className="abadge ab-fo">{lang==="tr"?"Geçici":"Foster"}</span>}
       </div>
@@ -3809,7 +3882,7 @@ function ImageCarousel({ photos, emoji, height = 220, fit = "cover" }) {
   if (!list) {
     return (
       <div className="d-thumb" style={{ height }}>
-        {emoji}
+        <img src={FALLBACK_IMAGE} style={{ width:"40%", height:"40%", objectFit:"contain", opacity:0.5 }} />
       </div>
     );
   }
@@ -4374,6 +4447,8 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact }) {
             photo_url: photos[0],
             photo_urls: photos,
             submitter_email: contact.email,
+            contact_phone: contact.phone || null,
+            contact_pref: contact.contactPref || "email",
             status: "active",
             urgent: f.needsHelp && f.helpUrgency === "critical",
             is_new: true,
