@@ -901,7 +901,9 @@ const CSS = `
   .btn-full { width:100%; justify-content:center; }
 
   /* ─ ANIMAL CARDS ─ */
-  .a-list { display:flex; flex-direction:column; gap:16px; }
+  .a-list { display:grid; grid-template-columns:1fr; gap:16px; }
+  @media (min-width:560px)  { .a-list { grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); } }
+  @media (min-width:1100px) { .a-list { grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); } }
   .acard  { background:var(--white); border:none; border-radius:var(--r-lg); overflow:hidden; cursor:pointer; transition:transform 0.15s, box-shadow 0.15s; display:flex; flex-direction:column; box-shadow:var(--shadow-sm); }
   .acard:active { opacity:0.92; transform:scale(0.99); }
   @media (hover:hover) { .acard:hover { box-shadow:var(--shadow-md); transform:translateY(-1px); } }
@@ -1036,21 +1038,22 @@ const CSS = `
 
   /* ─ PURPOSE CHIPS — compact grid variant of opt-item, used for multi-select "what applies" rows ─ */
   .purpose-chip {
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
     background:var(--off); border:1.5px solid transparent; border-radius:var(--r-sm);
     padding:14px 10px; cursor:pointer; transition:all 0.15s; text-align:center; position:relative;
-    flex:1 1 96px; min-height:78px;
+    flex:1 1 96px; min-height:88px;
   }
   .purpose-chip:active { transform:scale(0.97); }
   .purpose-chip input { position:absolute; opacity:0; width:0; height:0; pointer-events:none; }
-  .purpose-chip .pc-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  .purpose-chip .pc-icon { font-size:21px; width:42px; height:42px; border-radius:11px; background:var(--light); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
   .purpose-chip .pc-label { font-size:12.5px; font-weight:600; color:var(--dark); }
   .purpose-chip.on { background:var(--white); box-shadow:var(--shadow-sm); }
   .purpose-chip.on::after {
-    content:""; position:absolute; top:8px; right:8px; width:16px; height:16px; border-radius:50%;
+    content:""; position:absolute; top:8px; right:8px; width:18px; height:18px; border-radius:50%;
     background-color:var(--dark);
     background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23fff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' d='M3.5 8.5l3 3 6-6.5'/%3E%3C/svg%3E");
     background-repeat:no-repeat; background-position:center;
+    box-shadow:0 0 0 2px var(--white);
   }
   .purpose-chip.chip-lost.on   { border-color:var(--red); }
   .purpose-chip.chip-found.on  { border-color:var(--green); }
@@ -1915,81 +1918,57 @@ export default function App() {
                 ))}
               </div>
 
-              <div className="lf-list">
-                {filteredLF.map(item => (
-                  <div key={item.id} className={`lf-card ${item.status === "reunited" ? "reunited" : ""}`} onClick={() => setDetailLF(item)}>
-                    <div className="lf-top">
-                      <div className="lf-emo" style={{ overflow:"hidden" }}>
-                        {item.photo_url
-                          ? <img src={item.photo_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-                          : item.emoji
-                        }
-                        <span className={`lf-type ${item.status === "reunited" ? "lf-reunited" : item.type === "lost" ? "lf-lost" : "lf-found"}`}>
-                          {item.status === "reunited" ? t.reunited : item.type === "lost" ? (lang==="tr"?"Kayıp":"Lost") : (lang==="tr"?"Bulunan":"Found")}
-                        </span>
-                      </div>
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <div className="lf-name">{item.name === "Unknown" ? (lang==="tr"?`Bulunan ${item.species.tr}`:`Found ${item.species.en}`) : item.name}</div>
-                        <div className="lf-meta">{item.species[lang]} · {item.breed[lang]} · {item.color[lang]}</div>
-                        <div className="lf-meta">📍 {item.area}, {item.city} · {item.date[lang]}</div>
-                      </div>
-                      {item.reward[lang] && <span className="reward-pill">{lang==="tr"?"Ödül":"Reward"}: {item.reward[lang]}</span>}
-                    </div>
-                    <div className="lf-desc">{item.desc[lang]}</div>
-                    <div className="lf-foot">
-                      <span className="lf-contact">📞 {item.contact}</span>
-                      <div style={{ display:"flex", gap:6 }}>
-                        <WhatsAppShareButton lang={lang} t={t} text={
-                          `${item.type === "found"
-                            ? (lang==="tr"?"🐾 Bulunan hayvan":"🐾 Found animal")
-                            : (lang==="tr"?"🐾 Kayıp hayvan":"🐾 Lost animal")}: ${item.name === "Unknown" ? item.species[lang] : item.name}\n` +
-                          `📍 ${[item.area, item.city].filter(Boolean).join(", ")}\n` +
-                          `${item.desc[lang] || ""}\n\n` +
-                          `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?`${window.location.origin}${window.location.pathname}?lf=${item.id}`:""}`
-                        } />
-                        {item.status !== "reunited" && (
-                          <button className="btn btn-sm btn-outline" onClick={e => {
-                            e.stopPropagation();
-                            if (item.contact_pref === "phone" && item.contact_phone) {
-                              window.location.href = `tel:${item.contact_phone}`;
-                            } else if (item.contact_email) {
-                              window.location.href = `mailto:${item.contact_email}`;
-                            } else if (item.contact) {
-                              const c = item.contact;
-                              window.location.href = c.includes("@") ? `mailto:${c}` : `tel:${c}`;
-                            }
-                          }}>{t.contact}</button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              {filteredLF.length > 0 ? (
+                <div className="a-list">
+                  {filteredLF.map(item => {
+                    const displayName = item.name === "Unknown"
+                      ? (lang==="tr" ? `Bulunan ${item.species.tr}` : `Found ${item.species.en}`)
+                      : item.name;
+                    const adapted = {
+                      id: item.id,
+                      photo_url: item.photo_url,
+                      emoji: item.emoji,
+                      name: displayName,
+                      species: item.species,
+                      breed: item.breed,
+                      age: { en:"", tr:"" },
+                      gender: { en:"", tr:"" },
+                      city: item.area,
+                      province: item.city,
+                      tags: { en:[], tr:[] },
+                      desc: item.desc,
+                      isLost: item.type === "lost" && item.status !== "reunited",
+                      isFound: item.type === "found",
+                      needsHelp:false, canFoster:false, canAdopt:false,
+                      urgent:false, isNew:false,
+                    };
+                    return <ACard key={item.id} a={adapted} lang={lang} onClick={() => setDetailLF(item)} />;
+                  })}
+                </div>
+              ) : (() => {
+                // Contextual empty state — tone and illustration depend on which tab is active.
+                // "Lost" with zero results is good news (framed positively).
+                // "Found" and "All" with zero results invite the user to help, without sounding celebratory.
+                const empty = {
+                  lost:  { emoji:"🎉", title: t.lfEmptyLostTitle,  desc: t.lfEmptyLostDesc,  cta: t.lfEmptyLostCta,  newType:"lost"  },
+                  found: { emoji:"🔍", title: t.lfEmptyFoundTitle, desc: t.lfEmptyFoundDesc, cta: t.lfEmptyFoundCta, newType:"found" },
+                  all:   { emoji:"🐾", title: t.lfEmptyAllTitle,   desc: t.lfEmptyAllDesc,   cta: t.lfEmptyAllCta,   newType:"lost"  },
+                }[lfTypeFilter] || {};
 
-                {filteredLF.length === 0 && (() => {
-                  // Contextual empty state — tone and illustration depend on which tab is active.
-                  // "Lost" with zero results is good news (framed positively).
-                  // "Found" and "All" with zero results invite the user to help, without sounding celebratory.
-                  const empty = {
-                    lost:  { emoji:"🎉", title: t.lfEmptyLostTitle,  desc: t.lfEmptyLostDesc,  cta: t.lfEmptyLostCta,  newType:"lost"  },
-                    found: { emoji:"🔍", title: t.lfEmptyFoundTitle, desc: t.lfEmptyFoundDesc, cta: t.lfEmptyFoundCta, newType:"found" },
-                    all:   { emoji:"🐾", title: t.lfEmptyAllTitle,   desc: t.lfEmptyAllDesc,   cta: t.lfEmptyAllCta,   newType:"lost"  },
-                  }[lfTypeFilter] || {};
-
-                  return (
-                    <div style={{ textAlign:"center", padding:"48px 20px", maxWidth:380, margin:"0 auto" }}>
-                      <div style={{ fontSize:48, marginBottom:14 }}>{empty.emoji}</div>
-                      <div style={{ fontSize:15, fontWeight:700, color:"var(--dark)", marginBottom:8, lineHeight:1.4 }}>{empty.title}</div>
-                      <div style={{ fontSize:13, color:"var(--muted)", lineHeight:1.65, marginBottom:20 }}>{empty.desc}</div>
-                      <button
-                        className="btn btn-dark"
-                        onClick={() => { setLFForm(f => ({ ...f, type: empty.newType })); setLFSub("post"); }}
-                      >
-                        + {empty.cta}
+                return (
+                  <div style={{ textAlign:"center", padding:"48px 20px", maxWidth:380, margin:"0 auto" }}>
+                    <div style={{ fontSize:48, marginBottom:14 }}>{empty.emoji}</div>
+                    <div style={{ fontSize:15, fontWeight:700, color:"var(--dark)", marginBottom:8, lineHeight:1.4 }}>{empty.title}</div>
+                    <div style={{ fontSize:13, color:"var(--muted)", lineHeight:1.65, marginBottom:20 }}>{empty.desc}</div>
+                    <button
+                      className="btn btn-dark"
+                      onClick={() => { setLFForm(f => ({ ...f, type: empty.newType })); setLFSub("post"); }}
+                    >
+                      + {empty.cta}
                       </button>
                     </div>
                   );
                 })()}
-              </div>
             </div>
           )}
 
@@ -2149,7 +2128,7 @@ export default function App() {
             )}
 
             {/* ── Reports list — filtered by active sub-tab ── */}
-            <div className="r-list" style={{ marginBottom:24 }}>
+            <div className="a-list" style={{ marginBottom:24 }}>
               {[...helpItems]
                 .filter(r => helpSub === "active" ? r.status === "active" : (r.status === "helped" || r.status === "resolved"))
                 .sort((a,b) => {
@@ -2158,97 +2137,93 @@ export default function App() {
                 })
                 .map(r => {
                   const isVolunteer = contactInfo.email && r.volunteers?.some(v => v.name === contactInfo.email);
+                  const rTitle = typeof r.title === "object" ? (r.title[lang] || r.title.en || "") : (r.title || "");
+                  const rDesc  = typeof r.desc  === "object" ? (r.desc[lang]  || r.desc.en  || "") : (r.desc  || "");
+                  const rTime  = typeof r.time  === "object" ? (r.time[lang]  || r.time.en  || "") : (r.time  || "");
                   return (
-                    <div key={r.id} className={`rcard ${r.status === "helped" ? "helped" : r.status === "resolved" ? "resolved" : ""}`}>
-                      {/* Top row: icon/photo + title + status pill */}
-                      <div style={{ display:"flex", gap:14, alignItems:"flex-start" }}>
-                        <div className="r-icon" style={{ flexShrink:0, cursor: (r.photo_urls?.length > 1) ? "pointer" : "default" }} onClick={() => { if (r.photo_urls?.length > 1) setDetailReport(r); }}>
-                          {r.photo_url
-                            ? <img src={r.photo_url} style={{ width:72, height:72, objectFit:"cover", borderRadius:12, display:"block" }} />
-                            : <div style={{ width:72, height:72, background:"var(--off)", borderRadius:12, display:"flex", alignItems:"center", justifyContent:"center", fontSize:32 }}>{r.emoji}</div>
-                          }
-                          {r.photo_urls?.length > 1 && (
-                            <div style={{ position:"absolute", bottom:-4, right:-4, background:"rgba(0,0,0,0.65)", color:"#fff", fontSize:9, fontWeight:700, padding:"1px 5px", borderRadius:999 }}>
-                              +{r.photo_urls.length - 1}
-                            </div>
-                          )}
-                        </div>
-                        <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ display:"flex", justifyContent:"space-between", gap:6, flexWrap:"wrap", marginBottom:3 }}>
-                            <div className="r-title">{typeof r.title === "object" ? (r.title[lang] || r.title.en || "") : (r.title || "")}</div>
-                            <span className={`spill ${r.status === "active" ? "sp-a" : r.status === "helped" ? "sp-h" : r.status === "resolved" ? "sp-r" : "sp-p"}`}>
-                              {r.status}
-                            </span>
-                          </div>
-                          <div className="r-desc">{typeof r.desc === "object" ? (r.desc[lang] || r.desc.en || "") : (r.desc || "")}</div>
-                          <div className="r-meta">
-                            <span className="r-mi">📍 {r.location}</span>
-                            <span className="r-mi">{typeof r.time === "object" ? (r.time[lang] || r.time.en || "") : (r.time || "")}</span>
-                            {!r.fromAnimalListing && <span className="r-mi">{t.reportedBy} {r.reporter}</span>}
-                            {r.fromAnimalListing && (r.animalRef?.canAdopt || r.animalRef?.canFoster) && (
-                              <span className="r-mi" style={{ color:"var(--amber)", fontWeight:600 }}>
-                                {[r.animalRef?.canAdopt && (lang==="tr"?"🏠 Sahiplenilebilir":"🏠 Adoptable"), r.animalRef?.canFoster && (lang==="tr"?"🛏️ Geçici bakım da mümkün":"🛏️ Also fosterable")].filter(Boolean).join(" · ")}
-                              </span>
-                            )}
-                          </div>
-                        </div>
+                    <div key={r.id} className={`acard ${r.status === "resolved" ? "resolved" : ""}`} style={r.status==="resolved"?{opacity:0.55}:undefined}>
+                      {/* Same big-image header language as every other card in the app */}
+                      <div className="acard-img" style={{ overflow:"hidden", cursor:"pointer" }} onClick={() => setDetailReport(r)}>
+                        {r.photo_url
+                          ? <img src={r.photo_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                          : r.emoji
+                        }
+                        {r.status === "active" && <span className="abadge ab-red">{lang==="tr"?"Acil":"Urgent"}</span>}
+                        {r.photo_urls?.length > 1 && (
+                          <span className="abadge ab-sp">+{r.photo_urls.length - 1}</span>
+                        )}
                       </div>
-
-                      {/* Volunteer list — sorted by etaOrder (closest first), Coordinating last */}
-                      {r.volunteers?.length > 0 && (
-                        <div className="r-volunteers">
-                          <div style={{ fontSize:10, fontWeight:600, color:"var(--muted)", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:4 }}>
-                            {r.volunteers.length} {t.volunteersResponding}
-                          </div>
-                          {[...r.volunteers]
-                            .sort((a,b) => (a.etaOrder??99) - (b.etaOrder??99))
-                            .map((v, i) => {
-                              const opt = ETA_OPTIONS.find(o => o.label === v.eta);
-                              const displayEta = lang === "tr" ? (opt?.labelTR || v.eta) : v.eta;
-                              const isMe = contactInfo.email && v.name === contactInfo.email;
-                              // Privacy: never show another volunteer's raw email — just a masked label.
-                              const displayName = isMe
-                                ? (lang==="tr" ? "Sen" : "You")
-                                : (lang==="tr" ? "Bir gönüllü" : "A volunteer");
-                              return (
-                                <div key={i} className="r-vol-item">
-                                  <div className="r-vol-dot" style={{ background: v.etaOrder === 99 ? "var(--amber)" : "var(--blue)" }} />
-                                  <span style={{ fontWeight:600 }}>{displayName}</span>
-                                  <span className="r-vol-eta">· {displayEta}</span>
-                                </div>
-                              );
-                            })}
+                      <div className="acard-body">
+                        <div style={{ display:"flex", justifyContent:"space-between", gap:6, flexWrap:"wrap", marginBottom:2 }}>
+                          <div className="acard-name">{rTitle}</div>
+                          <span className={`spill ${r.status === "active" ? "sp-a" : r.status === "helped" ? "sp-h" : r.status === "resolved" ? "sp-r" : "sp-p"}`}>
+                            {r.status}
+                          </span>
                         </div>
-                      )}
+                        <div className="tags" style={{ marginBottom:5 }}>
+                          <span className="purpose-badge purpose-help">{lang==="tr"?"Yardım Gerekiyor":"Needs Help"}</span>
+                          {r.fromAnimalListing && r.animalRef?.canAdopt  && <span className="purpose-badge purpose-adopt">{lang==="tr"?"Sahiplenilebilir":"Adoptable"}</span>}
+                          {r.fromAnimalListing && r.animalRef?.canFoster && <span className="purpose-badge purpose-foster">{lang==="tr"?"Geçici Bakım":"Foster"}</span>}
+                        </div>
+                        <div className="acard-meta" style={{ marginBottom:8 }}>{rDesc}</div>
+                        <div className="r-meta" style={{ marginBottom:10 }}>
+                          <span className="r-mi">📍 {r.location}</span>
+                          <span className="r-mi">{rTime}</span>
+                          {!r.fromAnimalListing && <span className="r-mi">{t.reportedBy} {r.reporter}</span>}
+                        </div>
 
-                      {/* Action row */}
-                      {r.status !== "resolved" && (
-                        <div className="r-actions">
-                          {r.fromAnimalListing ? (
-                            // Multi-purpose listing — opens the unified Take Action sheet
-                            // (Adopt / Foster / Help, whichever this listing supports).
-                            <button className="btn btn-outline btn-sm" onClick={() => setTakeActionFor(r.animalRef)}>
-                              {t.takeAction}
-                            </button>
-                          ) : (<>
-                            {!isVolunteer && r.status !== "helped" && (
-                              <button className="btn btn-outline btn-sm" onClick={() => setEtaFor(r)}>
-                                {t.iCanHelp}
+                        {/* Volunteer list — sorted by etaOrder (closest first), Coordinating last */}
+                        {r.volunteers?.length > 0 && (
+                          <div className="r-volunteers" style={{ marginBottom:10 }}>
+                            <div style={{ fontSize:10, fontWeight:600, color:"var(--muted)", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:4 }}>
+                              {r.volunteers.length} {t.volunteersResponding}
+                            </div>
+                            {[...r.volunteers]
+                              .sort((a,b) => (a.etaOrder??99) - (b.etaOrder??99))
+                              .map((v, i) => {
+                                const opt = ETA_OPTIONS.find(o => o.label === v.eta);
+                                const displayEta = lang === "tr" ? (opt?.labelTR || v.eta) : v.eta;
+                                const isMe = contactInfo.email && v.name === contactInfo.email;
+                                const displayName = isMe
+                                  ? (lang==="tr" ? "Sen" : "You")
+                                  : (lang==="tr" ? "Bir gönüllü" : "A volunteer");
+                                return (
+                                  <div key={i} className="r-vol-item">
+                                    <div className="r-vol-dot" style={{ background: v.etaOrder === 99 ? "var(--amber)" : "var(--blue)" }} />
+                                    <span style={{ fontWeight:600 }}>{displayName}</span>
+                                    <span className="r-vol-eta">· {displayEta}</span>
+                                  </div>
+                                );
+                              })}
+                          </div>
+                        )}
+
+                        {/* Action row */}
+                        {r.status !== "resolved" && (
+                          <div className="r-actions" style={{ marginBottom:10 }}>
+                            {r.fromAnimalListing ? (
+                              <button className="btn btn-outline btn-sm" onClick={() => setTakeActionFor(r.animalRef)}>
+                                {t.takeAction}
                               </button>
-                            )}
-                            {isVolunteer && r.status !== "helped" && (
-                              <>
-                                <div style={{ fontSize:11, color:"var(--blue)", fontWeight:600 }}>
-                                  {t.youAreResponding} — {(() => { const v=r.volunteers.find(v=>v.name===contactInfo.email); const opt=ETA_OPTIONS.find(o=>o.label===v?.eta); return lang==="tr"?(opt?.labelTR||v?.eta):v?.eta; })()}
-                                </div>
-                                <button className="btn btn-blue btn-sm" onClick={() => { setHelpedFor(r); setHelpProof(null); }}>
-                                  {t.markAsHelped}
+                            ) : (<>
+                              {!isVolunteer && r.status !== "helped" && (
+                                <button className="btn btn-outline btn-sm" onClick={() => setEtaFor(r)}>
+                                  {t.iCanHelp}
                                 </button>
-                              </>
-                            )}
-                            {r.status === "helped" && (
-                              <div style={{ fontSize:11, color:"var(--blue)", fontWeight:500 }}>{t.animalHasBeenHelped}</div>
-                            )}
+                              )}
+                              {isVolunteer && r.status !== "helped" && (
+                                <>
+                                  <div style={{ fontSize:11, color:"var(--blue)", fontWeight:600 }}>
+                                    {t.youAreResponding} — {(() => { const v=r.volunteers.find(v=>v.name===contactInfo.email); const opt=ETA_OPTIONS.find(o=>o.label===v?.eta); return lang==="tr"?(opt?.labelTR||v?.eta):v?.eta; })()}
+                                  </div>
+                                  <button className="btn btn-blue btn-sm" onClick={() => { setHelpedFor(r); setHelpProof(null); }}>
+                                    {t.markAsHelped}
+                                  </button>
+                                </>
+                              )}
+                              {r.status === "helped" && (
+                                <div style={{ fontSize:11, color:"var(--blue)", fontWeight:500 }}>{t.animalHasBeenHelped}</div>
+                              )}
                           </>)}
                         </div>
                       )}
@@ -2262,6 +2237,7 @@ export default function App() {
                           `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?`${window.location.origin}${window.location.pathname}?report=${r.id}`:""}`
                         } />
                       </div>
+                    </div>
                     </div>
                   );
                 })}
@@ -2877,6 +2853,7 @@ function MiniCard({ a, lang, onClick }) {
 }
 
 function ACard({ a, mode, lang, onClick }) {
+  const metaParts = [a.breed?.[lang], a.age?.[lang], a.gender?.[lang]].filter(Boolean);
   return (
     <div className="acard" onClick={onClick}>
       <div className="acard-img" style={{ overflow:"hidden" }}>
@@ -2886,12 +2863,12 @@ function ACard({ a, mode, lang, onClick }) {
         }
         {a.urgent           && <span className="abadge ab-red">{lang==="tr"?"Acil":"Urgent"}</span>}
         {!a.urgent&&a.isNew && <span className="abadge ab-grn">{lang==="tr"?"Yeni":"New"}</span>}
-        <span className="abadge ab-sp">{a.species[lang]}</span>
+        {a.species?.[lang] && <span className="abadge ab-sp">{a.species[lang]}</span>}
         {mode === "foster"  && <span className="abadge ab-fo">{lang==="tr"?"Geçici":"Foster"}</span>}
       </div>
       <div className="acard-body">
         <div className="acard-name">{a.name}</div>
-        <div className="acard-meta">{a.breed[lang]} · {a.age[lang]} · {a.gender[lang]}</div>
+        {metaParts.length > 0 && <div className="acard-meta">{metaParts.join(" · ")}</div>}
         <div className="tags" style={{ marginBottom:5 }}>
           {[
             a.isLost    && { label: lang==="tr"?"Kayıp":"Lost",           cls:"purpose-lost" },
@@ -2901,13 +2878,13 @@ function ACard({ a, mode, lang, onClick }) {
             a.canAdopt  && { label: lang==="tr"?"Sahiplenilebilir":"Adoptable", cls:"purpose-adopt" },
           ].filter(Boolean).map(p => <span key={p.cls} className={`purpose-badge ${p.cls}`}>{p.label}</span>)}
         </div>
-        <div className="tags">{a.tags[lang].slice(0,2).map(tg => <span key={tg} className="tag">{tg}</span>)}</div>
+        {a.tags?.[lang]?.length > 0 && <div className="tags">{a.tags[lang].slice(0,2).map(tg => <span key={tg} className="tag">{tg}</span>)}</div>}
         <div className="acard-foot">
-          <span className="acard-loc">📍 {a.city}, {a.province}</span>
+          <span className="acard-loc">📍 {[a.city, a.province].filter(Boolean).join(", ")}</span>
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
             <WhatsAppShareButton lang={lang} text={
-              `🐾 ${a.name} — ${a.breed[lang]} · ${a.age[lang]} · ${a.gender[lang]}\n` +
-              `📍 ${a.city}, ${a.province}\n` +
+              `🐾 ${a.name}${metaParts.length ? " — " + metaParts.join(" · ") : ""}\n` +
+              `📍 ${[a.city, a.province].filter(Boolean).join(", ")}\n` +
               `${a.desc?.[lang] || ""}\n\n` +
               `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?`${window.location.origin}${window.location.pathname}?animal=${a.id}`:""}`
             } />
@@ -3098,15 +3075,19 @@ function TakeActionSheet({ animal, lang, t, onClose }) {
 
             {/* Purpose multi-select — only purposes this listing actually supports are shown */}
             <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:8 }}>
-              {["sighting","claim","adopt","foster","help"].filter(k => availablePurposes[k]).map(k => (
-                <label key={k} className={`opt-item ${purposes[k]?"on":""}`} style={{ flex:"1 1 140px" }}>
-                  <input type="checkbox" checked={purposes[k]} onChange={() => togglePurpose(k)} />
-                  <div>
-                    <div className="opt-label">{purposeLabel[k]}</div>
-                    <div className="opt-hint">{k==="adopt"?t.purposeAdoptDesc:k==="foster"?t.purposeFosterDesc:k==="help"?t.purposeHelpDesc:k==="sighting"?(lang==="tr"?"Bu hayvanı bir yerde gördün":"You spotted this animal somewhere"):(lang==="tr"?"Bu hayvanın sahibi olabilirsin":"You might be the owner")}</div>
-                  </div>
-                </label>
-              ))}
+              {["sighting","claim","adopt","foster","help"].filter(k => availablePurposes[k]).map(k => {
+                const icon = { sighting:"🔍", claim:"📍", adopt:"🏡", foster:"🤝", help:"🚨" }[k];
+                return (
+                  <label key={k} className={`opt-item ${purposes[k]?"on":""}`} style={{ flex:"1 1 140px" }}>
+                    <input type="checkbox" checked={purposes[k]} onChange={() => togglePurpose(k)} />
+                    <div className="pc-icon" style={{ width:38, height:38, fontSize:18, marginRight:2 }}>{icon}</div>
+                    <div>
+                      <div className="opt-label">{purposeLabel[k]}</div>
+                      <div className="opt-hint">{k==="adopt"?t.purposeAdoptDesc:k==="foster"?t.purposeFosterDesc:k==="help"?t.purposeHelpDesc:k==="sighting"?(lang==="tr"?"Bu hayvanı bir yerde gördün":"You spotted this animal somewhere"):(lang==="tr"?"Bu hayvanın sahibi olabilirsin":"You might be the owner")}</div>
+                    </div>
+                  </label>
+                );
+              })}
             </div>
             {errors._purpose && <div className="err">{errors._purpose}</div>}
 
@@ -4135,27 +4116,27 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact }) {
         <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
           <label className={`purpose-chip chip-lost ${f.isLost?"on":""}`}>
             <input type="checkbox" checked={f.isLost} onChange={e => setF(x=>({...x, isLost:e.target.checked}))} />
-            <div className="pc-dot" style={{ background:"var(--red)" }} />
+            <div className="pc-icon">🔍</div>
             <div className="pc-label">{lang==="tr"?"Kayıp":"Lost"}</div>
           </label>
           <label className={`purpose-chip chip-found ${f.isFound?"on":""}`}>
             <input type="checkbox" checked={f.isFound} onChange={e => setF(x=>({...x, isFound:e.target.checked}))} />
-            <div className="pc-dot" style={{ background:"var(--green)" }} />
+            <div className="pc-icon">📍</div>
             <div className="pc-label">{lang==="tr"?"Bulunan":"Found"}</div>
           </label>
           <label className={`purpose-chip chip-help ${f.needsHelp?"on":""}`}>
             <input type="checkbox" checked={f.needsHelp} onChange={e => setF(x=>({...x, needsHelp:e.target.checked}))} />
-            <div className="pc-dot" style={{ background:"var(--red)" }} />
+            <div className="pc-icon">🚨</div>
             <div className="pc-label">{lang==="tr"?"Yardım":"Help"}</div>
           </label>
           <label className={`purpose-chip chip-foster ${f.canFoster?"on":""}`}>
             <input type="checkbox" checked={f.canFoster} onChange={e => setF(x=>({...x, canFoster:e.target.checked}))} />
-            <div className="pc-dot" style={{ background:"var(--blue)" }} />
+            <div className="pc-icon">🤝</div>
             <div className="pc-label">{lang==="tr"?"Geçici Bakım":"Foster"}</div>
           </label>
           <label className={`purpose-chip chip-adopt ${f.canAdopt?"on":""}`}>
             <input type="checkbox" checked={f.canAdopt} onChange={e => setF(x=>({...x, canAdopt:e.target.checked}))} />
-            <div className="pc-dot" style={{ background:"var(--amber)" }} />
+            <div className="pc-icon">🏡</div>
             <div className="pc-label">{lang==="tr"?"Sahiplenme":"Adopt"}</div>
           </label>
         </div>
