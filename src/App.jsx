@@ -298,7 +298,23 @@ const T = {
   en: {
     // app shell
     appName:"Paweero", tagline:"Turkey · Northern Cyprus · UAE", lang:"EN",
-    home:"Home", animals:"Animals", lostFound:"Lost & Found", owners:"Owners", help:"Help",
+    home:"Home", animals:"Animals", lostFound:"Lost & Found", owners:"Owners", help:"Emergency",
+    // post chooser (single entry point for all posting actions)
+    postChooserTitle:"What would you like to do?",
+    postChooserSub:"Choose the option that matches your situation — this makes sure your post reaches the right people.",
+    postAdoptFosterTitle:"List an Animal",
+    postAdoptFosterDesc:"Post an animal that's looking for adoption or a foster home.",
+    postLostTitle:"I Lost My Pet",
+    postLostDesc:"Create a lost pet report to help find them.",
+    postFoundTitle:"I Found an Animal",
+    postFoundDesc:"Create a found report to reunite them with their family.",
+    postEmergencyTitle:"Report an Animal in Distress",
+    postEmergencyDesc:"Injured, sick, or in immediate danger — needs urgent rescue.",
+    postFabLabel:"Post",
+    helpFormRedirectNote:"This form is only for animals needing urgent rescue — injured, sick, or in immediate danger.",
+    helpFormWrongPlace:"Not an emergency?",
+    helpFormRedirectAdopt:"Post for adoption/foster instead →",
+    helpFormRedirectLF:"Report a lost or found pet instead →",
     // hero
     heroH1:"Every animal deserves", heroH1Em:"a loving home.",
     heroP:"Adopt, foster, find a pet sitter, post a lost & found, or report animals in distress.",
@@ -478,7 +494,23 @@ const T = {
   tr: {
     // uygulama kabuğu
     appName:"Paweero", tagline:"Türkiye · Kuzey Kıbrıs · BAE", lang:"TR",
-    home:"Ana Sayfa", animals:"Hayvanlar", lostFound:"Kayıp & Bulunan", owners:"Sahipler", help:"Yardım",
+    home:"Ana Sayfa", animals:"Hayvanlar", lostFound:"Kayıp & Bulunan", owners:"Sahipler", help:"Acil Durum",
+    // gönderi seçici (tüm paylaşım aksiyonları için tek giriş noktası)
+    postChooserTitle:"Ne yapmak istiyorsun?",
+    postChooserSub:"Durumuna uygun seçeneği seç — bu sayede ilanın doğru kişilere ulaşır.",
+    postAdoptFosterTitle:"Hayvan İlanı Ver",
+    postAdoptFosterDesc:"Sahiplenme veya geçici bakım arayan bir hayvan için ilan ver.",
+    postLostTitle:"Hayvanımı Kaybettim",
+    postLostDesc:"Hayvanını bulmana yardımcı olacak bir kayıp ilanı oluştur.",
+    postFoundTitle:"Bir Hayvan Buldum",
+    postFoundDesc:"Ailesine kavuşması için bulunan hayvan ilanı oluştur.",
+    postEmergencyTitle:"Tehlikedeki Hayvanı Bildir",
+    postEmergencyDesc:"Yaralı, hasta veya acil tehlikede — kurtarma ekibi gerekiyor.",
+    postFabLabel:"İlan Ver",
+    helpFormRedirectNote:"Bu form sadece acil kurtarmaya ihtiyacı olan hayvanlar içindir — yaralı, hasta veya tehlikede olanlar.",
+    helpFormWrongPlace:"Acil bir durum değil mi?",
+    helpFormRedirectAdopt:"Bunun yerine sahiplenme/geçici bakım ilanı ver →",
+    helpFormRedirectLF:"Bunun yerine kayıp/bulunan ilanı ver →",
     // hero
     heroH1:"Her hayvan hak ediyor", heroH1Em:"sevgi dolu bir yuva.",
     heroP:"Sahiplen, geçici bakım ver, bakıcı bul, kayıp ilanı ver ya da tehlikedeki hayvanları bildir.",
@@ -1030,6 +1062,28 @@ const CSS = `
   /* helped upload */
   .helped-note { font-size:12px; color:var(--muted); background:var(--off); border:1px solid var(--border); border-radius:8px; padding:10px 13px; margin-bottom:16px; line-height:1.6; }
   .helped-note strong { color:var(--dark); }
+
+  /* ─ GLOBAL POST FAB — single, unmistakable entry point for every posting action ─ */
+  .fab-post {
+    position:fixed; right:18px; bottom:calc(var(--nav-h) + 18px); z-index:150;
+    width:54px; height:54px; border-radius:50%; border:none;
+    background:var(--amber); color:#fff; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 4px 14px rgba(212,134,43,0.45);
+    transition:transform 0.15s, box-shadow 0.15s;
+  }
+  .fab-post:active { transform:scale(0.93); }
+  @media (hover:hover) { .fab-post:hover { box-shadow:0 6px 18px rgba(212,134,43,0.55); } }
+  @media (min-width:768px) { .fab-post { bottom:24px; } }
+
+  /* ─ POST CHOOSER CARDS ─ */
+  .chooser-card { display:flex; align-items:center; gap:14px; width:100%; background:var(--white); border:1px solid var(--border); border-radius:var(--r); padding:14px; cursor:pointer; text-align:left; font-family:var(--font); transition:all 0.12s; min-height:64px; }
+  .chooser-card:active { opacity:0.75; }
+  @media (hover:hover) { .chooser-card:hover { border-color:#ccc; box-shadow:0 3px 12px rgba(0,0,0,0.07); } }
+  .chooser-icon { width:42px; height:42px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+  .chooser-title { font-size:14px; font-weight:600; color:var(--dark); margin-bottom:2px; }
+  .chooser-desc  { font-size:11.5px; color:var(--muted); line-height:1.4; }
+  .chooser-chev  { font-size:18px; color:var(--border); flex-shrink:0; }
 `;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1378,6 +1432,7 @@ export default function App() {
   const [etaFor, setEtaFor]       = useState(null);   // report to volunteer for
   // (myName removed — volunteer identity is now the verified contactInfo.email)
   const [showReportForm, setShowReportForm] = useState(false);
+  const [showPostChooser, setShowPostChooser] = useState(false);
 
   // ── Email OTP verification ──
   const [contactModal, setContactModal] = useState(null); // { onConfirm }
@@ -1574,7 +1629,7 @@ export default function App() {
             <h1 className="hero-h1">{t.heroH1}<br /><em>{t.heroH1Em}</em></h1>
             <p className="hero-p">{t.heroP}</p>
             <div className="hero-cta">
-              <button className="btn btn-dark" onClick={() => { goTab("help"); setShowReportForm(true); }}>{t.postAnimal}</button>
+              <button className="btn btn-dark" onClick={() => setShowPostChooser(true)}>{t.postAnimal}</button>
               <button className="btn btn-red" onClick={() => goTab("help")}>🚨 {t.reportAnimal}</button>
             </div>
           </div>
@@ -2082,6 +2137,20 @@ export default function App() {
               <button className="sh-close" onClick={() => setShowReportForm(false)}>✕</button>
             </div>
             <div className="sh-body">
+              <div className="inote" style={{ borderColor:"rgba(192,57,43,0.25)", background:"rgba(192,57,43,0.05)" }}>
+                <strong style={{ color:"var(--red)" }}>🚨 {t.helpFormRedirectNote}</strong>
+                <div style={{ marginTop:8, display:"flex", flexDirection:"column", gap:4 }}>
+                  <span style={{ fontSize:11, color:"var(--muted)", fontWeight:600 }}>{t.helpFormWrongPlace}</span>
+                  <button
+                    style={{ background:"none", border:"none", padding:0, textAlign:"left", fontSize:12, fontWeight:600, color:"var(--amber)", cursor:"pointer", textDecoration:"underline" }}
+                    onClick={() => { setShowReportForm(false); setTab("animals"); setASub("post"); }}
+                  >{t.helpFormRedirectAdopt}</button>
+                  <button
+                    style={{ background:"none", border:"none", padding:0, textAlign:"left", fontSize:12, fontWeight:600, color:"var(--amber)", cursor:"pointer", textDecoration:"underline" }}
+                    onClick={() => { setShowReportForm(false); setTab("lostfound"); setLFSub("post"); }}
+                  >{t.helpFormRedirectLF}</button>
+                </div>
+              </div>
               <div className="fg"><label className="flabel">{t.animalType}</label>
                 <div className="type-row">{["🐕","🐈","🐦","🐄","🐎","🐾"].map(e => <button key={e} className={`tbtn ${rf.animal === e ? "on" : ""}`} onClick={() => setRf(f => ({ ...f, animal:e }))}>{e}</button>)}</div>
               </div>
@@ -2263,6 +2332,72 @@ export default function App() {
                   {lang==="tr"?"← E-postayı Değiştir":"← Change Email"}
                 </button>
               </>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* GLOBAL "+" POST BUTTON — single entry point for every posting action.
+          Fixes the historical confusion where people posting an Adopt/Found
+          listing ended up submitting to the Emergency form instead. */}
+      <button
+        className="fab-post"
+        onClick={() => setShowPostChooser(true)}
+        title={t.postFabLabel}
+      >
+        <span style={{ fontSize:24, lineHeight:1 }}>+</span>
+      </button>
+
+      {/* POST CHOOSER SHEET */}
+      {showPostChooser && (
+        <div className="sheet-overlay" onClick={() => setShowPostChooser(false)}>
+          <div className="sheet" onClick={e => e.stopPropagation()}>
+            <div className="sh-handle" />
+            <div className="sh-hd">
+              <div className="sh-title">{t.postChooserTitle}</div>
+              <button className="sh-close" onClick={() => setShowPostChooser(false)}>✕</button>
+            </div>
+            <div className="sh-body">
+              <div style={{ fontSize:12, color:"var(--muted)", marginBottom:18, lineHeight:1.6 }}>{t.postChooserSub}</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+
+                <button className="chooser-card" onClick={() => { setShowPostChooser(false); setTab("animals"); setASub("post"); }}>
+                  <div className="chooser-icon" style={{ background:"rgba(212,134,43,0.12)" }}>🏡</div>
+                  <div style={{ flex:1, textAlign:"left" }}>
+                    <div className="chooser-title">{t.postAdoptFosterTitle}</div>
+                    <div className="chooser-desc">{t.postAdoptFosterDesc}</div>
+                  </div>
+                  <div className="chooser-chev">›</div>
+                </button>
+
+                <button className="chooser-card" onClick={() => { setShowPostChooser(false); setTab("lostfound"); setLFSub("post"); setLFForm(f => ({ ...f, type:"lost" })); }}>
+                  <div className="chooser-icon" style={{ background:"rgba(192,57,43,0.1)" }}>🔍</div>
+                  <div style={{ flex:1, textAlign:"left" }}>
+                    <div className="chooser-title">{t.postLostTitle}</div>
+                    <div className="chooser-desc">{t.postLostDesc}</div>
+                  </div>
+                  <div className="chooser-chev">›</div>
+                </button>
+
+                <button className="chooser-card" onClick={() => { setShowPostChooser(false); setTab("lostfound"); setLFSub("post"); setLFForm(f => ({ ...f, type:"found" })); }}>
+                  <div className="chooser-icon" style={{ background:"rgba(45,122,79,0.1)" }}>📍</div>
+                  <div style={{ flex:1, textAlign:"left" }}>
+                    <div className="chooser-title">{t.postFoundTitle}</div>
+                    <div className="chooser-desc">{t.postFoundDesc}</div>
+                  </div>
+                  <div className="chooser-chev">›</div>
+                </button>
+
+                <button className="chooser-card" onClick={() => { setShowPostChooser(false); setTab("help"); setShowReportForm(true); }}>
+                  <div className="chooser-icon" style={{ background:"rgba(192,57,43,0.1)" }}>🚨</div>
+                  <div style={{ flex:1, textAlign:"left" }}>
+                    <div className="chooser-title">{t.postEmergencyTitle}</div>
+                    <div className="chooser-desc">{t.postEmergencyDesc}</div>
+                  </div>
+                  <div className="chooser-chev">›</div>
+                </button>
+
+              </div>
             </div>
           </div>
         </div>
