@@ -9,6 +9,18 @@ const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 // ─── ADMIN ────────────────────────────────────────────────────────────────────
 const ADMIN_PASSWORD = "paweerohelpsin2026!";
 
+// If exactly one Foster/Help/Sighting/Claim purpose applies to an animal, the
+// trigger button should name that action directly instead of the generic
+// "Take Action" label — that framing only makes sense when there's a real choice.
+function getSingleActionLabel(animal, lang) {
+  const opts = [];
+  if (animal.canFoster) opts.push(lang==="tr" ? "Geçici Bakım Ver" : "Offer Foster Care");
+  if (animal.needsHelp) opts.push(lang==="tr" ? "Yardım Teklif Et" : "Offer Help");
+  if (animal.isLost)    opts.push(lang==="tr" ? "Gördüm" : "I Saw This Animal");
+  if (animal.isFound)   opts.push(lang==="tr" ? "Benim Olabilir" : "This Might Be My Pet");
+  return opts.length === 1 ? opts[0] : null;
+}
+
 // ─── BRAND IMAGES ─────────────────────────────────────────────────────────────
 // Fallback photo used anywhere a listing has no uploaded image — upload the
 // Paweero favicon/logo to this exact path in the "pawero-photos" storage bucket.
@@ -764,7 +776,7 @@ const CSS = `
   body { font-family:var(--font); background:var(--white); color:var(--body); font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased; overflow-x:hidden; letter-spacing:-0.1px; }
 
   /* ─ TOPBAR ─ */
-  .topbar { position:sticky; top:0; z-index:100; height:var(--top-h); background:var(--white); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 var(--pad); }
+  .topbar { position:sticky; top:0; z-index:100; height:var(--top-h); background:var(--white); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 var(--pad); will-change:transform; backface-visibility:hidden; }
   .logo { font-family:var(--font); font-size:17px; font-weight:700; color:var(--dark); display:flex; align-items:center; gap:7px; letter-spacing:-0.3px; }
   .logo-dot { width:8px; height:8px; border-radius:50%; background:var(--amber); flex-shrink:0; }
   .desk-nav { display:none; gap:2px; }
@@ -780,7 +792,7 @@ const CSS = `
   .lang-btn.on { background:var(--white); color:var(--dark); box-shadow:0 1px 3px rgba(0,0,0,0.1); }
 
   /* ─ BOTTOM NAV ─ */
-  .bottom-nav { position:fixed; bottom:0; left:0; right:0; z-index:100; height:var(--nav-h); background:var(--white); border-top:1px solid var(--border); display:flex; justify-content:space-around; align-items:center; padding-bottom:env(safe-area-inset-bottom,0); }
+  .bottom-nav { position:fixed; bottom:0; left:0; right:0; z-index:100; height:var(--nav-h); background:var(--white); border-top:1px solid var(--border); display:flex; justify-content:space-around; align-items:center; padding-bottom:env(safe-area-inset-bottom,0); transform:translateZ(0); -webkit-transform:translateZ(0); will-change:transform; backface-visibility:hidden; }
   @media (min-width:768px) { .bottom-nav { display:none; } }
   .tab-btn { display:flex; flex-direction:column; align-items:center; gap:3px; background:none; border:none; cursor:pointer; flex:1; padding:8px 4px; color:var(--muted); transition:color 0.12s; }
   .tab-btn.on { color:var(--dark); }
@@ -829,15 +841,14 @@ const CSS = `
 
   /* ─ HOME QUICK LINKS ─ */
   .sec-label { font-size:11px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin:24px 0 12px; }
-  .ql-list { display:flex; flex-direction:column; }
-  .ql-item { display:flex; align-items:center; gap:14px; padding:14px 0; border-bottom:1px solid var(--border); cursor:pointer; transition:opacity 0.12s; }
-  .ql-item:first-child { border-top:1px solid var(--border); }
-  .ql-item:active { opacity:0.6; }
-  @media (hover:hover) { .ql-item:hover { opacity:0.7; } }
-  .ql-icon  { font-size:20px; width:42px; height:42px; border-radius:9px; background:var(--light); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .ql-list { display:flex; flex-direction:column; gap:10px; }
+  .ql-item { display:flex; align-items:center; gap:14px; padding:16px; cursor:pointer; transition:transform 0.12s, box-shadow 0.12s; background:var(--white); border-radius:var(--r); box-shadow:var(--shadow-sm); }
+  .ql-item:active { transform:scale(0.98); }
+  @media (hover:hover) { .ql-item:hover { box-shadow:var(--shadow-md); transform:translateY(-1px); } }
+  .ql-icon  { font-size:21px; width:44px; height:44px; border-radius:11px; background:var(--light); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
   .ql-body  { flex:1; min-width:0; }
-  .ql-title { font-size:14px; font-weight:600; color:var(--dark); margin-bottom:1px; }
-  .ql-desc  { font-size:12px; color:var(--muted); line-height:1.4; }
+  .ql-title { font-size:14.5px; font-weight:700; color:var(--dark); margin-bottom:1px; letter-spacing:-0.1px; }
+  .ql-desc  { font-size:12.5px; color:var(--muted); line-height:1.4; }
   .ql-chev  { font-size:16px; color:var(--border); flex-shrink:0; }
 
   /* ─ FILTERS ─ */
@@ -1043,7 +1054,8 @@ const CSS = `
     background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M3.5 8.5l3 3 6-6.5'/%3E%3C/svg%3E");
     background-repeat:no-repeat; background-position:center;
   }
-  .opt-item > input[type] + div { flex:1; min-width:0; }
+  .opt-item > div:last-child { flex:1; min-width:0; }
+  .opt-item .pc-icon { display:flex; align-items:center; justify-content:center; flex-shrink:0; border-radius:11px; background:var(--light); }
   .opt-label { font-size:14.5px; font-weight:600; color:var(--dark); flex:1; }
   .opt-hint  { font-size:12px; color:var(--muted); margin-top:2px; font-weight:400; }
 
@@ -1175,6 +1187,7 @@ const CSS = `
     display:flex; align-items:center; justify-content:center;
     box-shadow:0 4px 14px rgba(212,134,43,0.45);
     transition:transform 0.15s, box-shadow 0.15s;
+    will-change:transform; backface-visibility:hidden;
   }
   .fab-post:active { transform:scale(0.93); }
   @media (hover:hover) { .fab-post:hover { box-shadow:0 6px 18px rgba(212,134,43,0.55); } }
@@ -1298,7 +1311,8 @@ export default function App() {
     const url = detailReport.photo_url || (detailReport.photo_urls && detailReport.photo_urls[0]) || null;
     getDrawerHeightByImageAspectRatio(url).then(setDetailReportHeight);
   }, [detailReport]);
-  const [takeActionFor, setTakeActionFor] = useState(null); // animal object — unified Adopt/Foster/Help sheet
+  const [takeActionFor, setTakeActionFor] = useState(null); // animal object — unified Foster/Help/Sighting/Claim sheet
+  const [applyFor, setApplyFor] = useState(null); // animal object — dedicated full 5-step Adopt application
 
   // ── data state ──
   const [reports, setReports] = useState([]);
@@ -2223,11 +2237,20 @@ export default function App() {
 
                         {/* Action row */}
                         {r.status !== "resolved" && (
-                          <div className="r-actions" style={{ marginBottom:10 }}>
+                          <div className="r-actions" style={{ marginBottom:10, flexWrap:"wrap" }}>
                             {r.fromAnimalListing ? (
-                              <button className="btn btn-outline btn-sm" onClick={() => setTakeActionFor(r.animalRef)}>
-                                {t.takeAction}
-                              </button>
+                              <>
+                                {r.animalRef?.canAdopt && (
+                                  <button className="btn btn-dark btn-sm" onClick={() => setApplyFor(r.animalRef)}>
+                                    {t.applyAdopt}
+                                  </button>
+                                )}
+                                {(r.animalRef?.canFoster || r.animalRef?.needsHelp || r.animalRef?.isLost || r.animalRef?.isFound) && (
+                                  <button className="btn btn-outline btn-sm" onClick={() => setTakeActionFor(r.animalRef)}>
+                                    {getSingleActionLabel(r.animalRef, lang) || t.takeAction}
+                                  </button>
+                                )}
+                              </>
                             ) : (<>
                               {!isVolunteer && r.status !== "helped" && (
                                 <button className="btn btn-outline btn-sm" onClick={() => setEtaFor(r)}>
@@ -2560,7 +2583,12 @@ export default function App() {
               <div className="tags">{detailAnimal.tags[lang].map(tg => <span key={tg} className="tag">{tg}</span>)}</div>
               <div className="d-desc">{detailAnimal.desc[lang]}</div>
               <div className="d-acts">
-                <button className="btn btn-dark btn-full" onClick={() => { setTakeActionFor(detailAnimal); setDetailA(null); }}>{t.takeAction}</button>
+                {detailAnimal.canAdopt && (
+                  <button className="btn btn-dark btn-full" onClick={() => { setApplyFor(detailAnimal); setDetailA(null); }}>{t.applyAdopt}</button>
+                )}
+                {(detailAnimal.canFoster || detailAnimal.needsHelp || detailAnimal.isLost || detailAnimal.isFound) && (
+                  <button className={`btn btn-full ${detailAnimal.canAdopt ? "btn-outline" : "btn-dark"}`} onClick={() => { setTakeActionFor(detailAnimal); setDetailA(null); }}>{getSingleActionLabel(detailAnimal, lang) || t.takeAction}</button>
+                )}
                 <WhatsAppShareButton lang={lang} t={t} text={
                   `🐾 ${detailAnimal.name} — ${detailAnimal.breed[lang]} · ${detailAnimal.age[lang]} · ${detailAnimal.gender[lang]}\n` +
                   `📍 ${detailAnimal.city}, ${detailAnimal.province}\n` +
@@ -2710,9 +2738,15 @@ export default function App() {
         </div>
       )}
 
-      {/* TAKE ACTION SHEET — unified Adopt / Foster / Help, multi-select, one submission */}
+      {/* TAKE ACTION SHEET — unified Foster / Help / Sighting / Claim, multi-select, one submission */}
       {takeActionFor && (
         <TakeActionSheet animal={takeActionFor} lang={lang} t={t} onClose={() => setTakeActionFor(null)} />
+      )}
+
+      {/* ADOPT APPLICATION SHEET — dedicated full 5-step screening process, kept separate
+          because adoption warrants a more thorough application than a quick action. */}
+      {applyFor && (
+        <AppSheet animal={applyFor} mode="adopt" lang={lang} t={t} onClose={() => setApplyFor(null)} />
       )}
 
       {/* ETA PICKER SHEET */}
@@ -2976,8 +3010,11 @@ function ACard({ a, mode, lang, onClick }) {
 // downstream (Adoption Interest / Foster Interest / Help Offer), all linked
 // back to the same listing.
 function TakeActionSheet({ animal, lang, t, onClose }) {
+  // Adopt is intentionally excluded here — it now has its own dedicated,
+  // full 5-step screening flow (AdoptAppSheet), separate from this
+  // condensed multi-select sheet for Foster / Help / Sighting / Claim.
   const availablePurposes = {
-    adopt: !!animal.canAdopt,
+    adopt: false,
     foster: !!animal.canFoster,
     help: !!animal.needsHelp,
     sighting: !!animal.isLost,
@@ -3127,7 +3164,7 @@ function TakeActionSheet({ animal, lang, t, onClose }) {
       <div className="sheet" onClick={e=>e.stopPropagation()}>
         <div className="sh-handle" />
         <div className="sh-hd">
-          <div className="sh-title">{t.takeAction}</div>
+          <div className="sh-title">{getSingleActionLabel(animal, lang) || t.takeAction}</div>
           <button className="sh-close" onClick={onClose}>✕</button>
         </div>
 
