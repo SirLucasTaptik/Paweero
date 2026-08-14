@@ -825,18 +825,19 @@ const CSS = `
   @media (min-width:768px) { .hero-inner { flex-direction:row; align-items:center; gap:8px; } }
   .hero-text { padding:52px var(--pad) 8px; flex:1 1 440px; min-width:0; }
   @media (min-width:768px) { .hero-text { padding:56px 0 56px var(--pad); flex:1 1 460px; } }
-  .hero-media { position:relative; flex:1 1 380px; min-width:0; height:200px; margin:4px var(--pad) 40px; border-radius:var(--r-lg); overflow:hidden; }
-  @media (min-width:768px) { .hero-media { height:360px; margin:0 var(--pad) 0 0; } }
+  .hero-media { position:relative; flex:0 1 460px; max-width:460px; min-width:0; height:220px; margin:4px auto 40px; border-radius:var(--r-lg); overflow:hidden; }
+  @media (min-width:768px) { .hero-media { height:340px; margin:0 var(--pad) 0 0; } }
   .hero-media img {
-    width:100%; height:100%; object-fit:cover; object-position:center 25%; display:block;
-    -webkit-mask-image:linear-gradient(to bottom, transparent 0%, black 18%);
-    mask-image:linear-gradient(to bottom, transparent 0%, black 18%);
+    width:100%; height:100%; object-fit:contain; object-position:center; display:block;
+  }
+  .hero-media::after {
+    /* Soft edge fade where the image meets the text — contain keeps the whole
+       photo visible, this just softens the seam without ever cropping content. */
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background:linear-gradient(to bottom, var(--white) 0%, transparent 16%);
   }
   @media (min-width:768px) {
-    .hero-media img {
-      -webkit-mask-image:linear-gradient(to right, transparent 0%, black 14%);
-      mask-image:linear-gradient(to right, transparent 0%, black 14%);
-    }
+    .hero-media::after { background:linear-gradient(to right, var(--white) 0%, transparent 14%); }
   }
   .hero-label { font-size:12px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-bottom:14px; }
   .hero-h1 { font-size:clamp(30px,6vw,46px); font-weight:700; color:var(--dark); line-height:1.1; margin-bottom:14px; letter-spacing:-1px; }
