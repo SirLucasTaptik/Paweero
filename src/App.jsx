@@ -825,14 +825,14 @@ const CSS = `
   @media (min-width:768px) { .hero-inner { flex-direction:row; align-items:center; gap:8px; } }
   .hero-text { padding:52px var(--pad) 8px; flex:1 1 440px; min-width:0; }
   @media (min-width:768px) { .hero-text { padding:56px 0 56px var(--pad); flex:1 1 460px; } }
-  .hero-media { position:relative; flex:0 1 460px; max-width:460px; min-width:0; height:220px; margin:4px auto 40px; border-radius:var(--r-lg); overflow:hidden; }
-  @media (min-width:768px) { .hero-media { height:340px; margin:0 var(--pad) 0 0; } }
+  .hero-media { position:relative; max-width:460px; margin:16px auto 40px; border-radius:var(--r-lg); overflow:hidden; line-height:0; }
+  @media (min-width:768px) { .hero-media { flex:0 1 460px; margin:0 var(--pad) 0 0; } }
   .hero-media img {
-    width:100%; height:100%; object-fit:contain; object-position:center; display:block;
+    width:100%; height:auto; display:block;
   }
   .hero-media::after {
-    /* Soft edge fade where the image meets the text — contain keeps the whole
-       photo visible, this just softens the seam without ever cropping content. */
+    /* Soft edge fade where the image meets the text — a purely decorative overlay,
+       never affects layout height. */
     content:""; position:absolute; inset:0; pointer-events:none;
     background:linear-gradient(to bottom, var(--white) 0%, transparent 16%);
   }
@@ -1603,8 +1603,10 @@ export default function App() {
   const requireContact = (onConfirm) => {
     // If already verified this session, skip
     if (contactInfo.email && contactInfo.verified) {
+      console.log("[requireContact] Already verified, calling onConfirm directly");
       onConfirm(contactInfo);
     } else {
+      console.log("[requireContact] Not verified — opening OTP modal");
       setOtpStep("email");
       setOtpCode("");
       setContactErr({});
@@ -1850,13 +1852,13 @@ export default function App() {
             <div className="sec-label">{t.browseByGoal}</div>
             <div className="ql-list">
               {[
-                { icon:"🏡", title:t.adoptTitle,    desc:t.adoptDesc,    tab:"animals",   sub:() => setASub("adopt")   },
-                { icon:"🤝", title:t.fosterTitle,   desc:t.fosterDesc,   tab:"animals",   sub:() => setASub("foster")  },
-                { icon:"🔍", title:t.lostFoundTitle, desc:t.lostFoundDesc,tab:"lostfound", sub:() => {}                },
-                { icon:"🚨", title:t.helpTitle,     desc:t.helpDesc,     tab:"help",      sub:() => {}                 },
+                { icon:"🏡", title:t.adoptTitle,    desc:t.adoptDesc,    tab:"animals",   sub:() => setASub("adopt"),   color:"var(--amber)", bg:"rgba(212,134,43,0.12)" },
+                { icon:"🤝", title:t.fosterTitle,   desc:t.fosterDesc,   tab:"animals",   sub:() => setASub("foster"),  color:"var(--blue)",  bg:"rgba(37,99,235,0.12)"  },
+                { icon:"🔍", title:t.lostFoundTitle, desc:t.lostFoundDesc,tab:"lostfound", sub:() => {},                 color:"var(--green)", bg:"rgba(45,122,79,0.12)" },
+                { icon:"🚨", title:t.helpTitle,     desc:t.helpDesc,     tab:"help",      sub:() => {},                 color:"var(--red)",   bg:"rgba(192,57,43,0.12)" },
               ].map((f,i) => (
-                <div key={i} className="ql-item" onClick={() => { f.sub(); goTab(f.tab); }}>
-                  <div className="ql-icon">{f.icon}</div>
+                <div key={i} className="ql-item" style={{ borderLeft:`3px solid ${f.color}` }} onClick={() => { f.sub(); goTab(f.tab); }}>
+                  <div className="ql-icon" style={{ background:f.bg }}>{f.icon}</div>
                   <div className="ql-body"><div className="ql-title">{f.title}</div><div className="ql-desc">{f.desc}</div></div>
                   <div className="ql-chev">›</div>
                 </div>
@@ -2317,7 +2319,7 @@ export default function App() {
         </>}
 
       {/* ── SUBMIT REPORT MODAL/DRAWER ── */}
-      {showReportForm && (
+      {showReportForm && !contactModal && (
         <div className="sheet-overlay" onClick={() => setShowReportForm(false)}>
           <div className="sheet" onClick={e => e.stopPropagation()}>
             <div className="sh-handle" />
@@ -2434,7 +2436,7 @@ export default function App() {
 
       {/* ── EMAIL OTP VERIFICATION MODAL ── */}
       {contactModal && (
-        <div className="sheet-overlay" onClick={() => { if(!otpSending && !otpVerifying) setContactModal(null); }}>
+        <div className="sheet-overlay" style={{ zIndex:260 }} onClick={() => { if(!otpSending && !otpVerifying) setContactModal(null); }}>
           <div className="sheet" onClick={e => e.stopPropagation()}>
             <div className="sh-handle" />
             <div className="sh-hd">
@@ -2541,7 +2543,7 @@ export default function App() {
 
       {/* CREATE AN ANIMAL REPORT SHEET — one entry point, one animal record,
           multiple purposes selected inside PostAnimalForm itself. */}
-      {showCreateReport && (
+      {showCreateReport && !contactModal && (
         <div className="sheet-overlay" onClick={() => setShowCreateReport(false)}>
           <div className="sheet" onClick={e => e.stopPropagation()}>
             <div className="sh-handle" />
@@ -4218,6 +4220,13 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact }) {
     isNeutered:"", vaccinatedParasite:"", vaccinatedRabies:"",
   });
   const [photos, setPhotos] = useState([]);
+  const [formError, setFormError] = useState("");
+  const errorRef = useRef(null);
+
+  const showError = (msg) => {
+    setFormError(msg);
+    setTimeout(() => errorRef.current?.scrollIntoView({ behavior:"smooth", block:"center" }), 50);
+  };
 
   const sp = lang==="tr"
     ? ["Köpek","Kedi","Tavşan","Kuş","Hamster","Diğer"]
@@ -4461,15 +4470,24 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact }) {
         <MultiPhotoUpload photos={photos} setPhotos={setPhotos} folder="animals" lang={lang} t={t} maxPhotos={5} />
       </div>
 
+      {formError && (
+        <div ref={errorRef} style={{ background:"rgba(192,57,43,0.08)", border:"1.5px solid var(--red)", borderRadius:"var(--r-sm)", padding:"12px 14px", marginBottom:16, display:"flex", alignItems:"flex-start", gap:8 }}>
+          <span style={{ fontSize:16, flexShrink:0 }}>⚠️</span>
+          <span style={{ fontSize:13, color:"var(--red)", fontWeight:600, lineHeight:1.5 }}>{formError}</span>
+        </div>
+      )}
+
       <button className="btn btn-dark btn-full" onClick={() => {
-        if (!f.name) { alert(lang==="tr"?"Hayvanın adını girin":"Please enter animal name"); return; }
-        if (!f.city) { alert(lang==="tr"?"Şehir girin":"Please enter city"); return; }
-        if (!f.desc) { alert(lang==="tr"?"Açıklama girin":"Please enter description"); return; }
-        if (photos.length === 0) { alert(lang==="tr"?"Lütfen en az 1 fotoğraf yükleyin":"Please upload at least 1 photo"); return; }
-        if (!f.canAdopt && !f.canFoster && !f.needsHelp && !f.isLost && !f.isFound) { alert(lang==="tr"?"En az bir seçenek işaretle: Kayıp, Bulunan, Yardım, Geçici Bakım veya Sahiplenme":"Please select at least one: Lost, Found, Help, Foster, or Adopt"); return; }
-        if (f.needsHelp && !f.helpSituation) { alert(lang==="tr"?"Lütfen yardım durumunu seçin":"Please select the help situation"); return; }
-        if (!f.isNeutered || !f.vaccinatedParasite || !f.vaccinatedRabies) { alert(lang==="tr"?"Lütfen sağlık bilgilerinin tamamını doldurun":"Please fill in all health information"); return; }
+        setFormError("");
+        if (!f.name) { showError(lang==="tr"?"Hayvanın adını girin":"Please enter animal name"); return; }
+        if (!f.city) { showError(lang==="tr"?"Şehir girin":"Please enter city"); return; }
+        if (!f.desc) { showError(lang==="tr"?"Açıklama girin":"Please enter description"); return; }
+        if (photos.length === 0) { showError(lang==="tr"?"Lütfen en az 1 fotoğraf yükleyin":"Please upload at least 1 photo"); return; }
+        if (!f.canAdopt && !f.canFoster && !f.needsHelp && !f.isLost && !f.isFound) { showError(lang==="tr"?"En az bir seçenek işaretle: Kayıp, Bulunan, Yardım, Geçici Bakım veya Sahiplenme":"Please select at least one: Lost, Found, Help, Foster, or Adopt"); return; }
+        if (f.needsHelp && !f.helpSituation) { showError(lang==="tr"?"Lütfen yardım durumunu seçin":"Please select the help situation"); return; }
+        if (!f.isNeutered || !f.vaccinatedParasite || !f.vaccinatedRabies) { showError(lang==="tr"?"Lütfen sağlık bilgilerinin tamamını doldurun":"Please fill in all health information"); return; }
         requireContact(async (contact) => {
+          try {
           const speciesEn = spMap[f.species] || f.species;
           const fullDesc = f.address ? `${f.desc}\n📍 ${f.address}` : f.desc;
           const emoji = speciesEn==="Dog"?"🐕":speciesEn==="Cat"?"🐈":speciesEn==="Rabbit"?"🐇":speciesEn==="Bird"?"🐦":speciesEn==="Hamster"?"🐹":"🐾";
@@ -4510,10 +4528,12 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact }) {
             vaccinated_parasite: f.vaccinatedParasite || null,
             vaccinated_rabies: f.vaccinatedRabies || null,
           };
+          console.log("[PostAnimalForm] Submitting payload:", insertPayload);
           const { data, error } = await db.from("animals").insert([insertPayload]).select();
+          console.log("[PostAnimalForm] Insert result:", { data, error });
           if (error) {
             console.error("Animal insert error:", error);
-            alert((lang==="tr"?"Kayıt hatası: ":"Insert error: ") + error.message);
+            showError((lang==="tr"?"Kayıt hatası: ":"Insert error: ") + error.message);
             return;
           }
           // Build the mapped object the rest of the app expects, so it can be shown immediately
@@ -4553,6 +4573,10 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact }) {
           onSubmit(f.name, newAnimal);
           setF({ name:"", species:"Dog", breed:"", age:"", gender:"Female", colour:"", country:"Türkiye", province:"İstanbul", city:"", address:"", canFoster:false, canAdopt:true, needsHelp:false, isLost:false, isFound:false, helpSituation:"", helpUrgency:"", lostLastSeenLocation:"", lostCollarAccessories:"", lostIdentifyingCharacteristics:"", foundHow:"", foundIdentifyingCharacteristics:"", desc:"", isNeutered:"", vaccinatedParasite:"", vaccinatedRabies:"" });
           setPhotos([]);
+          } catch (err) {
+            console.error("[PostAnimalForm] Unexpected error during submit:", err);
+            showError((lang==="tr"?"Beklenmeyen bir hata oluştu: ":"An unexpected error occurred: ") + (err?.message || String(err)));
+          }
         });
       }}>{lang==="tr"?"Raporu Gönder":"Submit Report"}</button>
     </div>
