@@ -820,13 +820,26 @@ const CSS = `
   .stab.on { color:var(--dark); border-bottom-color:var(--dark); font-weight:600; }
 
   /* ─ HERO ─ */
-  .hero { padding:56px var(--pad) 44px; border-bottom:none; }
+  .hero { position:relative; overflow:hidden; padding:56px var(--pad) 44px; border-bottom:none; min-height:380px; display:flex; flex-direction:column; justify-content:center; }
+  .hero::before {
+    content:""; position:absolute; inset:0;
+    background-image:url("${HERO_IMAGE}");
+    background-size:cover; background-position:center 30%;
+    opacity:0.16; z-index:0; pointer-events:none;
+  }
+  .hero::after {
+    content:""; position:absolute; inset:0; z-index:0; pointer-events:none;
+    background:linear-gradient(100deg, var(--white) 0%, var(--white) 30%, rgba(255,255,255,0.82) 55%, rgba(255,255,255,0.55) 100%);
+  }
+  @media (max-width:640px) {
+    .hero::after { background:linear-gradient(180deg, rgba(255,255,255,0.55) 0%, var(--white) 62%, var(--white) 100%); }
+  }
+  .hero > * { position:relative; z-index:1; }
   .hero-label { font-size:12px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-bottom:14px; }
   .hero-h1 { font-size:clamp(30px,6vw,46px); font-weight:700; color:var(--dark); line-height:1.1; margin-bottom:14px; letter-spacing:-1px; }
   .hero-h1 em { color:var(--amber); font-style:italic; }
   .hero-p  { font-size:15px; color:var(--muted); max-width:440px; line-height:1.65; margin-bottom:28px; }
   .hero-cta { display:flex; gap:10px; flex-wrap:wrap; }
-  .hero-banner-img { width:100%; max-height:280px; object-fit:cover; border-radius:var(--r-lg); margin-top:28px; display:block; }
 
   /* ─ STATS ─ */
   .stats { display:grid; grid-template-columns:repeat(3,1fr); border-bottom:1px solid var(--border); }
@@ -1801,12 +1814,6 @@ export default function App() {
             <div className="hero-cta">
               <button className="btn btn-red" style={{ padding:"15px 28px", fontSize:15 }} onClick={() => setShowCreateReport(true)}>{t.postAnimal}</button>
             </div>
-            <img
-              src={HERO_IMAGE}
-              alt="Paweero"
-              className="hero-banner-img"
-              onError={(e) => { e.currentTarget.style.display = "none"; }}
-            />
           </div>
 
           <div className="stats">
