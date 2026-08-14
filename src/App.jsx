@@ -22,11 +22,10 @@ function getSingleActionLabel(animal, lang) {
 }
 
 // ─── BRAND IMAGES ─────────────────────────────────────────────────────────────
-// Fallback photo used anywhere a listing has no uploaded image — upload the
-// Paweero favicon/logo to this exact path in the "pawero-photos" storage bucket.
-const FALLBACK_IMAGE = "https://uyuqcpttdbejaakbwzyl.supabase.co/storage/v1/object/public/pawero-photos/branding/favicon.png";
-// Hero banner image on the Home page — upload the Paweero brand photo to this path.
-const HERO_IMAGE = "https://uyuqcpttdbejaakbwzyl.supabase.co/storage/v1/object/public/pawero-photos/branding/hero.jpg";
+// Fallback photo used anywhere a listing has no uploaded image — the "P" brand mark.
+const FALLBACK_IMAGE = "https://uyuqcpttdbejaakbwzyl.supabase.co/storage/v1/object/public/pawero-photos/banner/hero-p.png";
+// Hero banner image on the Home page — the real Lucas & Şirin photo.
+const HERO_IMAGE = "https://uyuqcpttdbejaakbwzyl.supabase.co/storage/v1/object/public/pawero-photos/banner/hero.jpg";
 
 // ─── IMAGE MODERATION ────────────────────────────────────────────────────────
 const moderateImage = async (imageUrl) => {
