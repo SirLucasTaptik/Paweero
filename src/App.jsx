@@ -825,10 +825,10 @@ const CSS = `
   @media (min-width:768px) { .hero-inner { flex-direction:row; align-items:center; gap:8px; } }
   .hero-text { padding:52px var(--pad) 8px; flex:1 1 440px; min-width:0; }
   @media (min-width:768px) { .hero-text { padding:56px 0 56px var(--pad); flex:1 1 460px; } }
-  .hero-media { position:relative; max-width:460px; margin:16px auto 40px; border-radius:var(--r-lg); overflow:hidden; line-height:0; }
-  @media (min-width:768px) { .hero-media { flex:0 1 460px; margin:0 var(--pad) 0 0; } }
+  .hero-media { position:relative; max-width:460px; margin:16px auto 40px; border-radius:var(--r-lg); overflow:hidden; background:var(--off); aspect-ratio:16/10; }
+  @media (min-width:768px) { .hero-media { flex:0 1 460px; margin:0 var(--pad) 0 0; aspect-ratio:4/3; } }
   .hero-media img {
-    width:100%; height:auto; display:block;
+    width:100%; height:100%; object-fit:contain; display:block;
   }
   .hero-media::after {
     /* Soft edge fade where the image meets the text — a purely decorative overlay,
@@ -846,7 +846,7 @@ const CSS = `
   .hero-cta { display:flex; gap:10px; flex-wrap:wrap; }
 
   /* ─ STATS ─ */
-  .stats { display:grid; grid-template-columns:repeat(3,1fr); border-bottom:1px solid var(--border); }
+  .stats { display:grid; grid-template-columns:repeat(3,1fr); border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
   .stat.clickable { cursor:pointer; transition:background 0.12s; }
   .stat.clickable:active { background:var(--off); }
   @media (hover:hover) { .stat.clickable:hover { background:var(--off); } }
