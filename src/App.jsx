@@ -141,6 +141,19 @@ const ANIMALS = [
 ];
 
 const COUNTRIES = ["All Countries","Türkiye","Kuzey Kıbrıs","BAE"];
+
+// The country/"all" keys above are stored verbatim on every record, so they must
+// never change. This maps a stored key to what the user actually sees per language.
+const LOC_LABELS = {
+  "All Countries": { en:"All Countries", tr:"Tüm Ülkeler" },
+  "All Provinces": { en:"All Provinces", tr:"Tüm İller" },
+  "All Cities":    { en:"All Areas",     tr:"Tüm Semtler" },
+  "Türkiye":       { en:"Turkey",         tr:"Türkiye" },
+  "Kuzey Kıbrıs":  { en:"Northern Cyprus",tr:"Kuzey Kıbrıs" },
+  "BAE":           { en:"UAE",            tr:"BAE" },
+};
+const locLabel = (name, lang) => (LOC_LABELS[name] && LOC_LABELS[name][lang === "tr" ? "tr" : "en"]) || name;
+
 const PROVINCES = {
   "All Countries":  ["All Provinces"],
   "Türkiye":        ["All Provinces","Adana","Adıyaman","Afyonkarahisar","Ağrı","Amasya","Ankara","Antalya","Artvin","Aydın","Balıkesir","Bilecik","Bingöl","Bitlis","Bolu","Burdur","Bursa","Çanakkale","Çankırı","Çorum","Denizli","Diyarbakır","Edirne","Elazığ","Erzincan","Erzurum","Eskişehir","Gaziantep","Giresun","Gümüşhane","Hakkari","Hatay","Isparta","Mersin","İstanbul","İzmir","Kars","Kastamonu","Kayseri","Kırklareli","Kırşehir","Kocaeli","Konya","Kütahya","Malatya","Manisa","Kahramanmaraş","Mardin","Muğla","Muş","Nevşehir","Niğde","Ordu","Rize","Sakarya","Samsun","Siirt","Sinop","Sivas","Tekirdağ","Tokat","Trabzon","Tunceli","Şanlıurfa","Uşak","Van","Yozgat","Zonguldak","Aksaray","Bayburt","Karaman","Kırıkkale","Batman","Şırnak","Bartın","Ardahan","Iğdır","Yalova","Karabük","Kilis","Osmaniye","Düzce"],
@@ -150,53 +163,105 @@ const PROVINCES = {
 const CITIES = {
   "All Provinces": ["All Cities"],
 
-  // ── Türkiye — büyükşehirler ──
-  "İstanbul":  ["All Cities","Adalar","Arnavutköy","Ataşehir","Avcılar","Bağcılar","Bahçelievler","Bakırköy","Başakşehir","Bayrampaşa","Beşiktaş","Beykoz","Beylikdüzü","Beyoğlu","Büyükçekmece","Çatalca","Çekmeköy","Esenler","Esenyurt","Eyüpsultan","Fatih","Gaziosmanpaşa","Güngören","Kadıköy","Kağıthane","Kartal","Küçükçekmece","Maltepe","Pendik","Sancaktepe","Sarıyer","Silivri","Sultanbeyli","Sultangazi","Şile","Şişli","Tuzla","Ümraniye","Üsküdar","Zeytinburnu"],
-  "Ankara":    ["All Cities","Altındağ","Çankaya","Etimesgut","Gölbaşı","Keçiören","Mamak","Polatlı","Pursaklar","Sincan","Yenimahalle"],
-  "İzmir":     ["All Cities","Bayraklı","Bornova","Buca","Çiğli","Gaziemir","Karabağlar","Karşıyaka","Konak","Menderes","Menemen","Torbalı","Urla"],
-  "Antalya":   ["All Cities","Alanya","Aksu","Döşemealtı","Finike","Kaş","Kemer","Kepez","Konyaaltı","Manavgat","Muratpaşa","Serik","Side"],
-  "Bursa":     ["All Cities","Gemlik","İnegöl","Mudanya","Nilüfer","Orhangazi","Osmangazi","Yıldırım"],
-  "Adana":     ["All Cities","Çukurova","Seyhan","Sarıçam","Yüreğir","Ceyhan"],
-  "Gaziantep": ["All Cities","Şahinbey","Şehitkamil","Nizip","İslahiye"],
-  "Konya":     ["All Cities","Selçuklu","Meram","Karatay","Ereğli"],
-  "Kayseri":   ["All Cities","Kocasinan","Melikgazi","Talas"],
-  "Mersin":    ["All Cities","Akdeniz","Mezitli","Toroslar","Yenişehir","Tarsus","Erdemli"],
-  "Diyarbakır":["All Cities","Bağlar","Kayapınar","Sur","Yenişehir"],
-  "Eskişehir": ["All Cities","Odunpazarı","Tepebaşı"],
-  "Şanlıurfa": ["All Cities","Eyyübiye","Haliliye","Karaköprü","Siverek"],
-  "Kocaeli":   ["All Cities","İzmit","Gebze","Darıca","Gölcük","Körfez"],
-  "Sakarya":   ["All Cities","Adapazarı","Serdivan","Erenler"],
-  "Manisa":    ["All Cities","Şehzadeler","Yunusemre","Akhisar","Turgutlu"],
-  "Hatay":     ["All Cities","Antakya","İskenderun","Defne"],
-  "Aydın":     ["All Cities","Efeler","Kuşadası","Nazilli","Söke"],
-  "Tekirdağ":  ["All Cities","Süleymanpaşa","Çorlu","Çerkezköy"],
-  "Balıkesir": ["All Cities","Altıeylül","Karesi","Edremit","Bandırma"],
-  "Kahramanmaraş": ["All Cities","Dulkadiroğlu","Onikişubat","Türkoğlu"],
-  "Van":       ["All Cities","İpekyolu","Edremit","Tuşba"],
-  "Denizli":   ["All Cities","Merkezefendi","Pamukkale"],
-  "Muğla":     ["All Cities","Bodrum","Fethiye","Marmaris","Milas","Datça","Dalaman","Menteşe"],
-  "Samsun":    ["All Cities","Atakum","İlkadım","Canik"],
-  "Trabzon":   ["All Cities","Ortahisar","Akçaabat"],
-  "Malatya":   ["All Cities","Battalgazi","Yeşilyurt"],
-  "Erzurum":   ["All Cities","Yakutiye","Palandöken"],
-  "Elazığ":    ["All Cities","Merkez"],
+  // ── Türkiye — 81 il, tüm ilçeler ──
+  "Adana":           ["All Cities","Aladağ","Ceyhan","Çukurova","Feke","İmamoğlu","Karaisalı","Karataş","Kozan","Pozantı","Saimbeyli","Sarıçam","Seyhan","Tufanbeyli","Yumurtalık","Yüreğir"],
+  "Adıyaman":        ["All Cities","Merkez","Besni","Çelikhan","Gerger","Gölbaşı","Kâhta","Samsat","Sincik","Tut"],
+  "Afyonkarahisar":  ["All Cities","Merkez","Başmakçı","Bayat","Bolvadin","Çay","Çobanlar","Dazkırı","Dinar","Emirdağ","Evciler","Hocalar","İhsaniye","İscehisar","Kızılören","Sandıklı","Sinanpaşa","Sultandağı","Şuhut"],
+  "Ağrı":            ["All Cities","Merkez","Diyadin","Doğubayazıt","Eleşkirt","Hamur","Patnos","Taşlıçay","Tutak"],
+  "Amasya":          ["All Cities","Merkez","Göynücek","Gümüşhacıköy","Hamamözü","Merzifon","Suluova","Taşova"],
+  "Ankara":          ["All Cities","Akyurt","Altındağ","Ayaş","Bala","Beypazarı","Çamlıdere","Çankaya","Çubuk","Elmadağ","Etimesgut","Evren","Gölbaşı","Güdül","Haymana","Kahramankazan","Kalecik","Keçiören","Kızılcahamam","Mamak","Nallıhan","Polatlı","Pursaklar","Sincan","Şereflikoçhisar","Yenimahalle"],
+  "Antalya":         ["All Cities","Akseki","Aksu","Alanya","Demre","Döşemealtı","Elmalı","Finike","Gazipaşa","Gündoğmuş","İbradı","Kaş","Kemer","Kepez","Konyaaltı","Korkuteli","Kumluca","Manavgat","Muratpaşa","Serik"],
+  "Artvin":          ["All Cities","Merkez","Ardanuç","Arhavi","Borçka","Hopa","Kemalpaşa","Murgul","Şavşat","Yusufeli"],
+  "Aydın":           ["All Cities","Efeler","Bozdoğan","Buharkent","Çine","Didim","Germencik","İncirliova","Karacasu","Karpuzlu","Koçarlı","Köşk","Kuşadası","Kuyucak","Nazilli","Söke","Sultanhisar","Yenipazar"],
+  "Balıkesir":       ["All Cities","Altıeylül","Karesi","Ayvalık","Balya","Bandırma","Bigadiç","Burhaniye","Dursunbey","Edremit","Erdek","Gömeç","Gönen","Havran","İvrindi","Kepsut","Manyas","Marmara","Savaştepe","Sındırgı","Susurluk"],
+  "Bilecik":         ["All Cities","Merkez","Bozüyük","Gölpazarı","İnhisar","Osmaneli","Pazaryeri","Söğüt","Yenipazar"],
+  "Bingöl":          ["All Cities","Merkez","Adaklı","Genç","Karlıova","Kiğı","Solhan","Yayladere","Yedisu"],
+  "Bitlis":          ["All Cities","Merkez","Adilcevaz","Ahlat","Güroymak","Hizan","Mutki","Tatvan"],
+  "Bolu":            ["All Cities","Merkez","Dörtdivan","Gerede","Göynük","Kıbrıscık","Mengen","Mudurnu","Seben","Yeniçağa"],
+  "Burdur":          ["All Cities","Merkez","Ağlasun","Altınyayla","Bucak","Çavdır","Çeltikçi","Gölhisar","Karamanlı","Kemer","Tefenni","Yeşilova"],
+  "Bursa":           ["All Cities","Osmangazi","Nilüfer","Yıldırım","Büyükorhan","Gemlik","Gürsu","Harmancık","İnegöl","İznik","Karacabey","Keles","Kestel","Mudanya","Mustafakemalpaşa","Orhaneli","Orhangazi","Yenişehir"],
+  "Çanakkale":       ["All Cities","Merkez","Ayvacık","Bayramiç","Biga","Bozcaada","Çan","Eceabat","Ezine","Gelibolu","Gökçeada","Lapseki","Yenice"],
+  "Çankırı":         ["All Cities","Merkez","Atkaracalar","Bayramören","Çerkeş","Eldivan","Ilgaz","Kızılırmak","Korgun","Kurşunlu","Orta","Şabanözü","Yapraklı"],
+  "Çorum":           ["All Cities","Merkez","Alaca","Bayat","Boğazkale","Dodurga","İskilip","Kargı","Laçin","Mecitözü","Oğuzlar","Ortaköy","Osmancık","Sungurlu","Uğurludağ"],
+  "Denizli":         ["All Cities","Merkezefendi","Pamukkale","Acıpayam","Babadağ","Baklan","Bekilli","Beyağaç","Bozkurt","Buldan","Çal","Çameli","Çardak","Çivril","Güney","Honaz","Kale","Sarayköy","Serinhisar","Tavas"],
+  "Diyarbakır":      ["All Cities","Bağlar","Kayapınar","Sur","Yenişehir","Bismil","Çermik","Çınar","Çüngüş","Dicle","Eğil","Ergani","Hani","Hazro","Kocaköy","Kulp","Lice","Silvan"],
+  "Edirne":          ["All Cities","Merkez","Enez","Havsa","İpsala","Keşan","Lalapaşa","Meriç","Süloğlu","Uzunköprü"],
+  "Elazığ":          ["All Cities","Merkez","Ağın","Alacakaya","Arıcak","Baskil","Karakoçan","Keban","Kovancılar","Maden","Palu","Sivrice"],
+  "Erzincan":        ["All Cities","Merkez","Çayırlı","İliç","Kemah","Kemaliye","Otlukbeli","Refahiye","Tercan","Üzümlü"],
+  "Erzurum":         ["All Cities","Yakutiye","Palandöken","Aziziye","Aşkale","Çat","Hınıs","Horasan","İspir","Karaçoban","Karayazı","Köprüköy","Narman","Oltu","Olur","Pasinler","Pazaryolu","Şenkaya","Tekman","Tortum","Uzundere"],
+  "Eskişehir":       ["All Cities","Odunpazarı","Tepebaşı","Alpu","Beylikova","Çifteler","Günyüzü","Han","İnönü","Mahmudiye","Mihalgazi","Mihalıççık","Sarıcakaya","Seyitgazi","Sivrihisar"],
+  "Gaziantep":       ["All Cities","Şahinbey","Şehitkamil","Araban","İslahiye","Karkamış","Nizip","Nurdağı","Oğuzeli","Yavuzeli"],
+  "Giresun":         ["All Cities","Merkez","Alucra","Bulancak","Çamoluk","Çanakçı","Dereli","Doğankent","Espiye","Eynesil","Görele","Güce","Keşap","Piraziz","Şebinkarahisar","Tirebolu","Yağlıdere"],
+  "Gümüşhane":       ["All Cities","Merkez","Kelkit","Köse","Kürtün","Şiran","Torul"],
+  "Hakkari":         ["All Cities","Merkez","Çukurca","Derecik","Şemdinli","Yüksekova"],
+  "Hatay":           ["All Cities","Antakya","Defne","İskenderun","Altınözü","Arsuz","Belen","Dörtyol","Erzin","Hassa","Kırıkhan","Kumlu","Payas","Reyhanlı","Samandağ","Yayladağı"],
+  "Isparta":         ["All Cities","Merkez","Aksu","Atabey","Eğirdir","Gelendost","Gönen","Keçiborlu","Senirkent","Sütçüler","Şarkikaraağaç","Uluborlu","Yalvaç","Yenişarbademli"],
+  "Mersin":          ["All Cities","Akdeniz","Mezitli","Toroslar","Yenişehir","Anamur","Aydıncık","Bozyazı","Çamlıyayla","Erdemli","Gülnar","Mut","Silifke","Tarsus"],
+  "İstanbul":        ["All Cities","Adalar","Arnavutköy","Ataşehir","Avcılar","Bağcılar","Bahçelievler","Bakırköy","Başakşehir","Bayrampaşa","Beşiktaş","Beykoz","Beylikdüzü","Beyoğlu","Büyükçekmece","Çatalca","Çekmeköy","Esenler","Esenyurt","Eyüpsultan","Fatih","Gaziosmanpaşa","Güngören","Kadıköy","Kağıthane","Kartal","Küçükçekmece","Maltepe","Pendik","Sancaktepe","Sarıyer","Silivri","Sultanbeyli","Sultangazi","Şile","Şişli","Tuzla","Ümraniye","Üsküdar","Zeytinburnu"],
+  "İzmir":           ["All Cities","Aliağa","Balçova","Bayındır","Bayraklı","Bergama","Beydağ","Bornova","Buca","Çeşme","Çiğli","Dikili","Foça","Gaziemir","Güzelbahçe","Karabağlar","Karaburun","Karşıyaka","Kemalpaşa","Kınık","Kiraz","Konak","Menderes","Menemen","Narlıdere","Ödemiş","Seferihisar","Selçuk","Tire","Torbalı","Urla"],
+  "Kars":            ["All Cities","Merkez","Akyaka","Arpaçay","Digor","Kağızman","Sarıkamış","Selim","Susuz"],
+  "Kastamonu":       ["All Cities","Merkez","Abana","Ağlı","Araç","Azdavay","Bozkurt","Cide","Çatalzeytin","Daday","Devrekani","Doğanyurt","Hanönü","İhsangazi","İnebolu","Küre","Pınarbaşı","Seydiler","Şenpazar","Taşköprü","Tosya"],
+  "Kayseri":         ["All Cities","Kocasinan","Melikgazi","Talas","Akkışla","Bünyan","Develi","Felahiye","Hacılar","İncesu","Özvatan","Pınarbaşı","Sarıoğlan","Sarız","Tomarza","Yahyalı","Yeşilhisar"],
+  "Kırklareli":      ["All Cities","Merkez","Babaeski","Demirköy","Kofçaz","Lüleburgaz","Pehlivanköy","Pınarhisar","Vize"],
+  "Kırşehir":        ["All Cities","Merkez","Akçakent","Akpınar","Boztepe","Çiçekdağı","Kaman","Mucur"],
+  "Kocaeli":         ["All Cities","İzmit","Gebze","Darıca","Gölcük","Körfez","Başiskele","Çayırova","Derince","Dilovası","Kandıra","Karamürsel","Kartepe"],
+  "Konya":           ["All Cities","Selçuklu","Meram","Karatay","Ahırlı","Akören","Akşehir","Altınekin","Beyşehir","Bozkır","Cihanbeyli","Çeltik","Çumra","Derbent","Derebucak","Doğanhisar","Emirgazi","Ereğli","Güneysınır","Hadim","Halkapınar","Hüyük","Ilgın","Kadınhanı","Karapınar","Kulu","Sarayönü","Seydişehir","Taşkent","Tuzlukçu","Yalıhüyük","Yunak"],
+  "Kütahya":         ["All Cities","Merkez","Altıntaş","Aslanapa","Çavdarhisar","Domaniç","Dumlupınar","Emet","Gediz","Hisarcık","Pazarlar","Simav","Şaphane","Tavşanlı"],
+  "Malatya":         ["All Cities","Battalgazi","Yeşilyurt","Akçadağ","Arapgir","Arguvan","Darende","Doğanşehir","Doğanyol","Hekimhan","Kale","Kuluncak","Pütürge","Yazıhan"],
+  "Manisa":          ["All Cities","Şehzadeler","Yunusemre","Ahmetli","Akhisar","Alaşehir","Demirci","Gölmarmara","Gördes","Kırkağaç","Köprübaşı","Kula","Salihli","Sarıgöl","Saruhanlı","Selendi","Soma","Turgutlu"],
+  "Kahramanmaraş":   ["All Cities","Dulkadiroğlu","Onikişubat","Afşin","Andırın","Çağlayancerit","Ekinözü","Elbistan","Göksun","Nurhak","Pazarcık","Türkoğlu"],
+  "Mardin":          ["All Cities","Artuklu","Dargeçit","Derik","Kızıltepe","Mazıdağı","Midyat","Nusaybin","Ömerli","Savur","Yeşilli"],
+  "Muğla":           ["All Cities","Menteşe","Bodrum","Dalaman","Datça","Fethiye","Kavaklıdere","Köyceğiz","Marmaris","Milas","Ortaca","Seydikemer","Ula","Yatağan"],
+  "Muş":             ["All Cities","Merkez","Bulanık","Hasköy","Korkut","Malazgirt","Varto"],
+  "Nevşehir":        ["All Cities","Merkez","Acıgöl","Avanos","Derinkuyu","Gülşehir","Hacıbektaş","Kozaklı","Ürgüp"],
+  "Niğde":           ["All Cities","Merkez","Altunhisar","Bor","Çamardı","Çiftlik","Ulukışla"],
+  "Ordu":            ["All Cities","Altınordu","Akkuş","Aybastı","Çamaş","Çatalpınar","Çaybaşı","Fatsa","Gölköy","Gülyalı","Gürgentepe","İkizce","Kabadüz","Kabataş","Korgan","Kumru","Mesudiye","Perşembe","Ulubey","Ünye"],
+  "Rize":            ["All Cities","Merkez","Ardeşen","Çamlıhemşin","Çayeli","Derepazarı","Fındıklı","Güneysu","Hemşin","İkizdere","İyidere","Kalkandere","Pazar"],
+  "Sakarya":         ["All Cities","Adapazarı","Serdivan","Erenler","Akyazı","Arifiye","Ferizli","Geyve","Hendek","Karapürçek","Karasu","Kaynarca","Kocaali","Pamukova","Sapanca","Söğütlü","Taraklı"],
+  "Samsun":          ["All Cities","Atakum","İlkadım","Canik","Tekkeköy","19 Mayıs","Alaçam","Asarcık","Ayvacık","Bafra","Çarşamba","Havza","Kavak","Ladik","Salıpazarı","Terme","Vezirköprü","Yakakent"],
+  "Siirt":           ["All Cities","Merkez","Baykan","Eruh","Kurtalan","Pervari","Şirvan","Tillo"],
+  "Sinop":           ["All Cities","Merkez","Ayancık","Boyabat","Dikmen","Durağan","Erfelek","Gerze","Saraydüzü","Türkeli"],
+  "Sivas":           ["All Cities","Merkez","Akıncılar","Altınyayla","Divriği","Doğanşar","Gemerek","Gölova","Gürün","Hafik","İmranlı","Kangal","Koyulhisar","Suşehri","Şarkışla","Ulaş","Yıldızeli","Zara"],
+  "Tekirdağ":        ["All Cities","Süleymanpaşa","Çorlu","Çerkezköy","Ergene","Kapaklı","Hayrabolu","Malkara","Marmaraereğlisi","Muratlı","Saray","Şarköy"],
+  "Tokat":           ["All Cities","Merkez","Almus","Artova","Başçiftlik","Erbaa","Niksar","Pazar","Reşadiye","Sulusaray","Turhal","Yeşilyurt","Zile"],
+  "Trabzon":         ["All Cities","Ortahisar","Akçaabat","Araklı","Arsin","Beşikdüzü","Çarşıbaşı","Çaykara","Dernekpazarı","Düzköy","Hayrat","Köprübaşı","Maçka","Of","Sürmene","Şalpazarı","Tonya","Vakfıkebir","Yomra"],
+  "Tunceli":         ["All Cities","Merkez","Çemişgezek","Hozat","Mazgirt","Nazımiye","Ovacık","Pertek","Pülümür"],
+  "Şanlıurfa":       ["All Cities","Eyyübiye","Haliliye","Karaköprü","Akçakale","Birecik","Bozova","Ceylanpınar","Halfeti","Harran","Hilvan","Siverek","Suruç","Viranşehir"],
+  "Uşak":            ["All Cities","Merkez","Banaz","Eşme","Karahallı","Sivaslı","Ulubey"],
+  "Van":             ["All Cities","İpekyolu","Tuşba","Edremit","Bahçesaray","Başkale","Çaldıran","Çatak","Erciş","Gevaş","Gürpınar","Muradiye","Özalp","Saray"],
+  "Yozgat":          ["All Cities","Merkez","Akdağmadeni","Aydıncık","Boğazlıyan","Çandır","Çayıralan","Çekerek","Kadışehri","Saraykent","Sarıkaya","Sorgun","Şefaatli","Yenifakılı","Yerköy"],
+  "Zonguldak":       ["All Cities","Merkez","Alaplı","Çaycuma","Devrek","Ereğli","Gökçebey","Kilimli","Kozlu"],
+  "Aksaray":         ["All Cities","Merkez","Ağaçören","Eskil","Gülağaç","Güzelyurt","Ortaköy","Sarıyahşi","Sultanhanı"],
+  "Bayburt":         ["All Cities","Merkez","Aydıntepe","Demirözü"],
+  "Karaman":         ["All Cities","Merkez","Ayrancı","Başyayla","Ermenek","Kazımkarabekir","Sarıveliler"],
+  "Kırıkkale":       ["All Cities","Merkez","Bahşılı","Balışeyh","Çelebi","Delice","Karakeçili","Keskin","Sulakyurt","Yahşihan"],
+  "Batman":          ["All Cities","Merkez","Beşiri","Gercüş","Hasankeyf","Kozluk","Sason"],
+  "Şırnak":          ["All Cities","Merkez","Beytüşşebap","Cizre","Güçlükonak","İdil","Silopi","Uludere"],
+  "Bartın":          ["All Cities","Merkez","Amasra","Kurucaşile","Ulus"],
+  "Ardahan":         ["All Cities","Merkez","Çıldır","Damal","Göle","Hanak","Posof"],
+  "Iğdır":           ["All Cities","Merkez","Aralık","Karakoyunlu","Tuzluca"],
+  "Yalova":          ["All Cities","Merkez","Altınova","Armutlu","Çınarcık","Çiftlikköy","Termal"],
+  "Karabük":         ["All Cities","Merkez","Eflani","Eskipazar","Ovacık","Safranbolu","Yenice"],
+  "Kilis":           ["All Cities","Merkez","Elbeyli","Musabeyli","Polateli"],
+  "Osmaniye":        ["All Cities","Merkez","Bahçe","Düziçi","Hasanbeyli","Kadirli","Sumbas","Toprakkale"],
+  "Düzce":           ["All Cities","Merkez","Akçakoca","Cumayeri","Çilimli","Gölyaka","Gümüşova","Kaynaşlı","Yığılca"],
 
   // ── Kuzey Kıbrıs ──
-  "Lefkoşa":     ["All Cities","Lefkoşa Merkez","Alayköy","Haspolat","Gönyeli","Hamitköy","Yenikent","Ortaköy"],
-  "Gazimağusa":  ["All Cities","Gazimağusa Merkez","Yeniboğaziçi","Akdoğan","Geçitkale"],
-  "Girne":       ["All Cities","Girne Merkez","Alsancak","Lapta","Karaoğlanoğlu","Çatalköy","Esentepe","Karşıyaka"],
-  "Güzelyurt":   ["All Cities","Güzelyurt Merkez","Gemikonağı","Serhatköy","Yeşilyurt"],
-  "İskele":      ["All Cities","İskele Merkez","Yeni Erenköy","Dipkarpaz","Bafra","Boğaz"],
-  "Lefke":       ["All Cities","Lefke Merkez","Gaziveren","Yeşilırmak"],
+  "Lefkoşa":         ["All Cities","Lefkoşa Merkez","Küçük Kaymaklı","Ortaköy","Yenişehir","Göçmenköy","Taşkınköy","Marmara","Hamitköy","Gönyeli","Yenikent","Alayköy","Haspolat","Değirmenlik","Dikmen","Kanlıköy","Balıkesir","Gökhan","Meriç","Akıncılar","Türkeli"],
+  "Gazimağusa":      ["All Cities","Gazimağusa Merkez","Sakarya","Baykal","Maraş","Tuzla","Mutluyaka","Yeniboğaziçi","Akdoğan","Geçitkale","Serdarlı","Beyarmudu","Pile","Dörtyol","İnönü","Vadili","Paşaköy","Alaniçi","Çayönü"],
+  "Girne":           ["All Cities","Girne Merkez","Karaoğlanoğlu","Alsancak","Lapta","Karşıyaka","Çamlıbel","Karaman","Zeytinlik","Edremit","Doğanköy","Ozanköy","Bellapais","Çatalköy","Arapköy","Esentepe","Karakum","Ilgaz","Kayalar","Akdeniz","Tatlısu"],
+  "Güzelyurt":       ["All Cities","Güzelyurt Merkez","Zümrütköy","Bostancı","Kalkanlı","Aydınköy","Yayla","Akçay","Şahinler","Serhatköy","Doğancı"],
+  "İskele":          ["All Cities","İskele Merkez","Boğaz","Bafra","Kumyalı","Ziyamet","Mehmetçik","Büyükkonuk","Yeni Erenköy","Dipkarpaz","Sipahi","Avtepe","Kaplıca","Balalan","Yarköy"],
+  "Lefke":           ["All Cities","Lefke Merkez","Gemikonağı","Yeşilyurt","Gaziveren","Yedidalga","Bağlıköy","Cengizköy","Denizli","Taşpınar"],
 
-  // ── BAE ──
-  "Dubai":           ["All Cities","Jumeirah","Deira","Bur Dubai","Dubai Marina","JLT","Business Bay","Downtown Dubai","Al Quoz","Mirdif","Al Barsha","Jebel Ali","Al Karama","Dubai Silicon Oasis","Arabian Ranches","Palm Jumeirah","International City"],
-  "Abu Dhabi":       ["All Cities","Al Reem","Yas Island","Khalifa City","Al Raha","Saadiyat","Mussafah","Al Ain","Al Bateen","Al Khalidiyah","Al Zahiyah","Masdar City"],
-  "Sharjah":         ["All Cities","Al Nahda","Al Majaz","Muwaileh","Al Khan","Al Qasimia","Al Taawun","Al Suyoh"],
-  "Ajman":           ["All Cities","Ajman City","Al Nuaimiyah","Al Rashidiya","Al Jurf","Al Mowaihat"],
-  "Ras Al Khaimah":  ["All Cities","RAK City","Al Hamra","Khuzam","Al Nakheel","Al Dhait"],
-  "Fujairah":        ["All Cities","Fujairah City","Dibba","Al Faseel"],
-  "Umm Al Quwain":   ["All Cities","UAQ City","Falaj Al Mualla"],
+  // ── BAE / UAE — emirates and their communities ──
+  "Dubai":           ["All Cities","Al Barari","Al Barsha","Al Barsha Heights (Tecom)","Al Barsha South","Al Furjan","Al Garhoud","Al Jaddaf","Al Jafiliya","Al Karama","Al Khawaneej","Al Mankhool","Al Mizhar","Al Muraqqabat","Al Nahda","Al Quoz","Al Qusais","Al Rashidiya","Al Rigga","Al Safa","Al Satwa","Al Sufouh","Al Twar","Al Warqa","Al Wasl","Arabian Ranches","Arjan","Bluewaters Island","Bur Dubai","Business Bay","City Walk","Culture Village","Damac Hills","Deira","Discovery Gardens","Downtown Dubai","Dubai Creek Harbour","Dubai Design District (d3)","Dubai Festival City","Dubai Healthcare City","Dubai Hills Estate","Dubai Internet City","Dubai Investment Park (DIP)","Dubai Marina","Dubai Media City","Dubai Production City (IMPZ)","Dubai Silicon Oasis","Dubai South","Dubai Sports City","Dubai Studio City","DIFC","Emirates Hills","Expo City","Green Community","Hatta","International City","Jebel Ali","Jumeirah","Jumeirah Beach Residence (JBR)","Jumeirah Golf Estates","Jumeirah Islands","Jumeirah Lake Towers (JLT)","Jumeirah Park","Jumeirah Village Circle (JVC)","Jumeirah Village Triangle (JVT)","Knowledge Village","La Mer","Living Legends","Meydan","Mirdif","Motor City","Mudon","Muhaisnah","Nad Al Sheba","Nadd Al Hamar","Oud Metha","Palm Jumeirah","Pearl Jumeirah","Port Saeed","Ras Al Khor","Remraam","Sheikh Zayed Road","The Greens","The Lakes","The Meadows","The Springs","The Villa","The Views","Town Square","Umm Al Sheif","Umm Ramool","Umm Suqeim","Warsan","World Trade Centre","Za'abeel"],
+  "Abu Dhabi":       ["All Cities","Al Bahia","Al Bateen","Al Danah","Al Falah","Al Ghadeer","Al Karamah","Al Khalidiyah","Al Manaseer","Al Maryah Island","Al Maqta","Al Mina","Al Mushrif","Al Muroor","Al Nahyan","Al Raha Beach","Al Raha Gardens","Al Rahba","Al Reef","Al Reem Island","Al Samha","Al Shahama","Al Shamkha","Al Wahda","Al Zahiyah","Baniyas","Bain Al Jessrain","Corniche","Hydra Village","Khalifa City","Madinat Zayed","Masdar City","Mohammed Bin Zayed City","Mussafah","Saadiyat Island","Shakhbout City","Tourist Club Area","Yas Island","Al Ain","Al Jimi","Al Muwaiji","Al Mutarad","Al Towayya","Hili","Zakher","Al Yahar","Ruwais","Ghayathi","Liwa","Delma Island","Sila"],
+  "Sharjah":         ["All Cities","Abu Shagara","Al Azra","Al Butina","Al Fisht","Al Gharb","Al Ghuwair","Al Heerah","Al Khan","Al Layyah","Al Majaz","Al Mamzar","Al Mujarrah","Al Nahda","Al Nud","Al Qasimia","Al Qulayaah","Al Rahmaniya","Al Ramtha","Al Riqqa","Al Shahba","Al Suyoh","Al Taawun","Al Tai","Al Yarmook","Al Zahia","Halwan","Industrial Area","Maysaloon","Muwaileh","Rolla","Samnan","Tilal City","University City","Al Dhaid","Al Badayer","Dibba Al Hisn","Kalba","Khor Fakkan","Mleiha"],
+  "Ajman":           ["All Cities","Ajman Downtown","Ajman Corniche","Al Amerah","Al Bustan","Al Hamidiyah","Al Helio","Al Jurf","Al Mowaihat","Al Nakhil","Al Nuaimiyah","Al Rashidiya","Al Rawda","Al Rumailah","Al Sawan","Al Tallah","Al Yasmeen","Al Zahra","Emirates City","Manama","Masfout"],
+  "Ras Al Khaimah":  ["All Cities","RAK City","Al Dhait","Al Ghail","Al Hamra Village","Al Jazirah Al Hamra","Al Mairid","Al Marjan Island","Al Nakheel","Al Qusaidat","Al Rams","Al Uraibi","Digdaga","Ghalilah","Julphar","Khatt","Khuzam","Mina Al Arab","Sha'am","Masafi"],
+  "Fujairah":        ["All Cities","Fujairah City","Al Aqah","Al Bidiyah","Al Faseel","Al Gurfa","Al Hilal City","Al Taween","Dibba Al Fujairah","Merashid","Mirbah","Murbah","Qidfa","Sakamkam","Masafi"],
+  "Umm Al Quwain":   ["All Cities","UAQ City","Al Dar Al Baida","Al Haditha","Al Humrah","Al Maidan","Al Raas","Al Rafaah","Al Ramlah","Al Riqqah","Al Salamah","Falaj Al Mualla","Khor Al Beidah"],
 };
 
 // ─── PROVINCE COORDINATES (approximate centers, for geolocation matching) ───
@@ -1777,13 +1842,13 @@ export default function App() {
         {locating ? "…" : "📍"}
       </button>
       <select className={`loc-select ${fCountry !== "All Countries" ? "on" : ""}`} value={fCountry} onChange={e => { setFC(e.target.value); setFP("All Provinces"); setFCi("All Cities"); }}>
-        {COUNTRIES.map(c => <option key={c}>{c}</option>)}
+        {COUNTRIES.map(c => <option key={c} value={c}>{locLabel(c, lang)}</option>)}
       </select>
       <select className={`loc-select ${fProvince !== "All Provinces" ? "on" : ""}`} value={fProvince} onChange={e => { setFP(e.target.value); setFCi("All Cities"); }}>
-        {(PROVINCES[fCountry] || ["All Provinces"]).map(p => <option key={p}>{p}</option>)}
+        {(PROVINCES[fCountry] || ["All Provinces"]).map(p => <option key={p} value={p}>{locLabel(p, lang)}</option>)}
       </select>
       <select className={`loc-select ${fCity !== "All Cities" ? "on" : ""}`} value={fCity} onChange={e => setFCi(e.target.value)}>
-        {(CITIES[fProvince] || ["All Cities"]).map(c => <option key={c}>{c}</option>)}
+        {(CITIES[fProvince] || ["All Cities"]).map(c => <option key={c} value={c}>{locLabel(c, lang)}</option>)}
       </select>
     </div>
   );
@@ -2066,7 +2131,7 @@ export default function App() {
                 <div className="fg"><label className="flabel">{t.colour}</label><input className="fi" placeholder={lang==="tr"?"örn. Siyah & beyaz":"e.g. Black & white"} value={lfForm.color} onChange={e => setLFForm(f => ({ ...f, color:e.target.value }))} /></div>
                 <div className="fg"><label className="flabel">{lang==="tr"?"Ülke *":"Country *"}</label>
                   <select className="fs" value={lfForm.lfCountry} onChange={e => setLFForm(f => ({ ...f, lfCountry:e.target.value, lfProvince:"", city:"" }))}>
-                    {COUNTRIES.filter(c=>c!=="All Countries").map(c => <option key={c}>{c}</option>)}
+                    {COUNTRIES.filter(c=>c!=="All Countries").map(c => <option key={c} value={c}>{locLabel(c, lang)}</option>)}
                   </select>
                 </div>
               </div>
@@ -2075,13 +2140,13 @@ export default function App() {
                 <div className="fg"><label className="flabel">{t.cityField}</label>
                   <select className="fs" value={lfForm.lfProvince} onChange={e => setLFForm(f => ({ ...f, lfProvince:e.target.value, city:"" }))}>
                     <option value="">{lang==="tr"?"İl / Bölge seç":"Select province"}</option>
-                    {(PROVINCES[lfForm.lfCountry] || []).filter(p=>p!=="All Provinces").map(p => <option key={p}>{p}</option>)}
+                    {(PROVINCES[lfForm.lfCountry] || []).filter(p=>p!=="All Provinces").map(p => <option key={p} value={p}>{locLabel(p, lang)}</option>)}
                   </select>
                 </div>
                 <div className="fg"><label className="flabel">{t.areaField}</label>
                   <select className="fs" value={lfForm.city} onChange={e => setLFForm(f => ({ ...f, city:e.target.value, area:e.target.value }))}>
                     <option value="">{lang==="tr"?"Semt / İlçe seç":"Select area"}</option>
-                    {(CITIES[lfForm.lfProvince] || []).filter(c=>c!=="All Cities").map(c => <option key={c}>{c}</option>)}
+                    {(CITIES[lfForm.lfProvince] || []).filter(c=>c!=="All Cities").map(c => <option key={c} value={c}>{locLabel(c, lang)}</option>)}
                   </select>
                 </div>
               </div>
@@ -2360,17 +2425,17 @@ export default function App() {
               <div className="fg"><label className="flabel">{t.locationField}</label>
                 <div className="frow">
                   <select className="fs" value={rf.rCountry} onChange={e => setRf(f => ({ ...f, rCountry:e.target.value, rProvince:"", rCity:"" }))}>
-                    {COUNTRIES.filter(c=>c!=="All Countries").map(c => <option key={c}>{c}</option>)}
+                    {COUNTRIES.filter(c=>c!=="All Countries").map(c => <option key={c} value={c}>{locLabel(c, lang)}</option>)}
                   </select>
                   <select className="fs" value={rf.rProvince} onChange={e => setRf(f => ({ ...f, rProvince:e.target.value, rCity:"" }))}>
                     <option value="">{lang==="tr"?"İl / Bölge seç":"Select province"}</option>
-                    {(PROVINCES[rf.rCountry] || []).filter(p=>p!=="All Provinces").map(p => <option key={p}>{p}</option>)}
+                    {(PROVINCES[rf.rCountry] || []).filter(p=>p!=="All Provinces").map(p => <option key={p} value={p}>{locLabel(p, lang)}</option>)}
                   </select>
                 </div>
                 <div className="frow" style={{ marginTop:10 }}>
                   <select className="fs" value={rf.rCity} onChange={e => setRf(f => ({ ...f, rCity:e.target.value }))}>
                     <option value="">{lang==="tr"?"Semt / İlçe seç":"Select area"}</option>
-                    {(CITIES[rf.rProvince] || []).filter(c=>c!=="All Cities").map(c => <option key={c}>{c}</option>)}
+                    {(CITIES[rf.rProvince] || []).filter(c=>c!=="All Cities").map(c => <option key={c} value={c}>{locLabel(c, lang)}</option>)}
                   </select>
                   <input className="fi" placeholder={lang==="tr"?"Açık adres (sokak, bina no...)":"Open address (street, building no...)"} value={rf.rAddress} onChange={e => setRf(f => ({ ...f, rAddress:e.target.value }))} />
                 </div>
@@ -4387,14 +4452,14 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact }) {
         <div className="fg">
           <label className="flabel">{lang==="tr"?"Ülke *":"Country *"}</label>
           <select className="fs" value={f.country} onChange={e=>setF(x=>({...x,country:e.target.value,province:"",city:""}))}>
-            {COUNTRIES.filter(c=>c!=="All Countries").map(c=><option key={c}>{c}</option>)}
+            {COUNTRIES.filter(c=>c!=="All Countries").map(c=><option key={c} value={c}>{locLabel(c, lang)}</option>)}
           </select>
         </div>
         <div className="fg">
           <label className="flabel">{lang==="tr"?"İl / Bölge *":"Province *"}</label>
           <select className="fs" value={f.province} onChange={e=>setF(x=>({...x,province:e.target.value,city:""}))}>
             <option value="">{lang==="tr"?"Seçin":"Select"}</option>
-            {(PROVINCES[f.country] || []).filter(p=>p!=="All Provinces").map(p=><option key={p}>{p}</option>)}
+            {(PROVINCES[f.country] || []).filter(p=>p!=="All Provinces").map(p=><option key={p} value={p}>{locLabel(p, lang)}</option>)}
           </select>
         </div>
       </div>
@@ -4404,7 +4469,7 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact }) {
           <label className="flabel">{lang==="tr"?"Semt / İlçe *":"Area *"}</label>
           <select className="fs" value={f.city} onChange={e=>setF(x=>({...x,city:e.target.value}))}>
             <option value="">{lang==="tr"?"Seçin":"Select"}</option>
-            {(CITIES[f.province] || []).filter(c=>c!=="All Cities").map(c=><option key={c}>{c}</option>)}
+            {(CITIES[f.province] || []).filter(c=>c!=="All Cities").map(c=><option key={c} value={c}>{locLabel(c, lang)}</option>)}
           </select>
         </div>
         <div className="fg">
