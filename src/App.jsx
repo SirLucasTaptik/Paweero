@@ -355,8 +355,8 @@ const T = {
     taSuccessDesc:"Your response has been sent to the poster. They'll reach out to you directly.",
     taSuccessFor:"You registered interest for:",
     // hero
-    heroH1:"Every animal deserves", heroH1Em:"a loving home.",
-    heroP:"Adopt, foster, find a pet sitter, post a lost & found, or report animals in distress.",
+    heroH1:"A free platform for", heroH1Em:"animal welfare.",
+    heroP:"Adopt, foster, find a pet sitter, post a lost & found, or report animals in distress — always free, for every animal.",
     browseAnimals:"Browse Animals", postAnimal:"Post an Animal", reportAnimal:"Report Animal in Need", shareWA:"Share",
     // stats
     adopted:"Adopted", waiting:"Waiting", rescues:"Rescue", shelters:"Shelters", helped:"Helped",
@@ -572,8 +572,8 @@ const T = {
     taSuccessDesc:"Yanıtın ilan sahibine iletildi. Seninle doğrudan iletişime geçecekler.",
     taSuccessFor:"Şunlar için ilgini kaydettik:",
     // hero
-    heroH1:"Her hayvan hak ediyor", heroH1Em:"sevgi dolu bir yuva.",
-    heroP:"Sahiplen, geçici bakım ver, bakıcı bul, kayıp ilanı ver ya da tehlikedeki hayvanları bildir.",
+    heroH1:"Hayvan refahı için", heroH1Em:"ücretsiz platform.",
+    heroP:"Sahiplen, geçici bakım ver, bakıcı bul, kayıp ilanı ver ya da tehlikedeki hayvanları bildir — her zaman ücretsiz, her hayvan için.",
     browseAnimals:"Hayvanlara Göz At", postAnimal:"Hayvan İlanı Ver", reportAnimal:"Tehlikedeki Hayvan Bildir", shareWA:"Paylaş",
     // istatistikler
     adopted:"Sahiplenilen", waiting:"Bekleyen", rescues:"Kurtarma", shelters:"Barınak", helped:"Yardım Edildi",
@@ -825,10 +825,12 @@ const CSS = `
   @media (min-width:768px) { .hero-inner { flex-direction:row; align-items:center; gap:8px; } }
   .hero-text { padding:52px var(--pad) 8px; flex:1 1 440px; min-width:0; }
   @media (min-width:768px) { .hero-text { padding:56px 0 56px var(--pad); flex:1 1 460px; } }
-  .hero-media { position:relative; max-width:460px; margin:16px auto 40px; border-radius:var(--r-lg); overflow:hidden; background:var(--off); aspect-ratio:16/10; }
-  @media (min-width:768px) { .hero-media { flex:0 1 460px; margin:0 var(--pad) 0 0; aspect-ratio:4/3; } }
+  /* The image keeps its own aspect ratio — no fixed box, so it never letterboxes
+     and leaves empty space above the stats line. line-height:0 kills the inline gap. */
+  .hero-media { position:relative; max-width:460px; margin:8px auto 0; border-radius:var(--r-lg); overflow:hidden; line-height:0; }
+  @media (min-width:768px) { .hero-media { flex:0 1 460px; margin:0 var(--pad) 0 0; } }
   .hero-media img {
-    width:100%; height:100%; object-fit:contain; display:block;
+    width:100%; height:auto; display:block;
   }
   .hero-media::after {
     /* Soft edge fade where the image meets the text — a purely decorative overlay,
