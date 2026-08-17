@@ -544,11 +544,17 @@ const slugify = (s) => String(s || "")
   .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
   .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60);
 
+// Tanınmayan adres "notfound" sekmesine düşer. Bu önemli: her adres index.html'e
+// yönlendiği için /asdfgh de 200 OK dönüyordu ve ana sayfayı gösteriyordu —
+// Google bunu "soft 404" sayar, tarama bütçesini harcar ve hatalı linkler sonsuz
+// sahte sayfa üretir. Artık açıkça "bulunamadı" diyoruz ve noindex veriyoruz.
 function parseLocation(pathname) {
   let parts;
   try { parts = decodeURIComponent(pathname).split("/").filter(Boolean); }
   catch (e) { parts = pathname.split("/").filter(Boolean); }
-  const tab = SEGMENT_TAB[parts[0] || ""] || "home";
+  const head = parts[0] || "";
+  if (!(head in SEGMENT_TAB) || parts.length > 2) return { tab:"notfound", sub:null, seg:"" };
+  const tab = SEGMENT_TAB[head];
   const seg = parts[1] || "";
   const isSub = (TAB_SUBS[tab] || []).includes(seg);
   return { tab, sub: isSub ? seg : null, seg: isSub ? "" : seg };
@@ -576,6 +582,12 @@ const tabPath = (tab, sub) => {
 // WhatsApp/Facebook gibi link önizlemeleri JS çalıştırmaz — onlar index.html'deki
 // sabit og etiketlerini görür. Kalıcı çözüm sunucu tarafı render.
 const PAGE_META = {
+  notfound: {
+    en: { title:"Page not found | Paweero",
+          desc:"This page or listing is no longer available." },
+    tr: { title:"Sayfa bulunamadı | Paweero",
+          desc:"Bu sayfa ya da ilan artık mevcut değil." },
+  },
   home: {
     en: { title:"Paweero — Free Animal Welfare Platform",
           desc:"Adopt, foster, find a pet sitter, post a lost & found, or report animals in distress across Turkey, Cyprus and the Gulf. Always free." },
@@ -1740,6 +1752,11 @@ export default function App() {
     return () => { cancelled = true; };
   }, []);
 
+  // Adresteki ilan kimliği henüz kayda bağlanmadıysa burada bekler. URL senkronu
+  // bu süre boyunca adrese dokunmaz — yoksa /animals'a sadeleşir ve hangi ilanın
+  // istendiği bilgisi kaybolur, dolayısıyla 404 da tespit edilemez.
+  const [pendingSeg, setPendingSeg] = useState(initialRoute.seg || "");
+
   // ── modal state ──
   const [detailAnimal, setDetailA]  = useState(null);
   const [detailSitter, setDetailS]  = useState(null);
@@ -1750,19 +1767,23 @@ export default function App() {
   // Adres, görünüm durumundan türetilir: sekme, alt sekme ve açık ilan. Derine
   // inerken (ilan açılırken) geçmişe yeni kayıt eklenir, yukarı çıkarken mevcut
   // kayıt değiştirilir — böylece geri tuşu beklendiği gibi davranır.
-  const currentPath = detailAnimal ? itemPath("animals",   detailAnimal, detailAnimal.name)
+  const here = typeof window === "undefined" ? "/" : (window.location.pathname.replace(/\/+$/, "") || "/");
+  // "notfound" durumunda adres olduğu gibi korunur — 404 sayfası kendi adresinde
+  // durmalı, sessizce /animals'a düşerse Google yine soft 404 görür.
+  const currentPath = (tab === "notfound" || pendingSeg) ? here
+                    : detailAnimal ? itemPath("animals",   detailAnimal, detailAnimal.name)
                     : detailLF     ? itemPath("lostfound", detailLF,     detailLF.name)
                     : detailReport ? itemPath("help",      detailReport, detailReport.title?.en || detailReport.title)
                     : tabPath(tab, tab === "animals" ? animalSub : tab === "help" ? helpSub : null);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || tab === "notfound" || pendingSeg) return;
     const here = window.location.pathname.replace(/\/+$/, "") || "/";
     if (here === currentPath) return;
     const depth = (s) => s.split("/").filter(Boolean).length;
     const method = depth(currentPath) > depth(here) ? "pushState" : "replaceState";
     window.history[method]({}, "", currentPath + window.location.hash);
-  }, [currentPath]);
+  }, [currentPath, pendingSeg]);
 
 
   // ── Dinamik drawer yüksekliği (görsel en/boy oranına göre) ──
@@ -1806,6 +1827,7 @@ export default function App() {
       if (r.tab === "animals" && r.sub) setASub(r.sub);
       if (r.tab === "help"    && r.sub) setHelpSub(r.sub);
       setDetailA(null); setDetailLF(null); setDetailReport(null);
+      setPendingSeg("");
       if (r.seg) {
         const a = animals.find(x => matchesSeg(x, r.seg));   if (a) return setDetailA(a);
         const l = lfItems.find(x => matchesSeg(x, r.seg));   if (l) return setDetailLF(l);
@@ -2006,7 +2028,7 @@ export default function App() {
     if (typeof window === "undefined" || deepLinkDone.current) return;
     if (!animals.length && !lfItems.length && !reports.length) return;
 
-    const route = parseLocation(window.location.pathname);
+    const route = { ...parseLocation(window.location.pathname), seg: pendingSeg };
     const params = new URLSearchParams(window.location.search);
     const open = (seg, kind) => {
       if (!seg) return false;
@@ -2029,10 +2051,13 @@ export default function App() {
              || open(params.get("animal"), "animal")
              || open(params.get("lf"),     "lf")
              || open(params.get("report"), "report");
-    // Kayıt bulunduysa ya da hiç derin link yoksa bu iş bitti; bulunamadıysa
-    // veri tazelenince tekrar denensin diye işaretlemiyoruz.
-    if (hit || (!route.seg && !params.toString())) deepLinkDone.current = true;
-  }, [animals, lfItems, reports]);
+    if (hit) { deepLinkDone.current = true; setPendingSeg(""); return; }
+    if (!route.seg && !params.toString()) { deepLinkDone.current = true; return; }
+
+    // Adreste bir ilan kimliği var ama kayıt yok — silinmiş ya da uydurma. Veri
+    // yüklenmesi bittiyse bu gerçek bir 404; hâlâ yükleniyorsa beklemeye devam.
+    if (route.seg && !dbLoading) { deepLinkDone.current = true; setPendingSeg(""); setTab("notfound"); }
+  }, [animals, lfItems, reports, dbLoading, pendingSeg]);
 
   // ── Sayfa başlığı / açıklaması / canonical ──
   useEffect(() => {
@@ -2070,6 +2095,13 @@ export default function App() {
       return;
     }
 
+    if (tab === "notfound") {
+      const m = PAGE_META.notfound[L];
+      // noindex ama follow: sayfayı indeksleme, üzerindeki linkleri yine de izle.
+      applyPageMeta({ title:m.title, desc:m.desc, path:currentPath, lang:L, noindex:true });
+      applyBreadcrumb(null);
+      return;
+    }
     const activeSub = tab === "animals" ? animalSub : tab === "help" ? helpSub : null;
     const subKey = activeSub && activeSub !== DEFAULT_SUB[tab] ? `${tab}/${activeSub}` : null;
     const meta = (subKey && SUB_META[subKey] ? SUB_META[subKey] : (PAGE_META[tab] || PAGE_META.home))[L];
@@ -2184,7 +2216,7 @@ export default function App() {
   const helpProofRef = useRef();
 
   const say   = (msg) => { setToast({ show:true, msg }); setTimeout(() => setToast({ show:false, msg:"" }), 2800); };
-  const goTab = (t)   => { setTab(t); setSearch(""); setSpecies("All"); setDetailA(null); setDetailLF(null); setDetailReport(null); };
+  const goTab = (t)   => { deepLinkDone.current = true; setPendingSeg(""); setTab(t); setSearch(""); setSpecies("All"); setDetailA(null); setDetailLF(null); setDetailReport(null); };
 
 
   // filtered animals
@@ -2337,6 +2369,29 @@ export default function App() {
           <div style={{ position:"fixed", top:0, left:0, right:0, height:3, background:"var(--amber)", zIndex:999, animation:"loadbar 1.5s ease-in-out infinite" }} />
         )}
 
+        {/* ══════════════════════════ NOT FOUND ═════════════════════════════ */}
+        {tab === "notfound" && (
+          <div className="wrap" style={{ paddingTop:64, paddingBottom:64, textAlign:"center", maxWidth:520 }}>
+            <div style={{ fontSize:52, lineHeight:1, marginBottom:18 }}>🐾</div>
+            <h1 style={{ fontSize:24, fontWeight:700, color:"var(--dark)", letterSpacing:"-0.5px", marginBottom:10 }}>
+              {lang==="tr" ? "Sayfa bulunamadı" : "Page not found"}
+            </h1>
+            <p style={{ fontSize:14, color:"var(--muted)", lineHeight:1.65, marginBottom:26 }}>
+              {lang==="tr"
+                ? "Aradığın sayfa ya da ilan artık mevcut değil. İlan sahiplendirilmiş, çözülmüş ya da kaldırılmış olabilir."
+                : "The page or listing you are looking for is no longer available. It may have been adopted, resolved or removed."}
+            </p>
+            <div style={{ display:"flex", gap:10, justifyContent:"center", flexWrap:"wrap" }}>
+              <button className="btn btn-dark" onClick={() => goTab("home")}>
+                {lang==="tr" ? "Ana sayfaya dön" : "Back to home"}
+              </button>
+              <button className="btn" style={{ border:"1px solid var(--border)", background:"var(--white)" }} onClick={() => goTab("animals")}>
+                {lang==="tr" ? "Hayvanlara göz at" : "Browse animals"}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* ══════════════════════════════ HOME ══════════════════════════════ */}
         {tab === "home" && <>
           <div className="hero">
@@ -2350,7 +2405,7 @@ export default function App() {
                 </div>
               </div>
               <div className="hero-media">
-                <img src={HERO_IMAGE} alt="Paweero" onError={(e) => { e.currentTarget.closest(".hero-media").style.display = "none"; }} />
+                <img src={HERO_IMAGE} alt={lang==="tr" ? "Sahiplendirilmiş bir kedi ve bir köpek" : "An adopted cat and dog"} onError={(e) => { e.currentTarget.closest(".hero-media").style.display = "none"; }} />
               </div>
             </div>
           </div>
@@ -2728,8 +2783,8 @@ export default function App() {
                       {/* Same big-image header language as every other card in the app */}
                       <div className="acard-img" style={{ overflow:"hidden", cursor:"pointer" }} onClick={() => setDetailReport(r)}>
                         {r.photo_url
-                          ? <img src={r.photo_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-                          : <img src={FALLBACK_IMAGE} style={{ width:"56%", height:"56%", objectFit:"contain", opacity:0.5 }} />
+                          ? <img src={r.photo_url} alt={r.title?.[lang] || r.title?.en || (lang==="tr"?"Bildirilen hayvan":"Reported animal")} loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                          : <img src={FALLBACK_IMAGE} alt="" aria-hidden="true" loading="lazy" style={{ width:"56%", height:"56%", objectFit:"contain", opacity:0.5 }} />
                         }
                         {r.photo_urls?.length > 1 && (
                           <span className="abadge ab-sp">+{r.photo_urls.length - 1}</span>
@@ -3122,7 +3177,7 @@ export default function App() {
             <div className="sh-handle" />
             <div className="sh-hd"><div className="sh-title">{t.animalProfile}</div><button className="sh-close" onClick={() => setDetailA(null)}>✕</button></div>
             <div className="sh-body">
-              <ImageCarousel photos={detailAnimal.photo_urls} emoji={detailAnimal.emoji} height={detailAHeight >= 85 ? 360 : 220} fit={detailAHeight >= 85 ? "contain" : "cover"} />
+              <ImageCarousel photos={detailAnimal.photo_urls} emoji={detailAnimal.emoji} alt={[detailAnimal.name, detailAnimal.breed?.[lang], detailAnimal.city].filter(Boolean).join(", ")} height={detailAHeight >= 85 ? 360 : 220} fit={detailAHeight >= 85 ? "contain" : "cover"} />
               <div className="d-name">{detailAnimal.name}</div>
               <div className="d-sub">{detailAnimal.breed[lang]} · {detailAnimal.species[lang]}</div>
               <div className="d-pills">
@@ -3161,7 +3216,7 @@ export default function App() {
               <button className="sh-close" onClick={() => setDetailLF(null)}>✕</button>
             </div>
             <div className="sh-body">
-              <ImageCarousel photos={detailLF.photo_urls} emoji={detailLF.emoji} height={detailLFHeight >= 85 ? 360 : 220} fit={detailLFHeight >= 85 ? "contain" : "cover"} />
+              <ImageCarousel photos={detailLF.photo_urls} emoji={detailLF.emoji} alt={[detailLF.name, detailLF.breed?.[lang], detailLF.area].filter(Boolean).join(", ")} height={detailLFHeight >= 85 ? 360 : 220} fit={detailLFHeight >= 85 ? "contain" : "cover"} />
               <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
                 <div className="d-name">{detailLF.name === "Unknown" ? (lang==="tr"?`Bulunan ${detailLF.species.tr}`:`Found ${detailLF.species.en}`) : detailLF.name}</div>
                 <span className={`lf-type ${detailLF.status === "reunited" ? "lf-reunited" : detailLF.type === "lost" ? "lf-lost" : "lf-found"}`} style={{ position:"static" }}>
@@ -3204,7 +3259,7 @@ export default function App() {
               <button className="sh-close" onClick={() => setDetailReport(null)}>✕</button>
             </div>
             <div className="sh-body">
-              <ImageCarousel photos={detailReport.photo_urls} emoji={detailReport.emoji} height={detailReportHeight >= 85 ? 360 : 220} fit={detailReportHeight >= 85 ? "contain" : "cover"} />
+              <ImageCarousel photos={detailReport.photo_urls} emoji={detailReport.emoji} alt={detailReport.title?.[lang] || detailReport.title?.en || ""} height={detailReportHeight >= 85 ? 360 : 220} fit={detailReportHeight >= 85 ? "contain" : "cover"} />
               <div className="d-pills">
                 <span className="d-pill">📍 {detailReport.location}</span>
                 <span className="d-pill">🕐 {detailReport.time[lang] || detailReport.time}</span>
@@ -3445,7 +3500,7 @@ export default function App() {
               {helpProof ? (
                 <>
                   <div className="photo-prev" style={{ marginBottom:10 }}>
-                    <img src={helpProof} style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:8}} />
+                    <img src={helpProof} alt={lang==="tr"?"Yüklenen yardım kanıtı önizlemesi":"Uploaded proof preview"} style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:8}} />
                   </div>
                   <div style={{ fontSize:12, color:"var(--green)", fontWeight:600, marginBottom:16 }}>{t.photoUploaded}</div>
                   <button className="btn btn-dark btn-full" style={{ marginBottom:8 }} onClick={async () => {
@@ -3498,8 +3553,8 @@ function MiniCard({ a, lang, onClick }) {
     <div className="mini-card" onClick={onClick}>
       <div style={{ height:126, background:"var(--off)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:44, position:"relative", overflow:"hidden" }}>
         {a.photo_url
-          ? <img src={a.photo_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-          : <img src={FALLBACK_IMAGE} style={{ width:"50%", height:"50%", objectFit:"contain", opacity:0.5 }} />
+          ? <img src={a.photo_url} alt={[a.name, a.breed?.[lang], a.city].filter(Boolean).join(", ")} loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+          : <img src={FALLBACK_IMAGE} alt="" aria-hidden="true" loading="lazy" style={{ width:"50%", height:"50%", objectFit:"contain", opacity:0.5 }} />
         }
       </div>
       <div style={{ padding:"8px 10px" }}>
@@ -3517,8 +3572,8 @@ function ACard({ a, mode, lang, onClick }) {
     <div className="acard" onClick={onClick}>
       <div className="acard-img" style={{ overflow:"hidden" }}>
         {a.photo_url
-          ? <img src={a.photo_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-          : <img src={FALLBACK_IMAGE} style={{ width:"56%", height:"56%", objectFit:"contain", opacity:0.5 }} />
+          ? <img src={a.photo_url} alt={[a.name, a.breed?.[lang], a.city].filter(Boolean).join(", ")} loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+          : <img src={FALLBACK_IMAGE} alt="" aria-hidden="true" loading="lazy" style={{ width:"56%", height:"56%", objectFit:"contain", opacity:0.5 }} />
         }
         {a.species?.[lang] && <span className="abadge ab-sp">{a.species[lang]}</span>}
         {mode === "foster"  && <span className="abadge ab-fo">{lang==="tr"?"Geçici":"Foster"}</span>}
@@ -4430,7 +4485,7 @@ function RehomeForm({ lang, t, onSubmit, requireContact }) {
       <div className="fg"><label className="flabel">{t.reasonField}</label><textarea className="fta" placeholder={t.reasonPlaceholder} value={f.reason} onChange={e => setF(x => ({ ...x, reason:e.target.value }))} /></div>
       <div className="fg">
         <label className="flabel">{t.photo} *</label>
-        {rehomePhoto && <div className="photo-prev"><img src={rehomePhoto} style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:8}} /></div>}
+        {rehomePhoto && <div className="photo-prev"><img src={rehomePhoto} alt={lang==="tr"?"Yüklenen hayvan fotoğrafı önizlemesi":"Uploaded animal photo preview"} style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:8}} /></div>}
         <div className="photo-drop" onClick={() => rehomeFileRef.current.click()}>
           <div style={{ fontSize:22, marginBottom:5 }}>📷</div>
           <div style={{ fontSize:12, fontWeight:500, color:"var(--muted)" }}>{rehomePhoto ? "✓ Photo uploaded" : t.uploadPhoto}</div>
@@ -4460,7 +4515,7 @@ function RehomeForm({ lang, t, onSubmit, requireContact }) {
 }
 
 // ─── IMAGE CAROUSEL (swipeable gallery with dot pagination) ────────────────
-function ImageCarousel({ photos, emoji, height = 220, fit = "cover" }) {
+function ImageCarousel({ photos, emoji, height = 220, fit = "cover", alt = "" }) {
   const [idx, setIdx] = useState(0);
   const [lightbox, setLightbox] = useState(false);
   const touchStartX = useRef(null);
@@ -4469,7 +4524,7 @@ function ImageCarousel({ photos, emoji, height = 220, fit = "cover" }) {
   if (!list) {
     return (
       <div className="d-thumb" style={{ height }}>
-        <img src={FALLBACK_IMAGE} style={{ width:"40%", height:"40%", objectFit:"contain", opacity:0.5 }} />
+        <img src={FALLBACK_IMAGE} alt="" aria-hidden="true" style={{ width:"40%", height:"40%", objectFit:"contain", opacity:0.5 }} />
       </div>
     );
   }
@@ -4495,6 +4550,7 @@ function ImageCarousel({ photos, emoji, height = 220, fit = "cover" }) {
       >
         <img
           src={list[idx]}
+          alt={alt ? `${alt} — ${idx + 1}/${list.length}` : ""}
           onClick={() => setLightbox(true)}
           style={{ width:"100%", height:"100%", objectFit:fit, display:"block" }}
         />
@@ -4582,6 +4638,7 @@ function ImageCarousel({ photos, emoji, height = 220, fit = "cover" }) {
 
           <img
             src={list[idx]}
+            alt={alt ? `${alt} — ${idx + 1}/${list.length}` : ""}
             onClick={e => e.stopPropagation()}
             onTouchStart={onTouchStart}
             onTouchEnd={onTouchEnd}
@@ -4688,7 +4745,7 @@ function MultiPhotoUpload({ photos, setPhotos, folder, lang, t, maxPhotos = 5 })
                 flexShrink:0, cursor:"grab",
               }}
             >
-              <img src={url} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
+              <img src={url} alt={`${lang==="tr"?"Yüklenen fotoğraf":"Uploaded photo"} ${idx+1}`} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
               {idx === 0 && (
                 <div style={{ position:"absolute", bottom:0, left:0, right:0, background:"rgba(212,134,43,0.92)", color:"#fff", fontSize:9, fontWeight:700, textAlign:"center", padding:"2px 0" }}>
                   {lang==="tr"?"KAPAK":"COVER"}
