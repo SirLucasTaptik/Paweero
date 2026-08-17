@@ -888,7 +888,10 @@ const CSS = `
   .hero { padding:0; border-bottom:none; overflow:hidden; }
   .hero-inner { display:flex; flex-direction:column; max-width:1100px; margin:0 auto; }
   @media (min-width:768px) { .hero-inner { flex-direction:row; align-items:center; gap:8px; } }
-  .hero-text { padding:52px var(--pad) 8px; flex:1 1 440px; min-width:0; }
+  /* flex-basis follows the main axis — in the mobile column layout that is the
+     HEIGHT, so a basis here would pad the text block out to a fixed height and
+     leave dead space above the image. Sizing is by content until the row layout. */
+  .hero-text { padding:52px var(--pad) 8px; flex:0 0 auto; min-width:0; }
   @media (min-width:768px) { .hero-text { padding:56px 0 56px var(--pad); flex:1 1 460px; } }
   /* The image keeps its own aspect ratio — no fixed box, so it never letterboxes
      and leaves empty space above the stats line. line-height:0 kills the inline gap. */
@@ -1188,10 +1191,16 @@ const CSS = `
   .toggle-btn.on { background:var(--dark); border-color:var(--dark); color:#fff; }
 
   /* ─ SHEET MODAL ─ */
-  .sheet-overlay { position:fixed; inset:0; z-index:200; background:rgba(0,0,0,0.3); display:flex; align-items:flex-end; }
+  html.sheet-open, html.sheet-open body { overflow:hidden; overscroll-behavior:none; }
+  .sheet-overlay { position:fixed; inset:0; z-index:200; background:rgba(0,0,0,0.3); display:flex; align-items:flex-end; overflow:hidden; }
   @media (min-width:640px) { .sheet-overlay { align-items:center; justify-content:center; padding:24px; } }
-  .sheet { background:var(--white); border-radius:22px 22px 0 0; width:100%; max-height:92vh; display:flex; flex-direction:column; overflow:hidden; animation:slideUp 0.25s cubic-bezier(0.32,0.72,0,1); }
-  @media (min-width:640px) { .sheet { border-radius:20px; max-width:580px; max-height:88vh; animation:fadeScale 0.18s ease; } }
+  /* The sheet is bottom-anchored, so anything taller than the overlay spills off
+     the TOP and clips its own header. On iOS Safari vh counts the browser chrome
+     as visible space, making 92vh taller than what the user can actually see —
+     hence the cut-off. dvh tracks the real viewport, and the 100% cap keeps the
+     sheet inside the overlay no matter which unit the browser honours. */
+  .sheet { background:var(--white); border-radius:22px 22px 0 0; width:100%; max-height:92vh; max-height:min(92dvh, 100%); display:flex; flex-direction:column; overflow:hidden; animation:slideUp 0.25s cubic-bezier(0.32,0.72,0,1); }
+  @media (min-width:640px) { .sheet { border-radius:20px; max-width:580px; max-height:88vh; max-height:min(88dvh, 100%); animation:fadeScale 0.18s ease; } }
   @keyframes loadbar { 0%{transform:scaleX(0);transform-origin:left} 50%{transform:scaleX(1);transform-origin:left} 51%{transform:scaleX(1);transform-origin:right} 100%{transform:scaleX(0);transform-origin:right} }
   @keyframes slideUp   { from{transform:translateY(100%)} to{transform:translateY(0)} }
   @keyframes fadeScale { from{opacity:0;transform:scale(0.97)} to{opacity:1;transform:scale(1)} }
@@ -1298,6 +1307,22 @@ const CSS = `
 // ROOT
 // ─────────────────────────────────────────────────────────────────────────────
 export default function App() {
+  // ── sheet scroll lock ──
+  // Sheets are rendered from a dozen different places, so rather than wiring each
+  // one up we watch for any .sheet-overlay in the DOM. Without the lock the page
+  // behind keeps scrolling on iOS, which expands/collapses the address bar and
+  // shifts the fixed overlay — that is what clips the top of an open sheet.
+  useEffect(() => {
+    const sync = () => {
+      const open = !!document.querySelector(".sheet-overlay");
+      document.documentElement.classList.toggle("sheet-open", open);
+    };
+    const obs = new MutationObserver(sync);
+    obs.observe(document.body, { childList:true, subtree:true });
+    sync();
+    return () => { obs.disconnect(); document.documentElement.classList.remove("sheet-open"); };
+  }, []);
+
   // ── language ──
   // Başlangıç dili: kullanıcı daha önce elle seçtiyse onu koru,
   // yoksa geçici olarak tarayıcı saat dilimine göre tahmin et (Türkiye → tr).
