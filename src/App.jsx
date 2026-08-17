@@ -299,12 +299,12 @@ const CITIES = {
   "Düzce":           ["All Cities","Merkez","Akçakoca","Cumayeri","Çilimli","Gölyaka","Gümüşova","Kaynaşlı","Yığılca"],
 
   // ── Cyprus (kuzey ilçeleri) ──
-  "Lefkoşa":         ["All Cities","Lefkoşa Merkez","Küçük Kaymaklı","Ortaköy","Yenişehir","Göçmenköy","Taşkınköy","Marmara","Hamitköy","Gönyeli","Yenikent","Alayköy","Haspolat","Değirmenlik","Dikmen","Kanlıköy","Balıkesir","Gökhan","Meriç","Akıncılar","Türkeli"],
-  "Gazimağusa":      ["All Cities","Gazimağusa Merkez","Sakarya","Baykal","Maraş","Tuzla","Mutluyaka","Yeniboğaziçi","Akdoğan","Geçitkale","Serdarlı","Beyarmudu","Pile","Dörtyol","İnönü","Vadili","Paşaköy","Alaniçi","Çayönü"],
-  "Girne":           ["All Cities","Girne Merkez","Karaoğlanoğlu","Alsancak","Lapta","Karşıyaka","Çamlıbel","Karaman","Zeytinlik","Edremit","Doğanköy","Ozanköy","Bellapais","Çatalköy","Arapköy","Esentepe","Karakum","Ilgaz","Kayalar","Akdeniz","Tatlısu"],
-  "Güzelyurt":       ["All Cities","Güzelyurt Merkez","Zümrütköy","Bostancı","Kalkanlı","Aydınköy","Yayla","Akçay","Şahinler","Serhatköy","Doğancı"],
-  "İskele":          ["All Cities","İskele Merkez","Boğaz","Bafra","Kumyalı","Ziyamet","Mehmetçik","Büyükkonuk","Yeni Erenköy","Dipkarpaz","Sipahi","Avtepe","Kaplıca","Balalan","Yarköy"],
-  "Lefke":           ["All Cities","Lefke Merkez","Gemikonağı","Yeşilyurt","Gaziveren","Yedidalga","Bağlıköy","Cengizköy","Denizli","Taşpınar"],
+  "Lefkoşa":         ["All Cities","Lefkoşa Merkez","Surlariçi","Arabahmet","Selimiye","Yenicami","Abdi Çavuş","Ayluka","Çağlayan","Dumlupınar","Göçmenköy","Hürriyet","İncirli","Karamanzade","Kermiya","Kızılbaş","Köşklüçiftlik","Küçük Kaymaklı","Kumsal","Marmara","Ortaköy","Taşkınköy","Yenişehir","Aydemet","Gelibolu","Metehan","Hamitköy","Haspolat","Gönyeli","Yenikent","Alayköy","Kanlıköy","Değirmenlik","Dikmen","Gökhan","Meriç","Akıncılar","Balıkesir","Türkeli","Yılmazköy","Minareliköy","Demirhan","Düzova","Cihangir","Gaziköy","Görneç","Kalavaç","Kırıkkale","Yiğitler","Beyköy","Şirinevler","Ercan"],
+  "Gazimağusa":      ["All Cities","Gazimağusa Merkez","Suriçi","Sakarya","Baykal","Karakol","Çanakkale","Maraş","Tuzla","Mutluyaka","Yeniboğaziçi","Akdoğan","Beyarmudu","Pile","Geçitkale","Serdarlı","Vadili","İnönü","Dörtyol","Alaniçi","Paşaköy","Çayönü","Turunçlu","Yıldırım","Güvercinlik","Mormenekşe","Akova","Aslanköy","Atlılar","Ergazi","Gaziler","Kurudere","Muratağa","Sandallar","Tatlısu Yolu","Yenişehir Mağusa","Ötüken","Beyköy Mağusa"],
+  "Girne":           ["All Cities","Girne Merkez","Karaoğlanoğlu","Alsancak","Lapta","Karşıyaka","Çamlıbel","Karaman","Zeytinlik","Edremit","Doğanköy","Ozanköy","Bellapais","Çatalköy","Arapköy","Esentepe","Karakum","Ilgaz","Kayalar","Akdeniz","Taşkent","Ağırdağ","Alemdağ","Bahçeli","Çınarlı","Geçitköy","Hisarköy","Karaağaç","Kozan","Kozanköy","Malatya","Mevlevi","Pınarbaşı","Sadrazamköy","Tepebaşı","Yayla","Yeşiltepe","Karpaşa","Boğazköy","Dağyolu","Karşıyaka Sahil","Lapta Sahil","Alsancak Sahil"],
+  "Güzelyurt":       ["All Cities","Güzelyurt Merkez","Zümrütköy","Bostancı","Kalkanlı","Aydınköy","Yayla","Akçay","Şahinler","Serhatköy","Doğancı","Gayretköy","Güneşköy","Yuvacık","Mevlevi Güzelyurt","Aşağı Bostancı","Kırıkkale Güzelyurt"],
+  "İskele":          ["All Cities","İskele Merkez","Boğaz","Bafra","Kumyalı","Ziyamet","Mehmetçik","Büyükkonuk","Yeni Erenköy","Dipkarpaz","Sipahi","Avtepe","Kaplıca","Balalan","Yarköy","Kurtuluş","Tuzluca","Çayırova","Adaçay","Ardahan","Esenköy","Gelincik","Kilitkaya","Kuruova","Mersinlik","Tatlısu","Topçuköy","Turnalar","Zeybekköy","Altınova","Bahçeli İskele","Derince","Ergazi İskele","Karpaz","Sazlıköy","Yedikonuk","Yenierenköy Sahil","Long Beach","Bogaz Sahil"],
+  "Lefke":           ["All Cities","Lefke Merkez","Gemikonağı","Yeşilyurt","Gaziveren","Yedidalga","Bağlıköy","Cengizköy","Denizli","Taşpınar","Çamlıköy","Doğancı Lefke","Elmalı","Yeşilırmak","Aplıç","Karadağ"],
 
   // ── BAE / UAE — emirates and their communities ──
   "Dubai":           ["All Cities","Al Barari","Al Barsha","Al Barsha Heights (Tecom)","Al Barsha South","Al Furjan","Al Garhoud","Al Jaddaf","Al Jafiliya","Al Karama","Al Khawaneej","Al Mankhool","Al Mizhar","Al Muraqqabat","Al Nahda","Al Quoz","Al Qusais","Al Rashidiya","Al Rigga","Al Safa","Al Satwa","Al Sufouh","Al Twar","Al Warqa","Al Wasl","Arabian Ranches","Arjan","Bluewaters Island","Bur Dubai","Business Bay","City Walk","Culture Village","Damac Hills","Deira","Discovery Gardens","Downtown Dubai","Dubai Creek Harbour","Dubai Design District (d3)","Dubai Festival City","Dubai Healthcare City","Dubai Hills Estate","Dubai Internet City","Dubai Investment Park (DIP)","Dubai Marina","Dubai Media City","Dubai Production City (IMPZ)","Dubai Silicon Oasis","Dubai South","Dubai Sports City","Dubai Studio City","DIFC","Emirates Hills","Expo City","Green Community","Hatta","International City","Jebel Ali","Jumeirah","Jumeirah Beach Residence (JBR)","Jumeirah Golf Estates","Jumeirah Islands","Jumeirah Lake Towers (JLT)","Jumeirah Park","Jumeirah Village Circle (JVC)","Jumeirah Village Triangle (JVT)","Knowledge Village","La Mer","Living Legends","Meydan","Mirdif","Motor City","Mudon","Muhaisnah","Nad Al Sheba","Nadd Al Hamar","Oud Metha","Palm Jumeirah","Pearl Jumeirah","Port Saeed","Ras Al Khor","Remraam","Sheikh Zayed Road","The Greens","The Lakes","The Meadows","The Springs","The Villa","The Views","Town Square","Umm Al Sheif","Umm Ramool","Umm Suqeim","Warsan","World Trade Centre","Za'abeel"],
@@ -316,11 +316,11 @@ const CITIES = {
   "Umm Al Quwain":   ["All Cities","UAQ City","Al Dar Al Baida","Al Haditha","Al Humrah","Al Maidan","Al Raas","Al Rafaah","Al Ramlah","Al Riqqah","Al Salamah","Falaj Al Mualla","Khor Al Beidah"],
 
   // ── Cyprus (güney ilçeleri) ──
-  "Nicosia":             ["All Cities","Nicosia Centre","Strovolos","Lakatamia","Aglantzia","Latsia","Engomi","Ayios Dometios","Kaimakli","Pallouriotissa","Dali","Tseri","Geri","Anthoupoli","Archangelos","Makedonitissa","Kokkinotrimithia","Astromeritis","Peristerona","Ergates","Politiko"],
-  "Limassol":            ["All Cities","Limassol Centre","Germasogeia","Agios Athanasios","Mesa Geitonia","Ypsonas","Kato Polemidia","Pano Polemidia","Agios Tychonas","Parekklisia","Pyrgos","Episkopi","Erimi","Kolossi","Trachoni","Zakaki","Moni","Palodia","Platres","Omodos","Pissouri","Fasouri"],
-  "Larnaca":             ["All Cities","Larnaca Centre","Aradippou","Livadia","Oroklini","Dromolaxia","Meneou","Kiti","Pervolia","Athienou","Xylofagou","Xylotymbou","Pyla","Mazotos","Alethriko","Kornos","Lefkara","Tersefanou","Kalo Chorio","Aradippou Industrial","Softades"],
-  "Paphos":              ["All Cities","Paphos Centre","Kato Paphos","Chloraka","Emba","Kissonerga","Peyia","Coral Bay","Tala","Tremithousa","Mesogi","Konia","Geroskipou","Timi","Polis Chrysochous","Latchi","Argaka","Pomos","Kathikas","Tsada","Anarita"],
-  "Famagusta":           ["All Cities","Ayia Napa","Paralimni","Protaras","Deryneia","Sotira","Liopetri","Frenaros","Avgorou","Achna","Vrysoulles","Kapparis","Pernera","Xylophagou Coast"],
+  "Nicosia":             ["All Cities","Nicosia Centre","Strovolos","Lakatamia","Aglantzia","Latsia","Engomi","Ayios Dometios","Kaimakli","Pallouriotissa","Dali","Tseri","Geri","Anthoupoli","Archangelos","Makedonitissa","Kokkinotrimithia","Astromeritis","Peristerona","Ergates","Politiko","Deftera","Kato Deftera","Psimolofou","Pera Chorio","Nisou","Alambra","Lympia","Idalion","Agioi Trimithias","Palaiometocho","Mammari","Akaki","Meniko","Malounta","Klirou","Agrokipia","Mitsero","Kambia","Kapedes","Analiontas","Lythrodontas","Mathiatis","Sia","Agia Varvara","Kotsiatis","Episkopeio","Tymvou","Margi","Potamia","Kalo Chorio Orinis","Farmakas","Gourri","Fikardou","Palaichori","Askas","Alona","Platanistasa","Polystypos","Lagoudera","Saranti","Orounta","Vyzakia","Nikitari","Agia Marina Xyliatou","Xyliatos","Kato Moni","Agios Epifanios"],
+  "Limassol":            ["All Cities","Limassol Centre","Germasogeia","Agios Athanasios","Mesa Geitonia","Ypsonas","Kato Polemidia","Pano Polemidia","Agios Tychonas","Mouttagiaka","Parekklisia","Pyrgos","Monagroulli","Pentakomo","Kellaki","Akrotiri","Kolossi","Erimi","Episkopi","Trachoni","Asomatos","Fasoula","Palodia","Spitali","Agios Amvrosios","Laneia","Silikou","Doros","Apesia","Limnatis","Alassa","Agros","Kyperounta","Pelendri","Potamitissa","Zoopigi","Kalo Chorio Limassol","Arakapas","Eptagoneia","Akapnou","Vasa","Omodos","Koilani","Pera Pedi","Mandria Limassol","Platres","Foini","Trimiklini","Moniatis","Saittas","Pissouri","Avdimou","Paramali","Sotira Limassol","Kantou","Souni","Zanakia","Prastio","Dierona","Zakaki","Moni","Fasouri","Kivides","Malia","Arsos","Anogyra"],
+  "Larnaca":             ["All Cities","Larnaca Centre","Aradippou","Livadia","Oroklini","Dromolaxia","Meneou","Kiti","Pervolia","Athienou","Xylofagou","Xylotymbou","Pyla","Mazotos","Alethriko","Kornos","Pano Lefkara","Kato Lefkara","Tersefanou","Kalo Chorio Larnaca","Softades","Anglisides","Kophinou","Menogeia","Psevdas","Klavdia","Alaminos","Maroni","Zygi","Kalavasos","Tochni","Choirokoitia","Vavla","Kato Drys","Skarinou","Agios Theodoros","Melini","Odou","Ora","Delikipos","Agia Anna","Avdellero","Troulloi","Pyrga","Kellia","Aplanta","Mosfiloti","Kalo Chorio Kapouti","Vavatsinia","Lageia","Mari","Petrofani","Avgorou Road"],
+  "Paphos":              ["All Cities","Paphos Centre","Kato Paphos","Chloraka","Emba","Kissonerga","Peyia","Coral Bay","Tala","Tremithousa","Mesogi","Konia","Geroskipou","Timi","Polis Chrysochous","Latchi","Argaka","Pomos","Kathikas","Tsada","Anarita","Acheleia","Mandria Paphos","Kouklia","Nikoklia","Agia Marina Chrysochous","Drouseia","Ineia","Kritou Terra","Lysos","Steni","Stroumbi","Polemi","Kallepia","Letymbou","Akoursos","Miliou","Neo Chorio","Prodromi","Goudi","Chrysochou","Peristerona Paphos","Pano Arodes","Kato Arodes","Fyti","Simou","Lasa","Kannaviou","Panagia","Statos","Pentalia","Salamiou","Nata","Mamonia","Choletria","Axylou","Armou","Marathounta","Episkopi Paphos","Choulou","Kelokedara","Kedares","Praitori","Agios Georgios","Kissonerga Beach"],
+  "Famagusta":           ["All Cities","Ayia Napa","Paralimni","Protaras","Deryneia","Sotira","Liopetri","Frenaros","Avgorou","Achna","Vrysoulles","Kapparis","Pernera","Agia Thekla","Cape Greco","Dasaki Achnas","Acheritou","Agia Triada","Fig Tree Bay","Nissi Beach","Konnos Bay","Xylophagou Coast","Ormideia","Xylotymbou East"],
 
   // ── Katar ──
   "Doha":                ["All Cities","West Bay","Al Dafna","Msheireb","Souq Waqif","Al Bidda","Al Sadd","Fereej Bin Mahmoud","Al Mansoura","Najma","Umm Ghuwailina","Al Hilal","Old Airport","Nuaija","Abu Hamour","Ain Khaled","Al Waab","Al Muntazah","Madinat Khalifa","Duhail","Al Markhiya","Onaiza","Al Khulaifat","Ras Abu Aboud","Al Thumama","Mesaimeer","Barwa City","Al Gharrafa","Bin Omran","Al Rumaila","Al Messila"],
@@ -454,13 +454,30 @@ const INITIAL_SETUP   = INITIAL_COUNTRY ? COUNTRY_META[INITIAL_COUNTRY] : null;
 // Form varsayılanları: bölge tespit edilemediyse eski davranış (Türkiye/İstanbul) korunur.
 const FORM_COUNTRY  = INITIAL_COUNTRY || "Türkiye";
 const FORM_PROVINCE = INITIAL_SETUP ? INITIAL_SETUP.province : "İstanbul";
-// Telefon ve para birimi placeholder'ları da bölgeyi izler. Bunlar yalnızca ipucu
-// metni; alt bileşenlerde ülkeyi prop olarak gezdirmek yerine saat diliminden
-// çıkan FORM_COUNTRY yeterli — kullanıcının kendi girdisi hiçbir zaman kısıtlanmaz.
-const metaFor      = (country) => COUNTRY_META[country] || COUNTRY_META["Türkiye"];
-const phoneHint    = (country) => metaFor(country).phone;
-const rewardHint   = (country, lang) => lang === "tr" ? `örn. 1.000 ${metaFor(country).currency}`     : `e.g. 1,000 ${metaFor(country).currency}`;
-const priceHint    = (country, lang) => lang === "tr" ? `örn. 300 ${metaFor(country).currency}/gün`   : `e.g. 300 ${metaFor(country).currency}/day`;
+// Kıbrıs tek ülke ama telefon kodu ve para birimi hattın iki yakasında farklı:
+// kuzey ilçeleri Türk numarası ve TL, güney ilçeleri Kıbrıs Cumhuriyeti kodu ve
+// Euro kullanır. İlçe bazlı istisnalar ülke varsayılanını ezer.
+const PROVINCE_DIALING = {
+  "Lefkoşa":    { phone:"+90 5XX XXX XX XX", currency:"TL"  },
+  "Girne":      { phone:"+90 5XX XXX XX XX", currency:"TL"  },
+  "Gazimağusa": { phone:"+90 5XX XXX XX XX", currency:"TL"  },
+  "Güzelyurt":  { phone:"+90 5XX XXX XX XX", currency:"TL"  },
+  "İskele":     { phone:"+90 5XX XXX XX XX", currency:"TL"  },
+  "Lefke":      { phone:"+90 5XX XXX XX XX", currency:"TL"  },
+  "Nicosia":    { phone:"+357 9X XXX XXX",   currency:"EUR" },
+  "Limassol":   { phone:"+357 9X XXX XXX",   currency:"EUR" },
+  "Larnaca":    { phone:"+357 9X XXX XXX",   currency:"EUR" },
+  "Paphos":     { phone:"+357 9X XXX XXX",   currency:"EUR" },
+  "Famagusta":  { phone:"+357 9X XXX XXX",   currency:"EUR" },
+};
+// Bunlar yalnızca ipucu metni — kullanıcının gireceği değer hiçbir zaman kısıtlanmaz.
+// Alt bileşenlerde ülkeyi prop olarak gezdirmek yerine saat diliminden çıkan
+// FORM_COUNTRY / FORM_PROVINCE yeterli.
+const metaFor    = (country) => COUNTRY_META[country] || COUNTRY_META["Türkiye"];
+const dialFor    = (country, province) => PROVINCE_DIALING[province] || metaFor(country);
+const phoneHint  = (country, province) => dialFor(country, province).phone;
+const rewardHint = (country, province, lang) => lang === "tr" ? `örn. 1.000 ${dialFor(country, province).currency}`   : `e.g. 1,000 ${dialFor(country, province).currency}`;
+const priceHint  = (country, province, lang) => lang === "tr" ? `örn. 300 ${dialFor(country, province).currency}/gün` : `e.g. 300 ${dialFor(country, province).currency}/day`;
 
 const ADOPTERS = [
   { id:101, name:"Yılmaz Family",  emoji:"👨‍👩‍👧", looking:{en:"Dog",         tr:"Köpek"},        city:"İstanbul", tags:{en:["Has yard","Experienced","Kid-friendly"], tr:["Bahçe var","Deneyimli","Çocuk dostu"]}, desc:{en:"Family of 4 with a large garden. Looking for a medium to large breed dog.",            tr:"Büyük bahçeli, 4 kişilik bir aile. Orta-büyük ırk köpek arıyoruz."} },
@@ -528,7 +545,7 @@ const ETA_OPTIONS = [
 const T = {
   en: {
     // app shell
-    appName:"Paweero", tagline:"Turkey · Cyprus · Gulf", lang:"EN",
+    appName:"Paweero", lang:"EN",
     home:"Home", animals:"Animals", lostFound:"Lost & Found", owners:"Owners", help:"Emergency",
     // post chooser (single entry point for all posting actions)
     postChooserTitle:"What would you like to do?",
@@ -745,7 +762,7 @@ const T = {
   },
   tr: {
     // uygulama kabuğu
-    appName:"Paweero", tagline:"Türkiye · Kıbrıs · Körfez", lang:"TR",
+    appName:"Paweero", lang:"TR",
     home:"Ana Sayfa", animals:"Hayvanlar", lostFound:"Kayıp & Bulunan", owners:"Sahipler", help:"Acil Durum",
     // gönderi seçici (tüm paylaşım aksiyonları için tek giriş noktası)
     postChooserTitle:"Ne yapmak istiyorsun?",
@@ -1483,6 +1500,12 @@ export default function App() {
   });
   const t = T[lang];  // translation shortcut
 
+  // Hero etiketi ülkeleri tek tek sayar ve COUNTRIES'ten türetilir — yeni bir ülke
+  // eklendiğinde elle güncellenmesi gereken bir metin kalmasın diye.
+  const countryList = COUNTRIES.filter(c => c !== "All Countries")
+                               .map(c => locLabel(c, lang))
+                               .join(" · ");
+
   // Dili elle değiştirmek için sarmalayıcı: seçim localStorage'a kaydedilir
   // böylece otomatik konum tespiti bunu ezmez.
   const changeLang = (l) => {
@@ -2086,7 +2109,7 @@ export default function App() {
           <div className="hero">
             <div className="hero-inner">
               <div className="hero-text">
-                <div className="hero-label">{t.tagline}</div>
+                <div className="hero-label">{countryList}</div>
                 <h1 className="hero-h1">{t.heroH1}<br /><em>{t.heroH1Em}</em></h1>
                 <p className="hero-p">{t.heroP}</p>
                 <div className="hero-cta">
@@ -2361,7 +2384,7 @@ export default function App() {
               <div className="fg"><label className="flabel">{t.yourContact}</label><input className="fi" placeholder={t.contactPlaceholder} value={lfForm.contact} onChange={e => setLFForm(f => ({ ...f, contact:e.target.value }))} /></div>
 
               {lfForm.type === "lost" && (
-                <div className="fg"><label className="flabel">{t.reward}</label><input className="fi" placeholder={rewardHint(formCountry, lang)} value={lfForm.reward} onChange={e => setLFForm(f => ({ ...f, reward:e.target.value }))} /></div>
+                <div className="fg"><label className="flabel">{t.reward}</label><input className="fi" placeholder={rewardHint(formCountry, lfForm.lfProvince || formProvince, lang)} value={lfForm.reward} onChange={e => setLFForm(f => ({ ...f, reward:e.target.value }))} /></div>
               )}
 
               <div className="fg"><label className="flabel">{t.descriptionField}</label>
@@ -2737,7 +2760,7 @@ export default function App() {
                 {/* Telefon - opsiyonel */}
                 <div className="fg">
                   <label className="flabel">{lang==="tr"?"Telefon (opsiyonel)":"Phone (optional)"}</label>
-                  <input className="fi" type="tel" placeholder={phoneHint(formCountry)}
+                  <input className="fi" type="tel" placeholder={phoneHint(formCountry, formProvince)}
                     value={contactInfo.phone}
                     onChange={e => setContactInfo(f => ({ ...f, phone:e.target.value }))} />
                 </div>
@@ -3514,7 +3537,7 @@ function TakeActionSheet({ animal, lang, t, onClose }) {
               </div>
               <div className="fg">
                 <label className="flabel">{t.phoneField}</label>
-                <input className="fi" placeholder={phoneHint(FORM_COUNTRY)} value={form.phone} onChange={e=>set("phone",e.target.value)} />
+                <input className="fi" placeholder={phoneHint(FORM_COUNTRY, FORM_PROVINCE)} value={form.phone} onChange={e=>set("phone",e.target.value)} />
                 {E("phone")}
               </div>
 
@@ -3837,7 +3860,7 @@ function AdoptAppSheet({ animal, mode, lang, t, onClose }) {
             {step===1&&<><div style={{fontSize:15,fontWeight:600,marginBottom:3}}>{t.personalInfo}</div><div style={{fontSize:12,color:"var(--muted)",marginBottom:16}}>{t.personalInfoSub}</div>
               <div className="frow"><div className="fg"><label className="flabel">{t.firstName}</label><input className="fi" placeholder={lang==="tr"?"Zeynep":"Jane"} value={app.firstName} onChange={e=>set("firstName",e.target.value)}/>{E("firstName")}</div><div className="fg"><label className="flabel">{t.lastName}</label><input className="fi" placeholder={lang==="tr"?"Yılmaz":"Mwangi"} value={app.lastName} onChange={e=>set("lastName",e.target.value)}/>{E("lastName")}</div></div>
               <div className="fg"><label className="flabel">{t.email}</label><input className="fi" type="email" placeholder="ornek@email.com" value={app.email} onChange={e=>set("email",e.target.value)}/>{E("email")}</div>
-              <div className="fg"><label className="flabel">{t.phoneField}</label><input className="fi" placeholder={phoneHint(FORM_COUNTRY)} value={app.phone} onChange={e=>set("phone",e.target.value)}/>{E("phone")}</div>
+              <div className="fg"><label className="flabel">{t.phoneField}</label><input className="fi" placeholder={phoneHint(FORM_COUNTRY, FORM_PROVINCE)} value={app.phone} onChange={e=>set("phone",e.target.value)}/>{E("phone")}</div>
               <div className="frow"><div className="fg"><label className="flabel">{t.ageField2}</label><input className="fi" placeholder="28" value={app.age} onChange={e=>set("age",e.target.value)}/>{E("age")}</div><div className="fg"><label className="flabel">{t.occupationField}</label><input className="fi" placeholder={lang==="tr"?"Öğretmen":"Teacher"} value={app.occupation} onChange={e=>set("occupation",e.target.value)}/>{E("occupation")}</div></div>
             </>}
             {step===2&&<><div style={{fontSize:15,fontWeight:600,marginBottom:3}}>{t.homeTitle}</div><div style={{fontSize:12,color:"var(--muted)",marginBottom:16}}>{t.homeSub}</div>
@@ -4042,7 +4065,7 @@ function FosterAppSheet({ animal, lang, t, onClose }) {
             </div>
             <div className="fg">
               <label className="flabel">{t.phoneField}</label>
-              <input className="fi" placeholder={phoneHint(FORM_COUNTRY)} value={app.phone} onChange={e=>set("phone",e.target.value)} />
+              <input className="fi" placeholder={phoneHint(FORM_COUNTRY, FORM_PROVINCE)} value={app.phone} onChange={e=>set("phone",e.target.value)} />
               {E("phone")}
             </div>
 
@@ -4899,7 +4922,7 @@ function RegisterSitterForm({ lang, t, onSubmit, requireContact }) {
       </div>
       <div className="frow">
         <div className="fg"><label className="flabel">{t.neighbourhood}</label><input className="fi" placeholder={lang==="tr"?"Beşiktaş":"Kilimani"} value={f.area} onChange={e => setF(x => ({ ...x, area:e.target.value }))} /></div>
-        <div className="fg"><label className="flabel">{t.pricePerDay}</label><input className="fi" placeholder={priceHint(FORM_COUNTRY, lang)} value={f.price} onChange={e => setF(x => ({ ...x, price:e.target.value }))} /></div>
+        <div className="fg"><label className="flabel">{t.pricePerDay}</label><input className="fi" placeholder={priceHint(FORM_COUNTRY, FORM_PROVINCE, lang)} value={f.price} onChange={e => setF(x => ({ ...x, price:e.target.value }))} /></div>
       </div>
       <div className="fg">
         <label className="flabel">{t.servicesOffered}</label>
