@@ -1356,6 +1356,12 @@ const CSS = `
   .toggle-btn.on { background:var(--dark); border-color:var(--dark); color:#fff; }
 
   /* ─ SHEET MODAL ─ */
+  /* Sürüm damgası — bilerek silik; aradığında görürsün, aramadığında fark etmezsin.
+     Alt boşluk sabit bottom-nav'ı temizlemeli, yoksa damga menünün arkasında kalır. */
+  .build-stamp { text-align:center; font-size:10px; color:var(--muted); opacity:0.45; letter-spacing:0.3px; user-select:all;
+                 padding:18px 0 calc(var(--nav-h) + 14px + env(safe-area-inset-bottom,0px)); }
+  @media (min-width:768px) { .build-stamp { padding-bottom:22px; } }
+
   html.sheet-open, html.sheet-open body { overflow:hidden; overscroll-behavior:none; }
   .sheet-overlay { position:fixed; inset:0; z-index:200; background:rgba(0,0,0,0.3); display:flex; align-items:flex-end; overflow:hidden; }
   @media (min-width:640px) { .sheet-overlay { align-items:center; justify-content:center; padding:24px; } }
@@ -2865,6 +2871,11 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* BUILD STAMP — hangi sürümün yayında olduğunu panele girmeden görebilmek için */}
+      <div className="build-stamp">
+        build {__BUILD_INFO__.commit} · {__BUILD_INFO__.at.slice(0, 16).replace("T", " ")} UTC
+      </div>
 
       {/* BOTTOM NAV */}
       <nav className="bottom-nav">
