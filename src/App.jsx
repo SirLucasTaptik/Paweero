@@ -314,6 +314,32 @@ function findCountryForProvince(province) {
   return null;
 }
 
+// ─── REGION DETECTION ───────────────────────────────────────────────────────
+// Ziyaretçinin ülkesine göre dil ve ülke seçimi:
+//   Türkiye ve Kuzey Kıbrıs → Türkçe,  BAE → İngilizce.
+// Saat dilimi anında sonuç verir (ağ beklemeden ilk boyamada doğru dil),
+// IP sorgusu sonradan doğrular — VPN ya da yanlış ayarlı saat dilimi için.
+const REGION_SETUP = {
+  TR: { country:"Türkiye",      province:"İstanbul", lang:"tr" },
+  CY: { country:"Kuzey Kıbrıs", province:"Lefkoşa",  lang:"tr" },
+  AE: { country:"BAE",          province:"Dubai",    lang:"en" },
+};
+const TZ_REGION = {
+  "Europe/Istanbul":"TR", "Asia/Istanbul":"TR",
+  "Asia/Nicosia":"CY",    "Europe/Nicosia":"CY",
+  "Asia/Dubai":"AE",
+};
+function regionFromTimezone() {
+  try { return TZ_REGION[Intl.DateTimeFormat().resolvedOptions().timeZone] || null; } catch (e) { return null; }
+}
+
+// Desteklenen bölge dışındaysa null → dil EN, ülke filtresi "All Countries".
+const INITIAL_REGION = regionFromTimezone();
+const INITIAL_SETUP  = INITIAL_REGION ? REGION_SETUP[INITIAL_REGION] : null;
+// Form varsayılanları: bölge tespit edilemediyse eski davranış (Türkiye/İstanbul) korunur.
+const FORM_COUNTRY  = INITIAL_SETUP ? INITIAL_SETUP.country  : "Türkiye";
+const FORM_PROVINCE = INITIAL_SETUP ? INITIAL_SETUP.province : "İstanbul";
+
 const ADOPTERS = [
   { id:101, name:"Yılmaz Family",  emoji:"👨‍👩‍👧", looking:{en:"Dog",         tr:"Köpek"},        city:"İstanbul", tags:{en:["Has yard","Experienced","Kid-friendly"], tr:["Bahçe var","Deneyimli","Çocuk dostu"]}, desc:{en:"Family of 4 with a large garden. Looking for a medium to large breed dog.",            tr:"Büyük bahçeli, 4 kişilik bir aile. Orta-büyük ırk köpek arıyoruz."} },
   { id:102, name:"Elif K.",        emoji:"👩",     looking:{en:"Cat",          tr:"Kedi"},         city:"Ankara",   tags:{en:["Works from home","Apartment","First pet"], tr:["Evden çalışıyor","Daire","İlk pet"]},  desc:{en:"Young professional working from home. Looking for an affectionate cat.",              tr:"Evden çalışan genç profesyonel. Sevecen bir kedi arıyor."} },
@@ -1325,15 +1351,13 @@ export default function App() {
 
   // ── language ──
   // Başlangıç dili: kullanıcı daha önce elle seçtiyse onu koru,
-  // yoksa geçici olarak tarayıcı saat dilimine göre tahmin et (Türkiye → tr).
+  // yoksa saat diliminden çıkan bölgenin dili (TR/KKTC → tr, BAE → en).
   const [lang, setLang] = useState(() => {
     try {
       const saved = localStorage.getItem("paweero_lang");
       if (saved === "tr" || saved === "en") return saved;
-      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
-      if (tz === "Europe/Istanbul" || tz === "Asia/Istanbul") return "tr";
     } catch (e) {}
-    return "en";
+    return INITIAL_SETUP ? INITIAL_SETUP.lang : "en";
   });
   const t = T[lang];  // translation shortcut
 
@@ -1343,36 +1367,6 @@ export default function App() {
     try { localStorage.setItem("paweero_lang", l); } catch (e) {}
     setLang(l);
   };
-
-  // ── Konuma göre otomatik dil seçimi ──
-  // Türkiye'de sayfayı otomatik TR, diğer her yerde EN olarak aç.
-  // Kullanıcı daha önce elle bir dil seçtiyse (localStorage) buna dokunma.
-  useEffect(() => {
-    let cancelled = false;
-    try {
-      const saved = localStorage.getItem("paweero_lang");
-      if (saved === "tr" || saved === "en") return; // elle seçim önceliklidir
-    } catch (e) {}
-
-    (async () => {
-      try {
-        const res = await fetch("https://ipapi.co/json/");
-        if (!res.ok) return;
-        const data = await res.json();
-        if (cancelled) return;
-        // country_code: ISO ülke kodu (Türkiye = TR)
-        if (data && data.country_code === "TR") {
-          setLang("tr");
-        } else if (data && data.country_code) {
-          setLang("en");
-        }
-      } catch (e) {
-        // IP tespiti başarısız olursa saat dilimi tahmini geçerli kalır
-      }
-    })();
-
-    return () => { cancelled = true; };
-  }, []);
 
   // ── navigation ──
   const [tab, setTab]         = useState("home");
@@ -1385,10 +1379,68 @@ export default function App() {
   // ── filters ──
   const [species, setSpecies]     = useState("All");
   const [search, setSearch]       = useState("");
-  const [fCountry, setFC]         = useState("All Countries");
+  // Ülke filtresi saat diliminden çıkan bölgeyle açılır; tespit yoksa hepsi.
+  const [fCountry, setFC]         = useState(INITIAL_SETUP ? INITIAL_SETUP.country : "All Countries");
   const [fProvince, setFP]        = useState("All Provinces");
   const [fCity, setFCi]           = useState("All Cities");
   // (svcFilter/sitterCity removed — Owners section deleted)
+
+  // Konum seçimi kimin elinde: kullanıcı elle değiştirdiyse ya da GPS kesin
+  // konum verdiyse, sonradan gelen IP tahmini bunların üstüne yazmaz.
+  const manualLocRef  = useRef(false);
+  const preciseLocRef = useRef(false);
+  // Form varsayılanları da bölgeyi izler (IP tespiti saat dilimini düzeltirse güncellenir).
+  const [formCountry, setFormCountry]   = useState(FORM_COUNTRY);
+  const [formProvince, setFormProvince] = useState(FORM_PROVINCE);
+  const markManualLoc = () => { manualLocRef.current = true; };
+
+  // ── Konuma göre otomatik dil + ülke seçimi ──
+  // Saat dilimi tahmini ilk boyamada zaten uygulandı; buradaki IP sorgusu onu
+  // doğrular. VPN, seyahat ya da yanlış ayarlı saat dilimi durumlarını yakalar.
+  useEffect(() => {
+    let cancelled = false;
+    let langLocked = false;
+    try {
+      const saved = localStorage.getItem("paweero_lang");
+      langLocked = saved === "tr" || saved === "en"; // elle seçim her zaman önceliklidir
+    } catch (e) {}
+
+    (async () => {
+      try {
+        const res = await fetch("https://ipapi.co/json/");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled || !data || !data.country_code) return;
+
+        const region = REGION_SETUP[data.country_code] ? data.country_code : null;
+        const setup  = region ? REGION_SETUP[region] : null;
+        if (region === INITIAL_REGION) return; // saat dilimi zaten doğruymuş
+
+        if (!langLocked) setLang(setup ? setup.lang : "en");
+
+        // GPS kesin konumu ya da kullanıcının kendi seçimi varsa dokunma.
+        if (!manualLocRef.current && !preciseLocRef.current) {
+          setFC(setup ? setup.country : "All Countries");
+          setFP("All Provinces");
+          setFCi("All Cities");
+          // Formlar hâlâ ilk tahmindeyse onları da düzelt.
+          const fresh = setup || { country:FORM_COUNTRY, province:FORM_PROVINCE };
+          setFormCountry(fresh.country);
+          setFormProvince(fresh.province);
+          const retarget = (f, ck, pk) =>
+            f[ck] === FORM_COUNTRY && f[pk] === FORM_PROVINCE
+              ? { ...f, [ck]:fresh.country, [pk]:fresh.province }
+              : f;
+          setRf(f => retarget(f, "rCountry", "rProvince"));
+          setLFForm(f => retarget(f, "lfCountry", "lfProvince"));
+        }
+      } catch (e) {
+        // IP tespiti başarısız olursa saat dilimi tahmini geçerli kalır
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, []);
 
   // ── modal state ──
   const [detailAnimal, setDetailA]  = useState(null);
@@ -1430,8 +1482,8 @@ export default function App() {
   const [dbLoading, setDbLoading] = useState(true);
   const [photos, setPhotos]   = useState([]);
   const [lfPhotos, setLFPhotos] = useState([]);
-  const [rf, setRf]           = useState({ title:"", location:"", desc:"", type:"Injured", animal:"", rCountry:"Türkiye", rProvince:"İstanbul", rCity:"", rAddress:"" });
-  const [lfForm, setLFForm]   = useState({ type:"lost", name:"", species:"Dog", breed:"", color:"", area:"", city:"", contact:"", reward:"", desc:"", lfCountry:"Türkiye", lfProvince:"İstanbul", lfAddress:"" });
+  const [rf, setRf]           = useState({ title:"", location:"", desc:"", type:"Injured", animal:"", rCountry:FORM_COUNTRY, rProvince:FORM_PROVINCE, rCity:"", rAddress:"" });
+  const [lfForm, setLFForm]   = useState({ type:"lost", name:"", species:"Dog", breed:"", color:"", area:"", city:"", contact:"", reward:"", desc:"", lfCountry:FORM_COUNTRY, lfProvince:FORM_PROVINCE, lfAddress:"" });
 
   // ── Supabase: veri çek ──
   const loadFromDB = async () => {
@@ -1661,6 +1713,7 @@ export default function App() {
               const province = findNearestProvince(latitude, longitude);
               const country  = province ? findCountryForProvince(province) : null;
               if (country && province) {
+                preciseLocRef.current = true; // GPS kesin — IP tahmini bunu ezemez
                 setFC(country);
                 setFP(province);
               }
@@ -1834,6 +1887,7 @@ export default function App() {
         const province = findNearestProvince(latitude, longitude);
         const country  = province ? findCountryForProvince(province) : null;
         if (country && province) {
+          preciseLocRef.current = true;
           setFC(country);
           setFP(province);
           setFCi("All Cities");
@@ -1866,13 +1920,13 @@ export default function App() {
       >
         {locating ? "…" : "📍"}
       </button>
-      <select className={`loc-select ${fCountry !== "All Countries" ? "on" : ""}`} value={fCountry} onChange={e => { setFC(e.target.value); setFP("All Provinces"); setFCi("All Cities"); }}>
+      <select className={`loc-select ${fCountry !== "All Countries" ? "on" : ""}`} value={fCountry} onChange={e => { markManualLoc(); setFC(e.target.value); setFP("All Provinces"); setFCi("All Cities"); }}>
         {COUNTRIES.map(c => <option key={c} value={c}>{locLabel(c, lang)}</option>)}
       </select>
-      <select className={`loc-select ${fProvince !== "All Provinces" ? "on" : ""}`} value={fProvince} onChange={e => { setFP(e.target.value); setFCi("All Cities"); }}>
+      <select className={`loc-select ${fProvince !== "All Provinces" ? "on" : ""}`} value={fProvince} onChange={e => { markManualLoc(); setFP(e.target.value); setFCi("All Cities"); }}>
         {(PROVINCES[fCountry] || ["All Provinces"]).map(p => <option key={p} value={p}>{locLabel(p, lang)}</option>)}
       </select>
-      <select className={`loc-select ${fCity !== "All Cities" ? "on" : ""}`} value={fCity} onChange={e => setFCi(e.target.value)}>
+      <select className={`loc-select ${fCity !== "All Cities" ? "on" : ""}`} value={fCity} onChange={e => { markManualLoc(); setFCi(e.target.value); }}>
         {(CITIES[fProvince] || ["All Cities"]).map(c => <option key={c} value={c}>{locLabel(c, lang)}</option>)}
       </select>
     </div>
@@ -2004,7 +2058,7 @@ export default function App() {
 
           <div className="wrap" style={{ paddingTop:14 }}>
             {animalSub === "post" && (
-              <PostAnimalForm lang={lang} t={t} onSubmit={async (name, newAnimal) => {
+              <PostAnimalForm lang={lang} t={t} defaultCountry={formCountry} defaultProvince={formProvince} onSubmit={async (name, newAnimal) => {
                 // Redirect to the most relevant tab based on which purposes were selected.
                 // A listing can serve multiple purposes at once — this just decides where
                 // to land the user right after posting, not which tabs the listing appears in.
@@ -2219,7 +2273,7 @@ export default function App() {
                   photo_urls: lfPhotos,
                 }]);
                 if (error) { say(lang==="tr"?"Hata oluştu, tekrar dene":"Error occurred, please try again"); return; }
-                setLFForm({ type:"lost", name:"", species:"Dog", breed:"", color:"", area:"", city:"", contact:"", reward:"", desc:"", lfCountry:"Türkiye", lfProvince:"İstanbul", lfAddress:"" });
+                setLFForm({ type:"lost", name:"", species:"Dog", breed:"", color:"", area:"", city:"", contact:"", reward:"", desc:"", lfCountry:FORM_COUNTRY, lfProvince:FORM_PROVINCE, lfAddress:"" });
                 setLFPhotos([]); setLFSub("board");
                 say(lfForm.type === "lost" ? t.postLost : t.postFound);
                 await loadFromDB();
@@ -2515,7 +2569,7 @@ export default function App() {
                   photo_urls: photos,
                 }]);
 
-                setRf({ title:"", location:"", desc:"", type:"Injured", animal:"", rCountry:"Türkiye", rProvince:"İstanbul", rCity:"", rAddress:"" });
+                setRf({ title:"", location:"", desc:"", type:"Injured", animal:"", rCountry:FORM_COUNTRY, rProvince:FORM_PROVINCE, rCity:"", rAddress:"" });
                 setPhotos([]); setShowReportForm(false);
                 say(lang==="tr"?"İhbar gönderildi — kurtarma ekibi bildirildi":"Report submitted — responders notified");
                 await loadFromDB();
@@ -2644,7 +2698,7 @@ export default function App() {
               <button className="sh-close" onClick={() => setShowCreateReport(false)}>✕</button>
             </div>
             <div className="sh-body">
-              <PostAnimalForm lang={lang} t={t} requireContact={requireContact} onSubmit={async (name, newAnimal) => {
+              <PostAnimalForm lang={lang} t={t} defaultCountry={formCountry} defaultProvince={formProvince} requireContact={requireContact} onSubmit={async (name, newAnimal) => {
                 setShowCreateReport(false);
                 // Land the user on whichever browse tab best matches what they selected.
                 if (newAnimal?.isLost || newAnimal?.isFound) { setTab("lostfound"); }
@@ -4301,10 +4355,10 @@ function MultiPhotoUpload({ photos, setPhotos, folder, lang, t, maxPhotos = 5 })
 }
 
 
-function PostAnimalForm({ lang, t, onSubmit, requireContact }) {
+function PostAnimalForm({ lang, t, onSubmit, requireContact, defaultCountry = FORM_COUNTRY, defaultProvince = FORM_PROVINCE }) {
   const [f, setF] = useState({
     name:"", species:"Dog", breed:"", age:"", gender:"Female", colour:"",
-    country:"Türkiye", province:"İstanbul", city:"",
+    country:defaultCountry, province:defaultProvince, city:"",
     canFoster:false, canAdopt:true, needsHelp:false, isLost:false, isFound:false,
     helpSituation:"", helpUrgency:"", desc:"",
     lostLastSeenLocation:"", lostLastSeenAt:"", lostCollarAccessories:"", lostIdentifyingCharacteristics:"",
@@ -4663,7 +4717,7 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact }) {
             submitter_email: inserted.submitter_email || "",
           } : null;
           onSubmit(f.name, newAnimal);
-          setF({ name:"", species:"Dog", breed:"", age:"", gender:"Female", colour:"", country:"Türkiye", province:"İstanbul", city:"", address:"", canFoster:false, canAdopt:true, needsHelp:false, isLost:false, isFound:false, helpSituation:"", helpUrgency:"", lostLastSeenLocation:"", lostCollarAccessories:"", lostIdentifyingCharacteristics:"", foundHow:"", foundIdentifyingCharacteristics:"", desc:"", isNeutered:"", vaccinatedParasite:"", vaccinatedRabies:"" });
+          setF({ name:"", species:"Dog", breed:"", age:"", gender:"Female", colour:"", country:defaultCountry, province:defaultProvince, city:"", address:"", canFoster:false, canAdopt:true, needsHelp:false, isLost:false, isFound:false, helpSituation:"", helpUrgency:"", lostLastSeenLocation:"", lostCollarAccessories:"", lostIdentifyingCharacteristics:"", foundHow:"", foundIdentifyingCharacteristics:"", desc:"", isNeutered:"", vaccinatedParasite:"", vaccinatedRabies:"" });
           setPhotos([]);
           } catch (err) {
             console.error("[PostAnimalForm] Unexpected error during submit:", err);
