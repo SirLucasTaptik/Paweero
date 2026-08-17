@@ -140,25 +140,55 @@ const ANIMALS = [
   { id:9, name:"Max",    emoji:"🐕", species:{en:"Dog",    tr:"Köpek"},   breed:{en:"Labrador Mix",            tr:"Labrador Mix"},             age:{en:"1 yr",     tr:"1 yaş"},    gender:{en:"Male",  tr:"Erkek"}, country:"Kuzey Kıbrıs", province:"Lefkoşa",    city:"Lefkoşa",  tags:{en:["Vaccinated","Playful","Young"],           tr:["Aşılı","Oyuncu","Genç"]},                 urgent:false, isNew:true,  canFoster:true,  desc:{en:"Max is an energetic and affectionate young dog. Loves running in open spaces.",                                              tr:"Max enerjik ve sevecen genç bir köpek. Açık alanda koşmayı çok seviyor."} },
 ];
 
-const COUNTRIES = ["All Countries","Türkiye","Kuzey Kıbrıs","BAE"];
+const COUNTRIES = ["All Countries","Türkiye","Kuzey Kıbrıs","Güney Kıbrıs","BAE","Katar","Kuveyt","Bahreyn","Umman","Suudi Arabistan"];
 
-// The country/"all" keys above are stored verbatim on every record, so they must
-// never change. This maps a stored key to what the user actually sees per language.
-const LOC_LABELS = {
+const COUNTRY_META = {
+  // key                  EN label                 TR label            dil    varsayılan il      saat dilimleri                          ISO   telefon                      para
+  "Türkiye":         { en:"Turkey",             tr:"Türkiye",         lang:"tr", province:"İstanbul", tz:["Europe/Istanbul","Asia/Istanbul"], iso:"TR", phone:"+90 5XX XXX XX XX",  currency:"TL"  },
+  "Kuzey Kıbrıs":    { en:"Northern Cyprus",    tr:"Kuzey Kıbrıs",    lang:"tr", province:"Lefkoşa",  tz:["Asia/Nicosia","Europe/Nicosia"],   iso:"CY", phone:"+90 5XX XXX XX XX",  currency:"TL"  },
+  "Güney Kıbrıs":    { en:"Republic of Cyprus", tr:"Güney Kıbrıs",    lang:"en", province:"Nicosia",  tz:[],                                  iso:"",   phone:"+357 9X XXX XXX",    currency:"EUR" },
+  "BAE":             { en:"UAE",                tr:"BAE",             lang:"en", province:"Dubai",    tz:["Asia/Dubai"],                      iso:"AE", phone:"+971 5X XXX XXXX",   currency:"AED" },
+  "Katar":           { en:"Qatar",              tr:"Katar",           lang:"en", province:"Doha",     tz:["Asia/Qatar"],                      iso:"QA", phone:"+974 XXXX XXXX",     currency:"QAR" },
+  "Kuveyt":          { en:"Kuwait",             tr:"Kuveyt",          lang:"en", province:"Al Asimah",tz:["Asia/Kuwait"],                     iso:"KW", phone:"+965 XXXX XXXX",     currency:"KWD" },
+  "Bahreyn":         { en:"Bahrain",            tr:"Bahreyn",         lang:"en", province:"Manama",   tz:["Asia/Bahrain"],                    iso:"BH", phone:"+973 XXXX XXXX",     currency:"BHD" },
+  "Umman":           { en:"Oman",               tr:"Umman",           lang:"en", province:"Muscat",   tz:["Asia/Muscat"],                     iso:"OM", phone:"+968 XXXX XXXX",     currency:"OMR" },
+  "Suudi Arabistan": { en:"Saudi Arabia",       tr:"Suudi Arabistan", lang:"en", province:"Riyadh",   tz:["Asia/Riyadh"],                     iso:"SA", phone:"+966 5X XXX XXXX",   currency:"SAR" },
+};
+
+// "Tümü" seçenekleri ülke değil, ayrı tutulur.
+const ALL_LABELS = {
   "All Countries": { en:"All Countries", tr:"Tüm Ülkeler" },
   "All Provinces": { en:"All Provinces", tr:"Tüm İller" },
   "All Cities":    { en:"All Areas",     tr:"Tüm Semtler" },
-  "Türkiye":       { en:"Turkey",         tr:"Türkiye" },
-  "Kuzey Kıbrıs":  { en:"Northern Cyprus",tr:"Kuzey Kıbrıs" },
-  "BAE":           { en:"UAE",            tr:"BAE" },
 };
-const locLabel = (name, lang) => (LOC_LABELS[name] && LOC_LABELS[name][lang === "tr" ? "tr" : "en"]) || name;
+// Kayıtlarda saklanan anahtar hiç değişmez; kullanıcının gördüğü metin dile göre gelir.
+const locLabel = (name, lang) => {
+  const l = lang === "tr" ? "tr" : "en";
+  return (ALL_LABELS[name] || COUNTRY_META[name] || {})[l] || name;
+};
+
+// Saat dilimi ve IP ülke kodundan ülke anahtarına çeviri — COUNTRY_META'dan türetilir,
+// böylece yeni bir ülke eklemek tek bir satır demek.
+const TZ_COUNTRY = {};
+const ISO_COUNTRY = {};
+for (const [key, m] of Object.entries(COUNTRY_META)) {
+  for (const z of m.tz) if (!TZ_COUNTRY[z]) TZ_COUNTRY[z] = key;
+  // Kuzey ve Güney Kıbrıs aynı ISO kodunu (CY) ve aynı saat dilimini paylaşır;
+  // ilk tanımlanan (Kuzey Kıbrıs) kazanır, güney GPS ya da elle seçimle gelir.
+  if (m.iso && !ISO_COUNTRY[m.iso]) ISO_COUNTRY[m.iso] = key;
+}
 
 const PROVINCES = {
   "All Countries":  ["All Provinces"],
   "Türkiye":        ["All Provinces","Adana","Adıyaman","Afyonkarahisar","Ağrı","Amasya","Ankara","Antalya","Artvin","Aydın","Balıkesir","Bilecik","Bingöl","Bitlis","Bolu","Burdur","Bursa","Çanakkale","Çankırı","Çorum","Denizli","Diyarbakır","Edirne","Elazığ","Erzincan","Erzurum","Eskişehir","Gaziantep","Giresun","Gümüşhane","Hakkari","Hatay","Isparta","Mersin","İstanbul","İzmir","Kars","Kastamonu","Kayseri","Kırklareli","Kırşehir","Kocaeli","Konya","Kütahya","Malatya","Manisa","Kahramanmaraş","Mardin","Muğla","Muş","Nevşehir","Niğde","Ordu","Rize","Sakarya","Samsun","Siirt","Sinop","Sivas","Tekirdağ","Tokat","Trabzon","Tunceli","Şanlıurfa","Uşak","Van","Yozgat","Zonguldak","Aksaray","Bayburt","Karaman","Kırıkkale","Batman","Şırnak","Bartın","Ardahan","Iğdır","Yalova","Karabük","Kilis","Osmaniye","Düzce"],
   "Kuzey Kıbrıs":   ["All Provinces","Lefkoşa","Gazimağusa","Girne","Güzelyurt","İskele","Lefke"],
   "BAE":            ["All Provinces","Dubai","Abu Dhabi","Sharjah","Ajman","Ras Al Khaimah","Fujairah","Umm Al Quwain"],
+  "Güney Kıbrıs":    ["All Provinces","Nicosia","Limassol","Larnaca","Paphos","Famagusta"],
+  "Katar":           ["All Provinces","Doha","Al Rayyan","Al Wakrah","Umm Salal","Al Daayen","Al Khor","Al Shamal","Al Shahaniya"],
+  "Kuveyt":          ["All Provinces","Al Asimah","Hawalli","Farwaniya","Mubarak Al-Kabeer","Ahmadi","Jahra"],
+  "Bahreyn":         ["All Provinces","Manama","Muharraq","Northern Bahrain","Southern Bahrain"],
+  "Umman":           ["All Provinces","Muscat","Dhofar","Al Batinah North","Al Batinah South","Al Dakhiliyah","Al Sharqiyah North","Al Sharqiyah South","Al Dhahirah","Al Buraimi","Al Wusta","Musandam"],
+  "Suudi Arabistan": ["All Provinces","Riyadh","Makkah","Madinah","Eastern Province","Asir","Tabuk","Hail","Northern Borders","Jazan","Najran","Al Bahah","Al Jouf","Qassim"],
 };
 const CITIES = {
   "All Provinces": ["All Cities"],
@@ -262,6 +292,65 @@ const CITIES = {
   "Ras Al Khaimah":  ["All Cities","RAK City","Al Dhait","Al Ghail","Al Hamra Village","Al Jazirah Al Hamra","Al Mairid","Al Marjan Island","Al Nakheel","Al Qusaidat","Al Rams","Al Uraibi","Digdaga","Ghalilah","Julphar","Khatt","Khuzam","Mina Al Arab","Sha'am","Masafi"],
   "Fujairah":        ["All Cities","Fujairah City","Al Aqah","Al Bidiyah","Al Faseel","Al Gurfa","Al Hilal City","Al Taween","Dibba Al Fujairah","Merashid","Mirbah","Murbah","Qidfa","Sakamkam","Masafi"],
   "Umm Al Quwain":   ["All Cities","UAQ City","Al Dar Al Baida","Al Haditha","Al Humrah","Al Maidan","Al Raas","Al Rafaah","Al Ramlah","Al Riqqah","Al Salamah","Falaj Al Mualla","Khor Al Beidah"],
+
+  // ── Güney Kıbrıs ──
+  "Nicosia":             ["All Cities","Nicosia Centre","Strovolos","Lakatamia","Aglantzia","Latsia","Engomi","Ayios Dometios","Kaimakli","Pallouriotissa","Dali","Tseri","Geri","Anthoupoli","Archangelos","Makedonitissa","Kokkinotrimithia","Astromeritis","Peristerona","Ergates","Politiko"],
+  "Limassol":            ["All Cities","Limassol Centre","Germasogeia","Agios Athanasios","Mesa Geitonia","Ypsonas","Kato Polemidia","Pano Polemidia","Agios Tychonas","Parekklisia","Pyrgos","Episkopi","Erimi","Kolossi","Trachoni","Zakaki","Moni","Palodia","Platres","Omodos","Pissouri","Fasouri"],
+  "Larnaca":             ["All Cities","Larnaca Centre","Aradippou","Livadia","Oroklini","Dromolaxia","Meneou","Kiti","Pervolia","Athienou","Xylofagou","Xylotymbou","Pyla","Mazotos","Alethriko","Kornos","Lefkara","Tersefanou","Kalo Chorio","Aradippou Industrial","Softades"],
+  "Paphos":              ["All Cities","Paphos Centre","Kato Paphos","Chloraka","Emba","Kissonerga","Peyia","Coral Bay","Tala","Tremithousa","Mesogi","Konia","Geroskipou","Timi","Polis Chrysochous","Latchi","Argaka","Pomos","Kathikas","Tsada","Anarita"],
+  "Famagusta":           ["All Cities","Ayia Napa","Paralimni","Protaras","Deryneia","Sotira","Liopetri","Frenaros","Avgorou","Achna","Vrysoulles","Kapparis","Pernera","Xylophagou Coast"],
+
+  // ── Katar ──
+  "Doha":                ["All Cities","West Bay","Al Dafna","Msheireb","Souq Waqif","Al Bidda","Al Sadd","Fereej Bin Mahmoud","Al Mansoura","Najma","Umm Ghuwailina","Al Hilal","Old Airport","Nuaija","Abu Hamour","Ain Khaled","Al Waab","Al Muntazah","Madinat Khalifa","Duhail","Al Markhiya","Onaiza","Al Khulaifat","Ras Abu Aboud","Al Thumama","Mesaimeer","Barwa City","Al Gharrafa","Bin Omran","Al Rumaila","Al Messila"],
+  "Al Rayyan":           ["All Cities","Al Rayyan City","New Al Rayyan","Education City","Muaither","Al Aziziya","Al Luqta","Al Shagub","Baaya","Fereej Al Soudan","Al Sailiya","Al Wajba","Al Gharrafa South","Rawdat Egdaim","Al Themaid","Bu Sidra"],
+  "Al Wakrah":           ["All Cities","Al Wakrah City","Al Wukair","Mesaieed","Barwa Al Baraha","Ezdan Village","Al Mashaf","Abu Sidra Wakrah"],
+  "Umm Salal":           ["All Cities","Umm Salal Mohammed","Umm Salal Ali","Al Kharaitiyat","Izghawa","Bu Fasseela","Al Kheesa South"],
+  "Al Daayen":           ["All Cities","Lusail","Wadi Al Banat","Al Kheesa","Rawdat Al Hamama","Umm Qarn","Leabaib","Al Ebb","Jery Al Samur","Al Sakhama"],
+  "Al Khor":             ["All Cities","Al Khor City","Al Thakhira","Ras Laffan","Simaisma","Al Dhakira Coast"],
+  "Al Shamal":           ["All Cities","Madinat Al Shamal","Al Ruwais","Abu Dhalouf","Fuwayrit","Al Ghariyah","Ain Sinan"],
+  "Al Shahaniya":        ["All Cities","Al Shahaniya City","Dukhan","Al Jemailiya","Umm Bab","Al Nasraniya","Al Utouriya"],
+
+  // ── Kuveyt ──
+  "Al Asimah":           ["All Cities","Kuwait City","Sharq","Dasman","Bneid Al Qar","Abdullah Al Salem","Adailiya","Faiha","Khaldiya","Kaifan","Mansouriya","Nuzha","Qadsiya","Qortuba","Rawda","Shamiya","Shuwaikh","Surra","Yarmouk","Daiya","Granada","Sulaibikhat","Jaber Al Ahmad","Doha Kuwait","Nahdha"],
+  "Hawalli":             ["All Cities","Hawalli","Salmiya","Jabriya","Bayan","Mishref","Salwa","Rumaithiya","Shaab","Maidan Hawalli","Mubarak Al Abdullah","Zahra","Hitteen","Siddeeq","Shuhada","Al Bidea","Anjafa"],
+  "Farwaniya":           ["All Cities","Farwaniya","Jleeb Al Shuyoukh","Khaitan","Ardiya","Rabiya","Andalous","Rehab","Firdous","Ishbiliya","Omariya","Riggae","Abdullah Al Mubarak","Sabah Al Nasser","Abraq Khaitan","Dajeej"],
+  "Mubarak Al-Kabeer":   ["All Cities","Mubarak Al Kabeer","Abu Fatira","Abu Hasaniya","Adan","Qurain","Sabah Al Salem","Messila","Fnaitees","Al Qusour","Sabhan","Wista"],
+  "Ahmadi":              ["All Cities","Ahmadi","Fahaheel","Mangaf","Abu Halifa","Mahboula","Fintas","Egaila","Sabahiya","Riqqa","Dhaher","Wafra","Zour","Khiran","Sabah Al Ahmad City","Ali Sabah Al Salem","Julaia"],
+  "Jahra":               ["All Cities","Jahra","Saad Al Abdullah","Naeem","Nasseem","Oyoun","Qasr","Waha","Taima","Amghara","Sulaibiya","Abdali","Kabd","Salmi"],
+
+  // ── Bahreyn ──
+  "Manama":              ["All Cities","Manama Centre","Adliya","Juffair","Hoora","Gudaibiya","Seef","Salmaniya","Sanabis","Zinj","Mahooz","Umm Al Hassam","Karbabad","Jidhafs","Bilad Al Qadeem","Ras Rumman","Diplomatic Area","Bahrain Bay","Bu Ghazal","Al Qufool"],
+  "Muharraq":            ["All Cities","Muharraq City","Amwaj Islands","Busaiteen","Hidd","Arad","Galali","Dair","Samaheej","Diyar Al Muharraq","Halat Bu Maher"],
+  "Northern Bahrain":    ["All Cities","Hamad Town","Budaiya","Saar","Janabiya","Barbar","Diraz","Bani Jamra","Karrana","Jasra","Malkiya","Damistan","Northern City","Sadad","Al Qadam","Duraz","Abu Saiba"],
+  "Southern Bahrain":    ["All Cities","Riffa","East Riffa","West Riffa","Isa Town","Sitra","Zallaq","Awali","Askar","Jaw","Durrat Al Bahrain","Sakhir","Riffa Views","Hawar Islands"],
+
+  // ── Umman ──
+  "Muscat":              ["All Cities","Muttrah","Ruwi","Qurum","Al Khuwair","Ghubrah","Azaiba","Bausher","Seeb","Al Mawaleh","Al Hail","Mabela","Amerat","Quriyat","Madinat Al Sultan Qaboos","Shatti Al Qurum","Wadi Kabir","Darsait","Wattayah","Al Ansab","Misfah","Old Muscat","Al Khoud"],
+  "Dhofar":              ["All Cities","Salalah","Taqah","Mirbat","Rakhyut","Thumrait","Dalkut","Sadah","Shalim","Al Mazyona","Muqshin","Awqad","Saada"],
+  "Al Batinah North":    ["All Cities","Sohar","Shinas","Liwa","Saham","Al Khaburah","Suwaiq","Falaj Al Qabail"],
+  "Al Batinah South":    ["All Cities","Rustaq","Al Awabi","Nakhal","Wadi Al Maawil","Barka","Al Musanaah","Naaman"],
+  "Al Dakhiliyah":       ["All Cities","Nizwa","Bahla","Manah","Al Hamra","Adam","Izki","Samail","Bidbid","Birkat Al Mouz","Jabal Akhdar"],
+  "Al Sharqiyah North":  ["All Cities","Ibra","Al Mudhaibi","Bidiyah","Al Qabil","Wadi Bani Khalid","Dima Wa Al Taeen","Sinaw"],
+  "Al Sharqiyah South":  ["All Cities","Sur","Al Kamil Wal Wafi","Jalan Bani Bu Hassan","Jalan Bani Bu Ali","Masirah","Ras Al Hadd","Ras Al Jinz"],
+  "Al Dhahirah":         ["All Cities","Ibri","Yanqul","Dhank"],
+  "Al Buraimi":          ["All Cities","Al Buraimi City","Mahdah","Al Sunaynah"],
+  "Al Wusta":            ["All Cities","Haima","Duqm","Mahout","Al Jazer"],
+  "Musandam":            ["All Cities","Khasab","Bukha","Daba","Madha"],
+
+  // ── Suudi Arabistan ──
+  "Riyadh":              ["All Cities","Riyadh City","Olaya","Al Malaz","Al Nakheel","Diplomatic Quarter","Al Muruj","Hittin","Al Yasmin","Al Narjis","Irqah","Al Aqiq","King Abdullah Financial District","Al Rawdah","Al Sulaymaniyah","Al Wurud","Al Sahafah","Qurtubah","Al Izdihar","Diriyah","Al Kharj","Al Majmaah","Al Zulfi","Wadi Al Dawasir","Dawadmi","Huraymila","Thadiq","Afif"],
+  "Makkah":              ["All Cities","Makkah City","Al Aziziyah","Al Shawqiyah","Al Awali","Al Nuzha Makkah","Jeddah","Al Hamra","Al Rawdah Jeddah","Al Salamah","Al Shatie","Al Andalus","Al Naeem","Al Zahra","Obhur","Al Basateen","Al Faisaliyah","Al Balad","Al Marwah","Al Safa","Taif","Rabigh","Al Qunfudhah","Al Lith","Khulais","Turbah"],
+  "Madinah":             ["All Cities","Madinah City","Central Haram Area","Quba","Al Aziziyah Madinah","Al Khalidiyah","Al Uyun","Yanbu","Badr","Al Ula","Khaybar","Mahd Al Dhahab","Al Henakiyah"],
+  "Eastern Province":    ["All Cities","Dammam","Al Khobar","Dhahran","Qatif","Jubail","Al Ahsa","Hofuf","Ras Tanura","Abqaiq","Safwa","Saihat","Khafji","Hafar Al Batin","Nairyah","Al Uqair","Half Moon Bay"],
+  "Asir":                ["All Cities","Abha","Khamis Mushait","Bisha","Mahayil","Rijal Almaa","Al Namas","Sarat Abidah","Tathleeth","Dhahran Al Janoub","Ahad Rufaidah"],
+  "Tabuk":               ["All Cities","Tabuk City","Duba","Haql","Al Wajh","Umluj","Tayma","NEOM"],
+  "Hail":                ["All Cities","Hail City","Baqaa","Al Ghazalah","Al Shinan","Mawqaq","Al Sulaimi"],
+  "Northern Borders":    ["All Cities","Arar","Rafha","Turaif","Al Uwayqilah"],
+  "Jazan":               ["All Cities","Jazan City","Sabya","Abu Arish","Samtah","Ahad Al Masarihah","Farasan","Baish","Al Darb"],
+  "Najran":              ["All Cities","Najran City","Sharurah","Habuna","Yadamah","Badr Al Janoub","Thar"],
+  "Al Bahah":            ["All Cities","Al Bahah City","Baljurashi","Al Mandaq","Al Aqiq Bahah","Qilwah","Al Makhwah","Al Qura"],
+  "Al Jouf":             ["All Cities","Sakaka","Dumat Al Jandal","Qurayyat","Tabarjal"],
+  "Qassim":              ["All Cities","Buraidah","Unaizah","Al Rass","Al Bukayriyah","Al Mithnab","Riyadh Al Khabra","Uyun Al Jiwa","Al Badayea","Al Asyah"],
 };
 
 // ─── PROVINCE COORDINATES (approximate centers, for geolocation matching) ───
@@ -294,6 +383,20 @@ const PROVINCE_COORDS = {
   // BAE
   "Dubai":[25.20,55.27],"Abu Dhabi":[24.45,54.38],"Sharjah":[25.35,55.40],
   "Ajman":[25.41,55.44],"Ras Al Khaimah":[25.79,55.94],"Fujairah":[25.12,56.33],"Umm Al Quwain":[25.57,55.55],
+
+  // Güney Kıbrıs + Körfez
+  "Nicosia":[35.17,33.36],"Limassol":[34.71,33.02],"Larnaca":[34.92,33.62],"Paphos":[34.78,32.42],
+  "Famagusta":[35.02,33.98],"Doha":[25.29,51.53],"Al Rayyan":[25.29,51.42],"Al Wakrah":[25.17,51.60],
+  "Umm Salal":[25.42,51.40],"Al Daayen":[25.58,51.48],"Al Khor":[25.68,51.50],"Al Shamal":[26.12,51.22],
+  "Al Shahaniya":[25.38,51.18],"Al Asimah":[29.38,47.99],"Hawalli":[29.33,48.03],"Farwaniya":[29.28,47.96],
+  "Mubarak Al-Kabeer":[29.20,48.07],"Ahmadi":[29.08,48.08],"Jahra":[29.34,47.66],"Manama":[26.22,50.58],
+  "Muharraq":[26.26,50.62],"Northern Bahrain":[26.15,50.48],"Southern Bahrain":[26.03,50.55],"Muscat":[23.59,58.41],
+  "Dhofar":[17.02,54.09],"Al Batinah North":[24.34,56.71],"Al Batinah South":[23.68,57.42],"Al Dakhiliyah":[22.93,57.53],
+  "Al Sharqiyah North":[22.69,58.53],"Al Sharqiyah South":[22.57,59.53],"Al Dhahirah":[23.22,56.51],"Al Buraimi":[24.25,55.79],
+  "Al Wusta":[19.96,56.28],"Musandam":[26.18,56.25],"Riyadh":[24.71,46.68],"Makkah":[21.39,39.86],
+  "Madinah":[24.47,39.61],"Eastern Province":[26.42,50.09],"Asir":[18.22,42.51],"Tabuk":[28.38,36.57],
+  "Hail":[27.52,41.69],"Northern Borders":[30.98,41.04],"Jazan":[16.89,42.57],"Najran":[17.49,44.13],
+  "Al Bahah":[20.01,41.47],"Al Jouf":[29.97,40.20],"Qassim":[26.33,43.97],
 };
 
 // Haversine-ish nearest-province lookup (good enough at province scale)
@@ -315,30 +418,27 @@ function findCountryForProvince(province) {
 }
 
 // ─── REGION DETECTION ───────────────────────────────────────────────────────
-// Ziyaretçinin ülkesine göre dil ve ülke seçimi:
-//   Türkiye ve Kuzey Kıbrıs → Türkçe,  BAE → İngilizce.
+// Ziyaretçinin ülkesine göre dil ve ülke seçimi (COUNTRY_META.lang):
+//   Türkiye ve Kuzey Kıbrıs → Türkçe,  Güney Kıbrıs ve Körfez → İngilizce.
 // Saat dilimi anında sonuç verir (ağ beklemeden ilk boyamada doğru dil),
 // IP sorgusu sonradan doğrular — VPN ya da yanlış ayarlı saat dilimi için.
-const REGION_SETUP = {
-  TR: { country:"Türkiye",      province:"İstanbul", lang:"tr" },
-  CY: { country:"Kuzey Kıbrıs", province:"Lefkoşa",  lang:"tr" },
-  AE: { country:"BAE",          province:"Dubai",    lang:"en" },
-};
-const TZ_REGION = {
-  "Europe/Istanbul":"TR", "Asia/Istanbul":"TR",
-  "Asia/Nicosia":"CY",    "Europe/Nicosia":"CY",
-  "Asia/Dubai":"AE",
-};
-function regionFromTimezone() {
-  try { return TZ_REGION[Intl.DateTimeFormat().resolvedOptions().timeZone] || null; } catch (e) { return null; }
+function countryFromTimezone() {
+  try { return TZ_COUNTRY[Intl.DateTimeFormat().resolvedOptions().timeZone] || null; } catch (e) { return null; }
 }
 
 // Desteklenen bölge dışındaysa null → dil EN, ülke filtresi "All Countries".
-const INITIAL_REGION = regionFromTimezone();
-const INITIAL_SETUP  = INITIAL_REGION ? REGION_SETUP[INITIAL_REGION] : null;
+const INITIAL_COUNTRY = countryFromTimezone();
+const INITIAL_SETUP   = INITIAL_COUNTRY ? COUNTRY_META[INITIAL_COUNTRY] : null;
 // Form varsayılanları: bölge tespit edilemediyse eski davranış (Türkiye/İstanbul) korunur.
-const FORM_COUNTRY  = INITIAL_SETUP ? INITIAL_SETUP.country  : "Türkiye";
+const FORM_COUNTRY  = INITIAL_COUNTRY || "Türkiye";
 const FORM_PROVINCE = INITIAL_SETUP ? INITIAL_SETUP.province : "İstanbul";
+// Telefon ve para birimi placeholder'ları da bölgeyi izler. Bunlar yalnızca ipucu
+// metni; alt bileşenlerde ülkeyi prop olarak gezdirmek yerine saat diliminden
+// çıkan FORM_COUNTRY yeterli — kullanıcının kendi girdisi hiçbir zaman kısıtlanmaz.
+const metaFor      = (country) => COUNTRY_META[country] || COUNTRY_META["Türkiye"];
+const phoneHint    = (country) => metaFor(country).phone;
+const rewardHint   = (country, lang) => lang === "tr" ? `örn. 1.000 ${metaFor(country).currency}`     : `e.g. 1,000 ${metaFor(country).currency}`;
+const priceHint    = (country, lang) => lang === "tr" ? `örn. 300 ${metaFor(country).currency}/gün`   : `e.g. 300 ${metaFor(country).currency}/day`;
 
 const ADOPTERS = [
   { id:101, name:"Yılmaz Family",  emoji:"👨‍👩‍👧", looking:{en:"Dog",         tr:"Köpek"},        city:"İstanbul", tags:{en:["Has yard","Experienced","Kid-friendly"], tr:["Bahçe var","Deneyimli","Çocuk dostu"]}, desc:{en:"Family of 4 with a large garden. Looking for a medium to large breed dog.",            tr:"Büyük bahçeli, 4 kişilik bir aile. Orta-büyük ırk köpek arıyoruz."} },
@@ -1380,7 +1480,7 @@ export default function App() {
   const [species, setSpecies]     = useState("All");
   const [search, setSearch]       = useState("");
   // Ülke filtresi saat diliminden çıkan bölgeyle açılır; tespit yoksa hepsi.
-  const [fCountry, setFC]         = useState(INITIAL_SETUP ? INITIAL_SETUP.country : "All Countries");
+  const [fCountry, setFC]         = useState(INITIAL_COUNTRY || "All Countries");
   const [fProvince, setFP]        = useState("All Provinces");
   const [fCity, setFCi]           = useState("All Cities");
   // (svcFilter/sitterCity removed — Owners section deleted)
@@ -1412,19 +1512,20 @@ export default function App() {
         const data = await res.json();
         if (cancelled || !data || !data.country_code) return;
 
-        const region = REGION_SETUP[data.country_code] ? data.country_code : null;
-        const setup  = region ? REGION_SETUP[region] : null;
-        if (region === INITIAL_REGION) return; // saat dilimi zaten doğruymuş
+        const country = ISO_COUNTRY[data.country_code] || null;
+        const setup   = country ? COUNTRY_META[country] : null;
+        if (country === INITIAL_COUNTRY) return; // saat dilimi zaten doğruymuş
 
         if (!langLocked) setLang(setup ? setup.lang : "en");
 
         // GPS kesin konumu ya da kullanıcının kendi seçimi varsa dokunma.
         if (!manualLocRef.current && !preciseLocRef.current) {
-          setFC(setup ? setup.country : "All Countries");
+          setFC(country || "All Countries");
           setFP("All Provinces");
           setFCi("All Cities");
           // Formlar hâlâ ilk tahmindeyse onları da düzelt.
-          const fresh = setup || { country:FORM_COUNTRY, province:FORM_PROVINCE };
+          const fresh = country ? { country, province:setup.province }
+                                : { country:FORM_COUNTRY, province:FORM_PROVINCE };
           setFormCountry(fresh.country);
           setFormProvince(fresh.province);
           const retarget = (f, ck, pk) =>
@@ -2237,7 +2338,7 @@ export default function App() {
               <div className="fg"><label className="flabel">{t.yourContact}</label><input className="fi" placeholder={t.contactPlaceholder} value={lfForm.contact} onChange={e => setLFForm(f => ({ ...f, contact:e.target.value }))} /></div>
 
               {lfForm.type === "lost" && (
-                <div className="fg"><label className="flabel">{t.reward}</label><input className="fi" placeholder={lang==="tr"?"örn. 1.000 TL":"e.g. KES 5,000"} value={lfForm.reward} onChange={e => setLFForm(f => ({ ...f, reward:e.target.value }))} /></div>
+                <div className="fg"><label className="flabel">{t.reward}</label><input className="fi" placeholder={rewardHint(formCountry, lang)} value={lfForm.reward} onChange={e => setLFForm(f => ({ ...f, reward:e.target.value }))} /></div>
               )}
 
               <div className="fg"><label className="flabel">{t.descriptionField}</label>
@@ -2613,7 +2714,7 @@ export default function App() {
                 {/* Telefon - opsiyonel */}
                 <div className="fg">
                   <label className="flabel">{lang==="tr"?"Telefon (opsiyonel)":"Phone (optional)"}</label>
-                  <input className="fi" type="tel" placeholder="+90 5XX XXX XX XX"
+                  <input className="fi" type="tel" placeholder={phoneHint(formCountry)}
                     value={contactInfo.phone}
                     onChange={e => setContactInfo(f => ({ ...f, phone:e.target.value }))} />
                 </div>
@@ -3390,7 +3491,7 @@ function TakeActionSheet({ animal, lang, t, onClose }) {
               </div>
               <div className="fg">
                 <label className="flabel">{t.phoneField}</label>
-                <input className="fi" placeholder="+90 5XX XXX XX XX" value={form.phone} onChange={e=>set("phone",e.target.value)} />
+                <input className="fi" placeholder={phoneHint(FORM_COUNTRY)} value={form.phone} onChange={e=>set("phone",e.target.value)} />
                 {E("phone")}
               </div>
 
@@ -3713,7 +3814,7 @@ function AdoptAppSheet({ animal, mode, lang, t, onClose }) {
             {step===1&&<><div style={{fontSize:15,fontWeight:600,marginBottom:3}}>{t.personalInfo}</div><div style={{fontSize:12,color:"var(--muted)",marginBottom:16}}>{t.personalInfoSub}</div>
               <div className="frow"><div className="fg"><label className="flabel">{t.firstName}</label><input className="fi" placeholder={lang==="tr"?"Zeynep":"Jane"} value={app.firstName} onChange={e=>set("firstName",e.target.value)}/>{E("firstName")}</div><div className="fg"><label className="flabel">{t.lastName}</label><input className="fi" placeholder={lang==="tr"?"Yılmaz":"Mwangi"} value={app.lastName} onChange={e=>set("lastName",e.target.value)}/>{E("lastName")}</div></div>
               <div className="fg"><label className="flabel">{t.email}</label><input className="fi" type="email" placeholder="ornek@email.com" value={app.email} onChange={e=>set("email",e.target.value)}/>{E("email")}</div>
-              <div className="fg"><label className="flabel">{t.phoneField}</label><input className="fi" placeholder="+90 5XX XXX XX XX" value={app.phone} onChange={e=>set("phone",e.target.value)}/>{E("phone")}</div>
+              <div className="fg"><label className="flabel">{t.phoneField}</label><input className="fi" placeholder={phoneHint(FORM_COUNTRY)} value={app.phone} onChange={e=>set("phone",e.target.value)}/>{E("phone")}</div>
               <div className="frow"><div className="fg"><label className="flabel">{t.ageField2}</label><input className="fi" placeholder="28" value={app.age} onChange={e=>set("age",e.target.value)}/>{E("age")}</div><div className="fg"><label className="flabel">{t.occupationField}</label><input className="fi" placeholder={lang==="tr"?"Öğretmen":"Teacher"} value={app.occupation} onChange={e=>set("occupation",e.target.value)}/>{E("occupation")}</div></div>
             </>}
             {step===2&&<><div style={{fontSize:15,fontWeight:600,marginBottom:3}}>{t.homeTitle}</div><div style={{fontSize:12,color:"var(--muted)",marginBottom:16}}>{t.homeSub}</div>
@@ -3918,7 +4019,7 @@ function FosterAppSheet({ animal, lang, t, onClose }) {
             </div>
             <div className="fg">
               <label className="flabel">{t.phoneField}</label>
-              <input className="fi" placeholder="+90 5XX XXX XX XX" value={app.phone} onChange={e=>set("phone",e.target.value)} />
+              <input className="fi" placeholder={phoneHint(FORM_COUNTRY)} value={app.phone} onChange={e=>set("phone",e.target.value)} />
               {E("phone")}
             </div>
 
@@ -4775,7 +4876,7 @@ function RegisterSitterForm({ lang, t, onSubmit, requireContact }) {
       </div>
       <div className="frow">
         <div className="fg"><label className="flabel">{t.neighbourhood}</label><input className="fi" placeholder={lang==="tr"?"Beşiktaş":"Kilimani"} value={f.area} onChange={e => setF(x => ({ ...x, area:e.target.value }))} /></div>
-        <div className="fg"><label className="flabel">{t.pricePerDay}</label><input className="fi" placeholder={lang==="tr"?"örn. 300 TL/gün":"KES 800/day"} value={f.price} onChange={e => setF(x => ({ ...x, price:e.target.value }))} /></div>
+        <div className="fg"><label className="flabel">{t.pricePerDay}</label><input className="fi" placeholder={priceHint(FORM_COUNTRY, lang)} value={f.price} onChange={e => setF(x => ({ ...x, price:e.target.value }))} /></div>
       </div>
       <div className="fg">
         <label className="flabel">{t.servicesOffered}</label>
