@@ -133,26 +133,50 @@ const ANIMALS = [
   { id:2, name:"Mochi",  emoji:"🐈", species:{en:"Cat",    tr:"Kedi"},    breed:{en:"Domestic Shorthair",      tr:"Tekir"},                    age:{en:"4 mos",    tr:"4 aylık"}, gender:{en:"Male",  tr:"Erkek"}, country:"Türkiye",      province:"İzmir",      city:"Konak",    tags:{en:["Vaccinated","Playful","Indoor"],          tr:["Aşılı","Oyuncu","İç mekan"]},             urgent:true,  isNew:false, canFoster:true,  desc:{en:"Mochi is a tiny bundle of energy! Found as a stray kitten, now healthy and ready for his forever family.",                   tr:"Mochi sokaktan kurtarılmış minik bir yavru. Sağlığına kavuştu, sıcak bir yuva bekliyor."} },
   { id:3, name:"Rocky",  emoji:"🐇", species:{en:"Rabbit", tr:"Tavşan"},  breed:{en:"Holland Lop",             tr:"Hollanda Lop"},             age:{en:"1 yr",     tr:"1 yaş"},    gender:{en:"Male",  tr:"Erkek"}, country:"Türkiye",      province:"Ankara",     city:"Çankaya",  tags:{en:["Neutered","Litter-trained","Gentle"],     tr:["Kısırlaştırıldı","Evcil","Sakin"]},       urgent:false, isNew:false, canFoster:false, desc:{en:"Rocky is a calm and gentle rabbit. Perfect for a quiet household.",                                                          tr:"Rocky sakin, uysal bir tavşan. Sessiz bir eve çok uygun."} },
   { id:4, name:"Bella",  emoji:"🐕", species:{en:"Dog",    tr:"Köpek"},   breed:{en:"German Shepherd",         tr:"Alman Çoban Köpeği"},       age:{en:"3 yrs",    tr:"3 yaş"},    gender:{en:"Female",tr:"Dişi"}, country:"BAE",          province:"Dubai",      city:"Jumeirah", tags:{en:["Trained","Vaccinated","Active"],          tr:["Eğitimli","Aşılı","Aktif"]},              urgent:false, isNew:true,  canFoster:false, desc:{en:"Bella is smart and loyal. Needs an active family with outdoor space.",                                                       tr:"Bella zeki ve sadık bir köpek. Dış alanı olan aktif bir aile için ideal."} },
-  { id:5, name:"Cleo",   emoji:"🐈", species:{en:"Cat",    tr:"Kedi"},    breed:{en:"Siamese Mix",             tr:"Siyam Mix"},                age:{en:"6 yrs",    tr:"6 yaş"},    gender:{en:"Female",tr:"Dişi"}, country:"Kuzey Kıbrıs", province:"Girne",      city:"Girne",    tags:{en:["Senior","Calm","Vaccinated"],             tr:["Yaşlı","Sakin","Aşılı"]},                 urgent:true,  isNew:false, canFoster:true,  desc:{en:"Cleo is a senior cat who loves peaceful spots. She deserves a forever home.",                                                tr:"Cleo huzurlu bir köşe seven yaşlı bir kedi. Kalıcı bir yuva hak ediyor."} },
+  { id:5, name:"Cleo",   emoji:"🐈", species:{en:"Cat",    tr:"Kedi"},    breed:{en:"Siamese Mix",             tr:"Siyam Mix"},                age:{en:"6 yrs",    tr:"6 yaş"},    gender:{en:"Female",tr:"Dişi"}, country:"Cyprus"      , province:"Girne",      city:"Girne",    tags:{en:["Senior","Calm","Vaccinated"],             tr:["Yaşlı","Sakin","Aşılı"]},                 urgent:true,  isNew:false, canFoster:true,  desc:{en:"Cleo is a senior cat who loves peaceful spots. She deserves a forever home.",                                                tr:"Cleo huzurlu bir köşe seven yaşlı bir kedi. Kalıcı bir yuva hak ediyor."} },
   { id:6, name:"Peanut", emoji:"🐹", species:{en:"Hamster",tr:"Hamster"}, breed:{en:"Syrian Hamster",          tr:"Suriye Hamster"},           age:{en:"6 mos",    tr:"6 aylık"}, gender:{en:"Male",  tr:"Erkek"}, country:"BAE",          province:"Abu Dhabi",  city:"Al Reem",  tags:{en:["Healthy","Friendly"],                    tr:["Sağlıklı","Uysal"]},                      urgent:false, isNew:false, canFoster:true,  desc:{en:"Peanut comes with cage and accessories. Easy to care for.",                                                                  tr:"Peanut kafesi ve aksesuarlarıyla birlikte verilecek."} },
   { id:7, name:"Atlas",  emoji:"🐕", species:{en:"Dog",    tr:"Köpek"},   breed:{en:"Kangal Mix",              tr:"Kangal Mix"},               age:{en:"4 yrs",    tr:"4 yaş"},    gender:{en:"Male",  tr:"Erkek"}, country:"Türkiye",      province:"Ankara",     city:"Keçiören", tags:{en:["Vaccinated","Stray","Large breed"],       tr:["Aşılı","Sahipsiz","Büyük cüsse"]},        urgent:true,  isNew:false, canFoster:true,  desc:{en:"Atlas was rescued from the street. Big and gentle, needs a home with a large garden.",                                       tr:"Atlas sokaktan alındı. Büyük ve sevecen, geniş bahçeli bir eve ihtiyacı var."} },
   { id:8, name:"Zara",   emoji:"🐈", species:{en:"Cat",    tr:"Kedi"},    breed:{en:"Van Cat",                 tr:"Van Kedisi"},               age:{en:"2 yrs",    tr:"2 yaş"},    gender:{en:"Female",tr:"Dişi"}, country:"Türkiye",      province:"Van",        city:"İpekyolu", tags:{en:["Vaccinated","Spayed","Active"],           tr:["Aşılı","Kısırlaştırıldı","Aktif"]},       urgent:false, isNew:true,  canFoster:true,  desc:{en:"Zara is a Van Cat, Turkey's iconic breed. Loves water and has an energetic personality.",                                    tr:"Zara Türkiye'nin simgesi Van kedisi. Suyu seven, enerjik bir karakter."} },
-  { id:9, name:"Max",    emoji:"🐕", species:{en:"Dog",    tr:"Köpek"},   breed:{en:"Labrador Mix",            tr:"Labrador Mix"},             age:{en:"1 yr",     tr:"1 yaş"},    gender:{en:"Male",  tr:"Erkek"}, country:"Kuzey Kıbrıs", province:"Lefkoşa",    city:"Lefkoşa",  tags:{en:["Vaccinated","Playful","Young"],           tr:["Aşılı","Oyuncu","Genç"]},                 urgent:false, isNew:true,  canFoster:true,  desc:{en:"Max is an energetic and affectionate young dog. Loves running in open spaces.",                                              tr:"Max enerjik ve sevecen genç bir köpek. Açık alanda koşmayı çok seviyor."} },
+  { id:9, name:"Max",    emoji:"🐕", species:{en:"Dog",    tr:"Köpek"},   breed:{en:"Labrador Mix",            tr:"Labrador Mix"},             age:{en:"1 yr",     tr:"1 yaş"},    gender:{en:"Male",  tr:"Erkek"}, country:"Cyprus"      , province:"Lefkoşa",    city:"Lefkoşa",  tags:{en:["Vaccinated","Playful","Young"],           tr:["Aşılı","Oyuncu","Genç"]},                 urgent:false, isNew:true,  canFoster:true,  desc:{en:"Max is an energetic and affectionate young dog. Loves running in open spaces.",                                              tr:"Max enerjik ve sevecen genç bir köpek. Açık alanda koşmayı çok seviyor."} },
 ];
 
-const COUNTRIES = ["All Countries","Türkiye","Kuzey Kıbrıs","Güney Kıbrıs","BAE","Katar","Kuveyt","Bahreyn","Umman","Suudi Arabistan"];
+const COUNTRIES = ["All Countries","Türkiye","Cyprus","BAE","Katar","Kuveyt","Bahreyn","Umman","Suudi Arabistan"];
 
 const COUNTRY_META = {
   // key                  EN label                 TR label            dil    varsayılan il      saat dilimleri                          ISO   telefon                      para
   "Türkiye":         { en:"Turkey",             tr:"Türkiye",         lang:"tr", province:"İstanbul", tz:["Europe/Istanbul","Asia/Istanbul"], iso:"TR", phone:"+90 5XX XXX XX XX",  currency:"TL"  },
-  "Kuzey Kıbrıs":    { en:"Northern Cyprus",    tr:"Kuzey Kıbrıs",    lang:"tr", province:"Lefkoşa",  tz:["Asia/Nicosia","Europe/Nicosia"],   iso:"CY", phone:"+90 5XX XXX XX XX",  currency:"TL"  },
-  "Güney Kıbrıs":    { en:"Republic of Cyprus", tr:"Güney Kıbrıs",    lang:"en", province:"Nicosia",  tz:[],                                  iso:"",   phone:"+357 9X XXX XXX",    currency:"EUR" },
+  "Cyprus":          { en:"Cyprus",             tr:"Kıbrıs",          lang:"en", province:"Lefkoşa",  tz:["Asia/Nicosia","Europe/Nicosia"],   iso:"CY", phone:"+357 9X XXX XXX",    currency:"EUR" },
   "BAE":             { en:"UAE",                tr:"BAE",             lang:"en", province:"Dubai",    tz:["Asia/Dubai"],                      iso:"AE", phone:"+971 5X XXX XXXX",   currency:"AED" },
   "Katar":           { en:"Qatar",              tr:"Katar",           lang:"en", province:"Doha",     tz:["Asia/Qatar"],                      iso:"QA", phone:"+974 XXXX XXXX",     currency:"QAR" },
   "Kuveyt":          { en:"Kuwait",             tr:"Kuveyt",          lang:"en", province:"Al Asimah",tz:["Asia/Kuwait"],                     iso:"KW", phone:"+965 XXXX XXXX",     currency:"KWD" },
   "Bahreyn":         { en:"Bahrain",            tr:"Bahreyn",         lang:"en", province:"Manama",   tz:["Asia/Bahrain"],                    iso:"BH", phone:"+973 XXXX XXXX",     currency:"BHD" },
   "Umman":           { en:"Oman",               tr:"Umman",           lang:"en", province:"Muscat",   tz:["Asia/Muscat"],                     iso:"OM", phone:"+968 XXXX XXXX",     currency:"OMR" },
   "Suudi Arabistan": { en:"Saudi Arabia",       tr:"Suudi Arabistan", lang:"en", province:"Riyadh",   tz:["Asia/Riyadh"],                     iso:"SA", phone:"+966 5X XXX XXXX",   currency:"SAR" },
+};
+
+// Kayıtlarda saklanan eski ülke değerleri. Ada tek ülkeye indirildi ama daha önce
+// "Kuzey Kıbrıs" / "Güney Kıbrıs" olarak kaydedilmiş ilanlar filtrelerden düşmesin.
+const LEGACY_COUNTRY = { "Kuzey Kıbrıs":"Cyprus", "Güney Kıbrıs":"Cyprus" };
+const normCountry = (c) => LEGACY_COUNTRY[c] || c || "";
+// Serbest metin konum alanlarında (acil bildirimler) ülkeyi yakalamak için.
+const COUNTRY_ALIASES = {
+  "Cyprus": ["cyprus","kıbrıs","kibris","kktc"],
+};
+
+// Kıbrıs'ın iki yakasındaki ilçeler aynı listede olduğu için adları netleştirilir.
+// Anahtarlar (soldaki) kayıtlarda saklanan değerler — asla değişmez.
+const PROVINCE_LABELS = {
+  "Lefkoşa":    { en:"Nicosia (North)",        tr:"Lefkoşa" },
+  "Nicosia":    { en:"Nicosia (South)",        tr:"Lefkoşa (Güney)" },
+  "Gazimağusa": { en:"Famagusta (North)",      tr:"Gazimağusa" },
+  "Famagusta":  { en:"Famagusta (Free Area)",  tr:"Mağusa (Güney)" },
+  "Girne":      { en:"Kyrenia",                tr:"Girne" },
+  "Güzelyurt":  { en:"Morphou",                tr:"Güzelyurt" },
+  "İskele":     { en:"Iskele",                 tr:"İskele" },
+  "Lefke":      { en:"Lefka",                  tr:"Lefke" },
+  "Limassol":   { en:"Limassol",               tr:"Limasol" },
+  "Larnaca":    { en:"Larnaca",                tr:"Larnaka" },
+  "Paphos":     { en:"Paphos",                 tr:"Baf" },
 };
 
 // "Tümü" seçenekleri ülke değil, ayrı tutulur.
@@ -164,7 +188,7 @@ const ALL_LABELS = {
 // Kayıtlarda saklanan anahtar hiç değişmez; kullanıcının gördüğü metin dile göre gelir.
 const locLabel = (name, lang) => {
   const l = lang === "tr" ? "tr" : "en";
-  return (ALL_LABELS[name] || COUNTRY_META[name] || {})[l] || name;
+  return (ALL_LABELS[name] || COUNTRY_META[name] || PROVINCE_LABELS[name] || {})[l] || name;
 };
 
 // Saat dilimi ve IP ülke kodundan ülke anahtarına çeviri — COUNTRY_META'dan türetilir,
@@ -173,17 +197,15 @@ const TZ_COUNTRY = {};
 const ISO_COUNTRY = {};
 for (const [key, m] of Object.entries(COUNTRY_META)) {
   for (const z of m.tz) if (!TZ_COUNTRY[z]) TZ_COUNTRY[z] = key;
-  // Kuzey ve Güney Kıbrıs aynı ISO kodunu (CY) ve aynı saat dilimini paylaşır;
-  // ilk tanımlanan (Kuzey Kıbrıs) kazanır, güney GPS ya da elle seçimle gelir.
   if (m.iso && !ISO_COUNTRY[m.iso]) ISO_COUNTRY[m.iso] = key;
 }
 
 const PROVINCES = {
   "All Countries":  ["All Provinces"],
   "Türkiye":        ["All Provinces","Adana","Adıyaman","Afyonkarahisar","Ağrı","Amasya","Ankara","Antalya","Artvin","Aydın","Balıkesir","Bilecik","Bingöl","Bitlis","Bolu","Burdur","Bursa","Çanakkale","Çankırı","Çorum","Denizli","Diyarbakır","Edirne","Elazığ","Erzincan","Erzurum","Eskişehir","Gaziantep","Giresun","Gümüşhane","Hakkari","Hatay","Isparta","Mersin","İstanbul","İzmir","Kars","Kastamonu","Kayseri","Kırklareli","Kırşehir","Kocaeli","Konya","Kütahya","Malatya","Manisa","Kahramanmaraş","Mardin","Muğla","Muş","Nevşehir","Niğde","Ordu","Rize","Sakarya","Samsun","Siirt","Sinop","Sivas","Tekirdağ","Tokat","Trabzon","Tunceli","Şanlıurfa","Uşak","Van","Yozgat","Zonguldak","Aksaray","Bayburt","Karaman","Kırıkkale","Batman","Şırnak","Bartın","Ardahan","Iğdır","Yalova","Karabük","Kilis","Osmaniye","Düzce"],
-  "Kuzey Kıbrıs":   ["All Provinces","Lefkoşa","Gazimağusa","Girne","Güzelyurt","İskele","Lefke"],
+  // Ada tek ülke olarak listelenir; ilçe anahtarları kayıtlarda saklandığı gibi kalır.
+  "Cyprus":         ["All Provinces","Lefkoşa","Nicosia","Girne","Limassol","Larnaca","Paphos","Gazimağusa","Famagusta","Güzelyurt","İskele","Lefke"],
   "BAE":            ["All Provinces","Dubai","Abu Dhabi","Sharjah","Ajman","Ras Al Khaimah","Fujairah","Umm Al Quwain"],
-  "Güney Kıbrıs":    ["All Provinces","Nicosia","Limassol","Larnaca","Paphos","Famagusta"],
   "Katar":           ["All Provinces","Doha","Al Rayyan","Al Wakrah","Umm Salal","Al Daayen","Al Khor","Al Shamal","Al Shahaniya"],
   "Kuveyt":          ["All Provinces","Al Asimah","Hawalli","Farwaniya","Mubarak Al-Kabeer","Ahmadi","Jahra"],
   "Bahreyn":         ["All Provinces","Manama","Muharraq","Northern Bahrain","Southern Bahrain"],
@@ -276,7 +298,7 @@ const CITIES = {
   "Osmaniye":        ["All Cities","Merkez","Bahçe","Düziçi","Hasanbeyli","Kadirli","Sumbas","Toprakkale"],
   "Düzce":           ["All Cities","Merkez","Akçakoca","Cumayeri","Çilimli","Gölyaka","Gümüşova","Kaynaşlı","Yığılca"],
 
-  // ── Kuzey Kıbrıs ──
+  // ── Cyprus (kuzey ilçeleri) ──
   "Lefkoşa":         ["All Cities","Lefkoşa Merkez","Küçük Kaymaklı","Ortaköy","Yenişehir","Göçmenköy","Taşkınköy","Marmara","Hamitköy","Gönyeli","Yenikent","Alayköy","Haspolat","Değirmenlik","Dikmen","Kanlıköy","Balıkesir","Gökhan","Meriç","Akıncılar","Türkeli"],
   "Gazimağusa":      ["All Cities","Gazimağusa Merkez","Sakarya","Baykal","Maraş","Tuzla","Mutluyaka","Yeniboğaziçi","Akdoğan","Geçitkale","Serdarlı","Beyarmudu","Pile","Dörtyol","İnönü","Vadili","Paşaköy","Alaniçi","Çayönü"],
   "Girne":           ["All Cities","Girne Merkez","Karaoğlanoğlu","Alsancak","Lapta","Karşıyaka","Çamlıbel","Karaman","Zeytinlik","Edremit","Doğanköy","Ozanköy","Bellapais","Çatalköy","Arapköy","Esentepe","Karakum","Ilgaz","Kayalar","Akdeniz","Tatlısu"],
@@ -293,7 +315,7 @@ const CITIES = {
   "Fujairah":        ["All Cities","Fujairah City","Al Aqah","Al Bidiyah","Al Faseel","Al Gurfa","Al Hilal City","Al Taween","Dibba Al Fujairah","Merashid","Mirbah","Murbah","Qidfa","Sakamkam","Masafi"],
   "Umm Al Quwain":   ["All Cities","UAQ City","Al Dar Al Baida","Al Haditha","Al Humrah","Al Maidan","Al Raas","Al Rafaah","Al Ramlah","Al Riqqah","Al Salamah","Falaj Al Mualla","Khor Al Beidah"],
 
-  // ── Güney Kıbrıs ──
+  // ── Cyprus (güney ilçeleri) ──
   "Nicosia":             ["All Cities","Nicosia Centre","Strovolos","Lakatamia","Aglantzia","Latsia","Engomi","Ayios Dometios","Kaimakli","Pallouriotissa","Dali","Tseri","Geri","Anthoupoli","Archangelos","Makedonitissa","Kokkinotrimithia","Astromeritis","Peristerona","Ergates","Politiko"],
   "Limassol":            ["All Cities","Limassol Centre","Germasogeia","Agios Athanasios","Mesa Geitonia","Ypsonas","Kato Polemidia","Pano Polemidia","Agios Tychonas","Parekklisia","Pyrgos","Episkopi","Erimi","Kolossi","Trachoni","Zakaki","Moni","Palodia","Platres","Omodos","Pissouri","Fasouri"],
   "Larnaca":             ["All Cities","Larnaca Centre","Aradippou","Livadia","Oroklini","Dromolaxia","Meneou","Kiti","Pervolia","Athienou","Xylofagou","Xylotymbou","Pyla","Mazotos","Alethriko","Kornos","Lefkara","Tersefanou","Kalo Chorio","Aradippou Industrial","Softades"],
@@ -377,14 +399,14 @@ const PROVINCE_COORDS = {
   "Şırnak":[37.52,42.46],"Bartın":[41.64,32.34],"Ardahan":[41.11,42.70],"Iğdır":[39.92,44.05],
   "Yalova":[40.65,29.27],"Karabük":[41.20,32.62],"Kilis":[36.72,37.12],"Osmaniye":[37.07,36.25],
   "Düzce":[40.84,31.16],
-  // Kuzey Kıbrıs
+  // Cyprus — kuzey
   "Lefkoşa":[35.19,33.36],"Gazimağusa":[35.12,33.95],"Girne":[35.34,33.32],
   "Güzelyurt":[35.20,32.99],"İskele":[35.29,33.89],"Lefke":[35.11,32.85],
   // BAE
   "Dubai":[25.20,55.27],"Abu Dhabi":[24.45,54.38],"Sharjah":[25.35,55.40],
   "Ajman":[25.41,55.44],"Ras Al Khaimah":[25.79,55.94],"Fujairah":[25.12,56.33],"Umm Al Quwain":[25.57,55.55],
 
-  // Güney Kıbrıs + Körfez
+  // Cyprus — güney + Körfez
   "Nicosia":[35.17,33.36],"Limassol":[34.71,33.02],"Larnaca":[34.92,33.62],"Paphos":[34.78,32.42],
   "Famagusta":[35.02,33.98],"Doha":[25.29,51.53],"Al Rayyan":[25.29,51.42],"Al Wakrah":[25.17,51.60],
   "Umm Salal":[25.42,51.40],"Al Daayen":[25.58,51.48],"Al Khor":[25.68,51.50],"Al Shamal":[26.12,51.22],
@@ -419,7 +441,7 @@ function findCountryForProvince(province) {
 
 // ─── REGION DETECTION ───────────────────────────────────────────────────────
 // Ziyaretçinin ülkesine göre dil ve ülke seçimi (COUNTRY_META.lang):
-//   Türkiye ve Kuzey Kıbrıs → Türkçe,  Güney Kıbrıs ve Körfez → İngilizce.
+//   Türkiye → Türkçe,  Kıbrıs ve Körfez → İngilizce.
 // Saat dilimi anında sonuç verir (ağ beklemeden ilk boyamada doğru dil),
 // IP sorgusu sonradan doğrular — VPN ya da yanlış ayarlı saat dilimi için.
 function countryFromTimezone() {
@@ -506,7 +528,7 @@ const ETA_OPTIONS = [
 const T = {
   en: {
     // app shell
-    appName:"Paweero", tagline:"Turkey · Northern Cyprus · UAE", lang:"EN",
+    appName:"Paweero", tagline:"Turkey · Cyprus · Gulf", lang:"EN",
     home:"Home", animals:"Animals", lostFound:"Lost & Found", owners:"Owners", help:"Emergency",
     // post chooser (single entry point for all posting actions)
     postChooserTitle:"What would you like to do?",
@@ -723,7 +745,7 @@ const T = {
   },
   tr: {
     // uygulama kabuğu
-    appName:"Paweero", tagline:"Türkiye · Kuzey Kıbrıs · BAE", lang:"TR",
+    appName:"Paweero", tagline:"Türkiye · Kıbrıs · Körfez", lang:"TR",
     home:"Ana Sayfa", animals:"Hayvanlar", lostFound:"Kayıp & Bulunan", owners:"Sahipler", help:"Acil Durum",
     // gönderi seçici (tüm paylaşım aksiyonları için tek giriş noktası)
     postChooserTitle:"Ne yapmak istiyorsun?",
@@ -1913,7 +1935,7 @@ export default function App() {
   const filtered = animals.filter(a => {
     const okS  = species === "All" || a.species.en === species;
     const okQ  = !search || a.name.toLowerCase().includes(search.toLowerCase()) || (a.breed?.en||"").toLowerCase().includes(search.toLowerCase());
-    const okC  = fCountry  === "All Countries"  || a.country  === fCountry;
+    const okC  = fCountry  === "All Countries"  || normCountry(a.country)  === fCountry;
     const okP  = fProvince === "All Provinces"  || a.province === fProvince;
     const okCi = fCity     === "All Cities"     || a.city     === fCity;
     const okType = animalSub === "foster"
@@ -1937,7 +1959,8 @@ export default function App() {
   // so we match it loosely against the selected province/city.
   const filteredReports = reports.filter(r => {
     const loc = (r.location || "").toLowerCase();
-    const okCo = fCountry  === "All Countries"  || loc.includes(fCountry.toLowerCase());
+    const okCo = fCountry  === "All Countries"  ||
+                 (COUNTRY_ALIASES[fCountry] || [fCountry.toLowerCase()]).some(a => loc.includes(a));
     const okP  = fProvince === "All Provinces"  || loc.includes(fProvince.toLowerCase());
     const okCi = fCity     === "All Cities"     || loc.includes(fCity.toLowerCase());
     return okCo && okP && okCi;
@@ -1949,7 +1972,7 @@ export default function App() {
   // the Help tab just because it's also adoptable.
   const helpFromAnimals = animals.filter(a => {
     if (!a.needsHelp) return false;
-    const okCo = fCountry  === "All Countries"  || a.country  === fCountry;
+    const okCo = fCountry  === "All Countries"  || normCountry(a.country)  === fCountry;
     const okP  = fProvince === "All Provinces"  || a.province === fProvince;
     const okCi = fCity     === "All Cities"     || a.city     === fCity;
     return okCo && okP && okCi;
