@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Başvuru ve yönetim ekranlarının aranacak bir içeriği yok.
+Disallow: /admin
+Disallow: /*?apply=
+
+Sitemap: https://paweero.com/sitemap.xml

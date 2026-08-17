@@ -524,6 +524,149 @@ const TABS = [
   { id:"help",     icon:"🚨", label:"Help"         },
 ];
 
+// ─── ROUTING ──────────────────────────────────────────────────────────────────
+// Uygulama tek sayfaydı; her şey "/" adresinde yaşıyordu. Bu, Google'a
+// indeksleyecek tek bir sayfa vermek demek. Artık her görünümün gerçek bir
+// adresi var ve ilanlar tekil olarak paylaşılabiliyor.
+const SITE_URL = "https://paweero.com";
+const TAB_SEGMENT = { home:"", animals:"animals", lostfound:"lost-found", help:"help" };
+const SEGMENT_TAB = { "":"home", "animals":"animals", "lost-found":"lostfound", "help":"help" };
+// Alt görünümler ayrı adres alır — /animals ve /animals/foster farklı listeler.
+// Varsayılan alt görünüm adrese yazılmaz: /animals ile /animals/adopt aynı sayfa
+// olurdu ve Google bunu kopya içerik sayardı. /animals/adopt yazılırsa çalışır,
+// ama adres sessizce /animals'a sadeleşir.
+const TAB_SUBS = { animals:["adopt","foster"], help:["active","helped"] };
+const DEFAULT_SUB = { animals:"adopt", help:"active" };
+
+const slugify = (s) => String(s || "")
+  .toLowerCase()
+  .replace(/ı/g,"i").replace(/ğ/g,"g").replace(/ü/g,"u").replace(/ş/g,"s").replace(/ö/g,"o").replace(/ç/g,"c")
+  .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+  .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60);
+
+function parseLocation(pathname) {
+  let parts;
+  try { parts = decodeURIComponent(pathname).split("/").filter(Boolean); }
+  catch (e) { parts = pathname.split("/").filter(Boolean); }
+  const tab = SEGMENT_TAB[parts[0] || ""] || "home";
+  const seg = parts[1] || "";
+  const isSub = (TAB_SUBS[tab] || []).includes(seg);
+  return { tab, sub: isSub ? seg : null, seg: isSub ? "" : seg };
+}
+
+// Kayıt kimliği sayı da olabilir UUID de. Slug'ı ayırmak yerine kimliğin kendisini
+// önek olarak arıyoruz — tek kural iki biçimi de çözüyor, UUID'deki tireler bozmuyor.
+const matchesSeg = (item, seg) => {
+  const id = String(item.id);
+  return seg === id || seg.startsWith(id + "-");
+};
+const itemPath = (tab, item, name) => {
+  const slug = slugify(name);
+  return `/${TAB_SEGMENT[tab]}/${item.id}${slug ? "-" + slug : ""}`;
+};
+const tabPath = (tab, sub) => {
+  const base = "/" + TAB_SEGMENT[tab];
+  const named = sub && sub !== DEFAULT_SUB[tab] && (TAB_SUBS[tab] || []).includes(sub);
+  return (named ? base + "/" + sub : base).replace(/\/+$/, "") || "/";
+};
+
+// ─── SAYFA META BİLGİSİ ───────────────────────────────────────────────────────
+// Her görünüm kendi başlığını, açıklamasını ve canonical adresini yazar. Google
+// sayfayı JS çalıştırdıktan sonra okuduğu için bunlar indekse girer; ancak
+// WhatsApp/Facebook gibi link önizlemeleri JS çalıştırmaz — onlar index.html'deki
+// sabit og etiketlerini görür. Kalıcı çözüm sunucu tarafı render.
+const PAGE_META = {
+  home: {
+    en: { title:"Paweero — Free Animal Welfare Platform",
+          desc:"Adopt, foster, find a pet sitter, post a lost & found, or report animals in distress across Turkey, Cyprus and the Gulf. Always free." },
+    tr: { title:"Paweero — Ücretsiz Hayvan Refahı Platformu",
+          desc:"Türkiye, Kıbrıs ve Körfez'de sahiplen, geçici bakım ver, bakıcı bul, kayıp ilanı ver ya da tehlikedeki hayvanları bildir. Her zaman ücretsiz." },
+  },
+  animals: {
+    en: { title:"Adopt or Foster an Animal | Paweero",
+          desc:"Browse animals waiting for adoption or foster care. Free listings from rescuers and shelters across Turkey, Cyprus and the Gulf." },
+    tr: { title:"Sahiplen ya da Geçici Bakım Ver | Paweero",
+          desc:"Sahiplenilmeyi veya geçici bakımı bekleyen hayvanlara göz at. Türkiye, Kıbrıs ve Körfez'den ücretsiz ilanlar." },
+  },
+  lostfound: {
+    en: { title:"Lost & Found Pets | Paweero",
+          desc:"Report a lost pet or an animal you have found. Free lost and found listings for Turkey, Cyprus and the Gulf." },
+    tr: { title:"Kayıp ve Bulunan Hayvanlar | Paweero",
+          desc:"Kaybolan hayvanını bildir ya da bulduğun bir hayvanı paylaş. Türkiye, Kıbrıs ve Körfez için ücretsiz kayıp ilanları." },
+  },
+  help: {
+    en: { title:"Report an Animal in Distress | Paweero",
+          desc:"Report injured, sick or abandoned animals and see active rescue calls near you. Free and open to everyone." },
+    tr: { title:"Tehlikedeki Hayvanı Bildir | Paweero",
+          desc:"Yaralı, hasta ya da terk edilmiş hayvanları bildir, yakınındaki aktif kurtarma çağrılarını gör. Ücretsiz ve herkese açık." },
+  },
+};
+
+// Varsayılan olmayan alt görünümlerin kendi başlığı olur; aksi hâlde /animals ile
+// /animals/foster aynı başlığı taşır ve Google ikisini kopya sayar.
+const SUB_META = {
+  "animals/foster": {
+    en: { title:"Foster an Animal | Paweero",
+          desc:"Offer a temporary home to an animal in need. Browse animals looking for foster care across Turkey, Cyprus and the Gulf." },
+    tr: { title:"Geçici Bakım Ver | Paweero",
+          desc:"İhtiyacı olan bir hayvana geçici yuva ol. Türkiye, Kıbrıs ve Körfez'de geçici bakım bekleyen hayvanlara göz at." },
+  },
+  "help/helped": {
+    en: { title:"Rescued Animals | Paweero",
+          desc:"Animals that were reported in distress and have since been helped. See what the community has resolved." },
+    tr: { title:"Yardım Edilen Hayvanlar | Paweero",
+          desc:"Tehlikede olduğu bildirilen ve yardım ulaştırılan hayvanlar. Topluluğun çözüme kavuşturduğu ilanlar." },
+  },
+};
+
+function upsertTag(selector, create) {
+  let el = document.head.querySelector(selector);
+  if (!el) { el = create(); document.head.appendChild(el); }
+  return el;
+}
+const setMetaName = (name, content) => {
+  upsertTag(`meta[name="${name}"]`, () => Object.assign(document.createElement("meta"), { name })).content = content;
+};
+const setMetaProp = (prop, content) => {
+  upsertTag(`meta[property="${prop}"]`, () => {
+    const m = document.createElement("meta"); m.setAttribute("property", prop); return m;
+  }).setAttribute("content", content);
+};
+
+// Sayfa başlığı, açıklaması, canonical ve paylaşım etiketlerini tek yerden yazar.
+function applyPageMeta({ title, desc, path, image, lang, noindex }) {
+  const url = SITE_URL + path;
+  document.title = title;
+  document.documentElement.lang = lang === "tr" ? "tr" : "en";
+  setMetaName("description", desc);
+  setMetaName("robots", noindex ? "noindex, follow" : "index, follow, max-image-preview:large");
+  upsertTag('link[rel="canonical"]', () => Object.assign(document.createElement("link"), { rel:"canonical" })).href = url;
+  setMetaProp("og:title", title);
+  setMetaProp("og:description", desc);
+  setMetaProp("og:url", url);
+  setMetaProp("og:locale", lang === "tr" ? "tr_TR" : "en_US");
+  setMetaProp("og:type", path === "/" ? "website" : "article");
+  if (image) setMetaProp("og:image", image);
+  setMetaName("twitter:title", title);
+  setMetaName("twitter:description", desc);
+  if (image) setMetaName("twitter:image", image);
+}
+
+// Arama sonuçlarında kırıntı yolu (breadcrumb) göstermek için.
+function applyBreadcrumb(trail) {
+  const el = upsertTag('script[data-seo="breadcrumb"]', () => {
+    const s = document.createElement("script");
+    s.type = "application/ld+json"; s.dataset.seo = "breadcrumb"; return s;
+  });
+  if (!trail || trail.length < 2) { el.textContent = ""; return; }
+  el.textContent = JSON.stringify({
+    "@context":"https://schema.org", "@type":"BreadcrumbList",
+    itemListElement: trail.map((t, i) => ({
+      "@type":"ListItem", position:i + 1, name:t.name, item:SITE_URL + t.path,
+    })),
+  });
+}
+
 const APP_STEPS = [{id:1,title:"Personal"},{id:2,title:"Home"},{id:3,title:"Lifestyle"},{id:4,title:"Experience"},{id:5,title:"Review"}];
 const EMPTY_APP = { firstName:"",lastName:"",email:"",phone:"",age:"",occupation:"",homeType:"",ownRent:"",hasYard:"",hasChildren:"",childrenAges:"",householdSize:"",hoursHome:"",activityLevel:"",travelFreq:"",petCare:"",allergies:"",hadPetsBefore:"",currentPetDetails:"",currentPets:"",vetReference:"",whyAdopt:"",longTermPlan:"",agree:false };
 const EMPTY_FOSTER_APP = { firstName:"",lastName:"",email:"",phone:"",hasPetExperience:"",experienceNote:"",availableFrom:"",fosterDuration:"",canProvideCare:"",notes:"",agree:false };
@@ -1520,10 +1663,13 @@ export default function App() {
   };
 
   // ── navigation ──
-  const [tab, setTab]         = useState("home");
-  const [animalSub, setASub]  = useState("adopt");    // adopt | foster | profile
+  // Açılış görünümü adresten gelir: /animals/foster doğrudan o listeyi açar.
+  const initialRoute = typeof window === "undefined" ? { tab:"home", sub:null, seg:"" }
+                                                     : parseLocation(window.location.pathname);
+  const [tab, setTab]         = useState(initialRoute.tab);
+  const [animalSub, setASub]  = useState(initialRoute.tab === "animals" && initialRoute.sub ? initialRoute.sub : "adopt");
   const [lfSub, setLFSub]     = useState("board");    // board | post
-  const [helpSub, setHelpSub] = useState("active");   // active | helped
+  const [helpSub, setHelpSub] = useState(initialRoute.tab === "help" && initialRoute.sub ? initialRoute.sub : "active");
   const [lfTypeFilter, setLFType] = useState("all");  // all | lost | found
   // (ownerSub removed — Owners section deleted)
 
@@ -1600,6 +1746,25 @@ export default function App() {
   const [detailLF, setDetailLF]     = useState(null);
   const [detailReport, setDetailReport] = useState(null);
 
+  // ── URL senkronu ──
+  // Adres, görünüm durumundan türetilir: sekme, alt sekme ve açık ilan. Derine
+  // inerken (ilan açılırken) geçmişe yeni kayıt eklenir, yukarı çıkarken mevcut
+  // kayıt değiştirilir — böylece geri tuşu beklendiği gibi davranır.
+  const currentPath = detailAnimal ? itemPath("animals",   detailAnimal, detailAnimal.name)
+                    : detailLF     ? itemPath("lostfound", detailLF,     detailLF.name)
+                    : detailReport ? itemPath("help",      detailReport, detailReport.title?.en || detailReport.title)
+                    : tabPath(tab, tab === "animals" ? animalSub : tab === "help" ? helpSub : null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const here = window.location.pathname.replace(/\/+$/, "") || "/";
+    if (here === currentPath) return;
+    const depth = (s) => s.split("/").filter(Boolean).length;
+    const method = depth(currentPath) > depth(here) ? "pushState" : "replaceState";
+    window.history[method]({}, "", currentPath + window.location.hash);
+  }, [currentPath]);
+
+
   // ── Dinamik drawer yüksekliği (görsel en/boy oranına göre) ──
   // Dikey (portrait) görseller → 85vh, yatay/kare → 70vh
   const [detailAHeight, setDetailAHeight]   = useState(70);
@@ -1631,6 +1796,25 @@ export default function App() {
   const [lfItems, setLFItems] = useState([]);
   const [sitters, setSitters] = useState([]);
   const [animals, setAnimals] = useState(ANIMALS);
+
+  // Geri/ileri tuşu: adresi tekrar duruma çevir.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onPop = () => {
+      const r = parseLocation(window.location.pathname);
+      setTab(r.tab);
+      if (r.tab === "animals" && r.sub) setASub(r.sub);
+      if (r.tab === "help"    && r.sub) setHelpSub(r.sub);
+      setDetailA(null); setDetailLF(null); setDetailReport(null);
+      if (r.seg) {
+        const a = animals.find(x => matchesSeg(x, r.seg));   if (a) return setDetailA(a);
+        const l = lfItems.find(x => matchesSeg(x, r.seg));   if (l) return setDetailLF(l);
+        const p = reports.find(x => matchesSeg(x, r.seg));   if (p) return setDetailReport(p);
+      }
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [animals, lfItems, reports]);
   const [dbLoading, setDbLoading] = useState(true);
   const [photos, setPhotos]   = useState([]);
   const [lfPhotos, setLFPhotos] = useState([]);
@@ -1812,45 +1996,87 @@ export default function App() {
     loadFromDB();
   }, []);
 
-  // ── URL parametrelerine göre direkt post aç ──
-  // WhatsApp'tan paylaşılan linkler ?animal=X, ?lf=Y veya ?report=Z içerir.
+  // ── Adresten ilan aç ──
+  // Veriler yüklendikten sonra çalışır: /animals/12-luna gibi yol adresini ya da
+  // eski ?animal=12 bağlantılarını açık ilana çevirir. Eski biçim korunuyor çünkü
+  // WhatsApp'ta paylaşılmış linkler hâlâ dolaşımda; URL senkronu onları sessizce
+  // yeni adrese yazar, yani eski link tıklanınca canonical adrese dönüşür.
+  const deepLinkDone = useRef(false);
+  useEffect(() => {
+    if (typeof window === "undefined" || deepLinkDone.current) return;
+    if (!animals.length && !lfItems.length && !reports.length) return;
+
+    const route = parseLocation(window.location.pathname);
+    const params = new URLSearchParams(window.location.search);
+    const open = (seg, kind) => {
+      if (!seg) return false;
+      if (kind !== "lf" && kind !== "report") {
+        const a = animals.find(x => matchesSeg(x, seg));
+        if (a && (kind === "animal" || route.tab === "animals")) { setTab("animals"); setDetailA(a); return true; }
+      }
+      if (kind !== "animal" && kind !== "report") {
+        const l = lfItems.find(x => matchesSeg(x, seg));
+        if (l && (kind === "lf" || route.tab === "lostfound")) { setTab("lostfound"); setDetailLF(l); return true; }
+      }
+      if (kind !== "animal" && kind !== "lf") {
+        const p = reports.find(x => matchesSeg(x, seg));
+        if (p && (kind === "report" || route.tab === "help")) { setTab("help"); setDetailReport(p); return true; }
+      }
+      return false;
+    };
+
+    const hit = open(route.seg, null)
+             || open(params.get("animal"), "animal")
+             || open(params.get("lf"),     "lf")
+             || open(params.get("report"), "report");
+    // Kayıt bulunduysa ya da hiç derin link yoksa bu iş bitti; bulunamadıysa
+    // veri tazelenince tekrar denensin diye işaretlemiyoruz.
+    if (hit || (!route.seg && !params.toString())) deepLinkDone.current = true;
+  }, [animals, lfItems, reports]);
+
+  // ── Sayfa başlığı / açıklaması / canonical ──
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
-    
-    // Hayvan ilanı için ?animal=ID
-    const animalId = params.get("animal");
-    if (animalId) {
-      const found = animals.find(a => String(a.id) === animalId);
-      if (found) {
-        setDetailA(found);
-        goTab("animals");
-        return;
-      }
+    const L = lang === "tr" ? "tr" : "en";
+    const crumbHome = { name: L === "tr" ? "Ana Sayfa" : "Home", path: "/" };
+
+    if (detailAnimal) {
+      const a = detailAnimal;
+      const where = [a.city, a.province].filter(Boolean).join(", ");
+      const breed = a.breed?.[L] || a.breed?.en || "";
+      applyPageMeta({
+        title: `${a.name}${breed ? " — " + breed : ""}${where ? ", " + where : ""} | Paweero`,
+        desc: (a.desc?.[L] || a.desc?.en || "").slice(0, 300) ||
+              (L === "tr" ? `${a.name} sahiplenilmeyi bekliyor.` : `${a.name} is waiting for a home.`),
+        path: currentPath, image: a.photo_urls?.[0] || a.photo_url || undefined, lang: L,
+      });
+      applyBreadcrumb([crumbHome, { name: L === "tr" ? "Hayvanlar" : "Animals", path: "/animals" },
+                       { name: a.name, path: currentPath }]);
+      return;
+    }
+    if (detailLF || detailReport) {
+      const it = detailLF || detailReport;
+      const isLF = !!detailLF;
+      const name = isLF ? (it.name || (L === "tr" ? "Kayıp hayvan" : "Lost pet")) : (it.title?.[L] || it.title?.en || it.title);
+      applyPageMeta({
+        title: `${name} | Paweero`,
+        desc: (it.desc?.[L] || it.desc?.en || "").slice(0, 300) || PAGE_META[isLF ? "lostfound" : "help"][L].desc,
+        path: currentPath, image: it.photo_urls?.[0] || it.photo_url || undefined, lang: L,
+      });
+      applyBreadcrumb([crumbHome,
+        isLF ? { name: L === "tr" ? "Kayıp & Bulunan" : "Lost & Found", path: "/lost-found" }
+             : { name: L === "tr" ? "Yardım" : "Help", path: "/help" },
+        { name, path: currentPath }]);
+      return;
     }
 
-    // Lost & Found ilanı için ?lf=ID
-    const lfId = params.get("lf");
-    if (lfId) {
-      const found = lfItems.find(item => String(item.id) === lfId);
-      if (found) {
-        setDetailLF(found);
-        goTab("lostfound");
-        return;
-      }
-    }
-
-    // Yardım raporu için ?report=ID
-    const reportId = params.get("report");
-    if (reportId) {
-      const found = reports.find(r => String(r.id) === reportId);
-      if (found) {
-        setDetailReport(found);
-        goTab("help");
-        return;
-      }
-    }
-  }, [animals, lfItems, reports]); // Veriler yüklendikten sonra kontrol et
+    const activeSub = tab === "animals" ? animalSub : tab === "help" ? helpSub : null;
+    const subKey = activeSub && activeSub !== DEFAULT_SUB[tab] ? `${tab}/${activeSub}` : null;
+    const meta = (subKey && SUB_META[subKey] ? SUB_META[subKey] : (PAGE_META[tab] || PAGE_META.home))[L];
+    applyPageMeta({ title: meta.title, desc: meta.desc, path: currentPath, lang: L });
+    applyBreadcrumb(tab === "home" ? null
+      : [crumbHome, { name: meta.title.split(" | ")[0], path: currentPath }]);
+  }, [tab, animalSub, helpSub, detailAnimal, detailLF, detailReport, lang, currentPath]);
 
   // If the browser already has location permission granted (from a previous visit),
   // silently pre-select the nearest province/country without prompting again.
@@ -1958,7 +2184,8 @@ export default function App() {
   const helpProofRef = useRef();
 
   const say   = (msg) => { setToast({ show:true, msg }); setTimeout(() => setToast({ show:false, msg:"" }), 2800); };
-  const goTab = (t)   => { setTab(t); setSearch(""); setSpecies("All"); };
+  const goTab = (t)   => { setTab(t); setSearch(""); setSpecies("All"); setDetailA(null); setDetailLF(null); setDetailReport(null); };
+
 
   // filtered animals
   const filtered = animals.filter(a => {
@@ -2598,7 +2825,7 @@ export default function App() {
                           `🚨 ${lang==="tr"?"Yardıma ihtiyacı olan hayvan":"Animal in need of help"}: ${typeof r.title === "object" ? (r.title[lang] || r.title.en || "") : (r.title || "")}\n` +
                           `📍 ${r.location}\n` +
                           `${typeof r.desc === "object" ? (r.desc[lang] || r.desc.en || "") : (r.desc || "")}\n\n` +
-                          `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?`${window.location.origin}${window.location.pathname}?report=${r.id}`:""}`
+                          `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?`${SITE_URL}${itemPath("help", r, r.title?.en || r.title)}`:""}`
                         } />
                       </div>
                     </div>
@@ -2916,7 +3143,7 @@ export default function App() {
                   `🐾 ${detailAnimal.name} — ${detailAnimal.breed[lang]} · ${detailAnimal.age[lang]} · ${detailAnimal.gender[lang]}\n` +
                   `📍 ${detailAnimal.city}, ${detailAnimal.province}\n` +
                   `${detailAnimal.desc?.[lang] || ""}\n\n` +
-                  `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?`${window.location.origin}${window.location.pathname}?animal=${detailAnimal.id}`:""}`
+                  `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?`${SITE_URL}${itemPath("animals", detailAnimal, detailAnimal.name)}`:""}`
                 } />
               </div>
             </div>
@@ -2958,7 +3185,7 @@ export default function App() {
                     : (lang==="tr"?"🐾 Kayıp hayvan":"🐾 Lost animal")}: ${detailLF.name === "Unknown" ? detailLF.species[lang] : detailLF.name}\n` +
                   `📍 ${[detailLF.area, detailLF.city].filter(Boolean).join(", ")}\n` +
                   `${detailLF.desc[lang] || ""}\n\n` +
-                  `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?`${window.location.origin}${window.location.pathname}?lf=${detailLF.id}`:""}`
+                  `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?`${SITE_URL}${itemPath("lostfound", detailLF, detailLF.name)}`:""}`
                 } />
                 <button className="btn btn-outline btn-full" onClick={() => setDetailLF(null)}>{t.close}</button>
               </div>
@@ -3011,7 +3238,7 @@ export default function App() {
                   `🚨 ${lang==="tr"?"Yardıma ihtiyacı olan hayvan":"Animal in need of help"}: ${detailReport.title[lang]||detailReport.title}\n` +
                   `📍 ${detailReport.location}\n` +
                   `${detailReport.desc[lang]||detailReport.desc||""}\n\n` +
-                  `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?`${window.location.origin}${window.location.pathname}?report=${detailReport.id}`:""}`
+                  `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?`${SITE_URL}${itemPath("help", detailReport, detailReport.title?.en || detailReport.title)}`:""}`
                 } />
                 <button className="btn btn-outline btn-full" onClick={() => setDetailReport(null)}>{t.close}</button>
               </div>
@@ -3316,7 +3543,7 @@ function ACard({ a, mode, lang, onClick }) {
               `🐾 ${a.name}${metaParts.length ? " — " + metaParts.join(" · ") : ""}\n` +
               `📍 ${[a.city, a.province].filter(Boolean).join(", ")}\n` +
               `${a.desc?.[lang] || ""}\n\n` +
-              `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?`${window.location.origin}${window.location.pathname}?animal=${a.id}`:""}`
+              `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?`${SITE_URL}${itemPath("animals", a, a.name)}`:""}`
             } />
             <span style={{ fontSize:11, fontWeight:600, color:"var(--muted)" }}>{lang==="tr"?"Gör →":"View →"}</span>
           </div>
