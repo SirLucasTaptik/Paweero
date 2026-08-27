@@ -38,8 +38,11 @@ const STATIC_ROUTES = [
   { path: '/help/helped',      priority: '0.6', changefreq: 'weekly' },
 ]
 
-async function fetchRows(table, columns) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=${columns}&limit=2000`, {
+// Filtreler uygulamanın loadFromDB() sorgularıyla birebir aynı olmalı. Aksi hâlde
+// sitemap, uygulamanın göstermediği bir kaydı listeler ve o adres 404 döner —
+// Google'ın "sitemap'te ölü adres" olarak işaretlediği durum tam olarak budur.
+async function fetchRows(table, columns, filter = '') {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=${columns}&limit=2000${filter}`, {
     headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
   })
   if (!res.ok) throw new Error(`${table}: HTTP ${res.status}`)
@@ -54,7 +57,9 @@ function sitemapPlugin() {
       const urls = STATIC_ROUTES.map(r => ({ ...r, lastmod: BUILD_INFO.at.slice(0, 10) }))
       try {
         const [animals, lf, reports] = await Promise.all([
-          fetchRows('animals', 'id,name,created_at').catch(() => []),
+          // animals: uygulama yalnızca status=active kayıtları gösteriyor.
+          fetchRows('animals', 'id,name,created_at', '&status=eq.active').catch(() => []),
+          // lf_listings ve reports: uygulamada durum filtresi yok, hepsi listeleniyor.
           fetchRows('lf_listings', 'id,name,created_at').catch(() => []),
           fetchRows('reports', 'id,title,created_at').catch(() => []),
         ])
