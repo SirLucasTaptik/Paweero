@@ -15,6 +15,7 @@ const BUILD_INFO = {
 }
 
 const SITE = 'https://paweero.com'
+const LANGS = ['tr', 'en']   // src/App.jsx içindeki LANGS ile aynı kalmalı
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://uyuqcpttdbejaakbwzyl.supabase.co'
 const SUPABASE_KEY = process.env.VITE_SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5dXFjcHR0ZGJlamFha2J3enlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0Mjk2NTgsImV4cCI6MjA5NDAwNTY1OH0.y8dJOe0yyWeKeaUU9PfPxnGn6b-2yHyG84LBdqaNH9k'
 
@@ -74,19 +75,33 @@ function sitemapPlugin() {
         add(animals, 'animals', r => r.name)
         add(lf, 'lost-found', r => r.name)
         add(reports, 'help', r => r.title)
-        console.log(`[sitemap] ${urls.length} adres (${animals.length} hayvan, ${lf.length} kayıp/bulunan, ${reports.length} rapor)`)
+        console.log(`[sitemap] ${urls.length} sayfa x ${LANGS.length} dil (${animals.length} hayvan, ${lf.length} kayıp/bulunan, ${reports.length} rapor)`)
       } catch (e) {
         console.warn('[sitemap] ilanlar çekilemedi, yalnızca sabit sayfalar yazıldı:', e.message)
       }
 
-      const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${urls.map(u => `  <url>
-    <loc>${SITE}${u.path}</loc>
+      // Her adres iki dilde de listelenir ve <xhtml:link> ile birbirine bağlanır.
+      // hreflang'i sitemap'e koymak önemli: sayfadaki etiketler JS ile yazıldığı
+      // için Google onları ancak render kuyruğunda görüyor, sitemap ise anında.
+      const alts = (path) => LANGS.map(l =>
+        `    <xhtml:link rel="alternate" hreflang="${l}" href="${SITE}/${l}${path}"/>`
+      ).concat(`    <xhtml:link rel="alternate" hreflang="x-default" href="${SITE}/en${path}"/>`).join('\n')
+
+      const entries = urls.flatMap(u => {
+        const bare = u.path === '/' ? '' : u.path
+        return LANGS.map(l => `  <url>
+    <loc>${SITE}/${l}${bare}</loc>
+${alts(bare)}
     <lastmod>${u.lastmod}</lastmod>
     <changefreq>${u.changefreq}</changefreq>
     <priority>${u.priority}</priority>
-  </url>`).join('\n')}
+  </url>`)
+      })
+
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+${entries.join('\n')}
 </urlset>
 `
       writeFileSync(resolve(process.cwd(), 'dist/sitemap.xml'), xml)

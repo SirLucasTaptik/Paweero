@@ -545,16 +545,26 @@ const slugify = (s) => String(s || "")
 // yönlendiği için /asdfgh de 200 OK dönüyordu ve ana sayfayı gösteriyordu —
 // Google bunu "soft 404" sayar, tarama bütçesini harcar ve hatalı linkler sonsuz
 // sahte sayfa üretir. Artık açıkça "bulunamadı" diyoruz ve noindex veriyoruz.
+// Her sayfanın dili adresinde yazar: /tr/animals ve /en/animals ayrı adreslerdir.
+// Sebebi: iki dil tek adreste yaşarken Googlebot çoğunlukla ABD'den taradığı için
+// hep İngilizce'yi görüyordu, Türkçe içerik indekse hiç girmiyordu.
+const LANGS = ["tr", "en"];
+
 function parseLocation(pathname) {
   let parts;
   try { parts = decodeURIComponent(pathname).split("/").filter(Boolean); }
   catch (e) { parts = pathname.split("/").filter(Boolean); }
+
+  // Dil öneki varsa ayır. Yoksa lang null döner — çağıran taraf tespit edip
+  // adresi dilli sürüme yazar, böylece öneksiz eski linkler de çalışmaya devam eder.
+  const lang = LANGS.includes(parts[0]) ? parts.shift() : null;
+
   const head = parts[0] || "";
-  if (!(head in SEGMENT_TAB) || parts.length > 2) return { tab:"notfound", sub:null, seg:"" };
+  if (!(head in SEGMENT_TAB) || parts.length > 2) return { lang, tab:"notfound", sub:null, seg:"" };
   const tab = SEGMENT_TAB[head];
   const seg = parts[1] || "";
   const isSub = (TAB_SUBS[tab] || []).includes(seg);
-  return { tab, sub: isSub ? seg : null, seg: isSub ? "" : seg };
+  return { lang, tab, sub: isSub ? seg : null, seg: isSub ? "" : seg };
 }
 
 // Kayıt kimliği sayı da olabilir UUID de. Slug'ı ayırmak yerine kimliğin kendisini
@@ -563,14 +573,20 @@ const matchesSeg = (item, seg) => {
   const id = String(item.id);
   return seg === id || seg.startsWith(id + "-");
 };
-const itemPath = (tab, item, name) => {
+const itemPath = (lang, tab, item, name) => {
   const slug = slugify(name);
-  return `/${TAB_SEGMENT[tab]}/${item.id}${slug ? "-" + slug : ""}`;
+  return `/${lang}/${TAB_SEGMENT[tab]}/${item.id}${slug ? "-" + slug : ""}`;
 };
-const tabPath = (tab, sub) => {
-  const base = "/" + TAB_SEGMENT[tab];
+const tabPath = (lang, tab, sub) => {
+  const base = `/${lang}/` + TAB_SEGMENT[tab];
   const named = sub && sub !== DEFAULT_SUB[tab] && (TAB_SUBS[tab] || []).includes(sub);
-  return (named ? base + "/" + sub : base).replace(/\/+$/, "") || "/";
+  return (named ? base + "/" + sub : base).replace(/\/+$/, "") || `/${lang}`;
+};
+// Aynı sayfanın diğer dildeki karşılığı — hreflang ve dil değiştirici için.
+const swapLang = (path, lang) => {
+  const parts = path.split("/").filter(Boolean);
+  if (LANGS.includes(parts[0])) parts[0] = lang; else parts.unshift(lang);
+  return "/" + parts.join("/");
 };
 
 // ─── SAYFA META BİLGİSİ ───────────────────────────────────────────────────────
@@ -642,11 +658,28 @@ const setMetaProp = (prop, content) => {
   }).setAttribute("content", content);
 };
 
+// Aynı sayfanın dil sürümlerini birbirine bağlar. Google böylece ikisini kopya
+// saymaz, kullanıcıya diline uygun olanı gösterir. x-default, dili belli olmayan
+// ziyaretçi için varsayılan sürüm.
+function applyHreflang(path, noindex) {
+  document.head.querySelectorAll('link[rel="alternate"][data-seo="hreflang"]').forEach(el => el.remove());
+  if (noindex) return;
+  const add = (hreflang, href) => {
+    const l = document.createElement("link");
+    l.rel = "alternate"; l.hreflang = hreflang; l.href = SITE_URL + href;
+    l.dataset.seo = "hreflang";
+    document.head.appendChild(l);
+  };
+  LANGS.forEach(l => add(l, swapLang(path, l)));
+  add("x-default", swapLang(path, "en"));
+}
+
 // Sayfa başlığı, açıklaması, canonical ve paylaşım etiketlerini tek yerden yazar.
 function applyPageMeta({ title, desc, path, image, lang, noindex }) {
   const url = SITE_URL + path;
   document.title = title;
   document.documentElement.lang = lang === "tr" ? "tr" : "en";
+  applyHreflang(path, noindex);
   setMetaName("description", desc);
   setMetaName("robots", noindex ? "noindex, follow" : "index, follow, max-image-preview:large");
   upsertTag('link[rel="canonical"]', () => Object.assign(document.createElement("link"), { rel:"canonical" })).href = url;
@@ -1647,9 +1680,15 @@ export default function App() {
   }, []);
 
   // ── language ──
-  // Başlangıç dili: kullanıcı daha önce elle seçtiyse onu koru,
-  // yoksa saat diliminden çıkan bölgenin dili (TR/KKTC → tr, BAE → en).
+  // Açılış adresi. Dil öneki varsa (/tr/... , /en/...) o dil kesindir; öneksiz
+  // gelindiyse tespit devreye girer ve adres dilli sürüme yazılır.
+  const initialRoute = typeof window === "undefined" ? { lang:null, tab:"home", sub:null, seg:"" }
+                                                     : parseLocation(window.location.pathname);
+
+  // Başlangıç dili önceliği: adresteki önek > kullanıcının elle seçimi >
+  // saat diliminden çıkan bölgenin dili (TR/KKTC → tr, Kıbrıs ve Körfez → en).
   const [lang, setLang] = useState(() => {
+    if (initialRoute.lang) return initialRoute.lang;
     try {
       const saved = localStorage.getItem("paweero_lang");
       if (saved === "tr" || saved === "en") return saved;
@@ -1672,9 +1711,7 @@ export default function App() {
   };
 
   // ── navigation ──
-  // Açılış görünümü adresten gelir: /animals/foster doğrudan o listeyi açar.
-  const initialRoute = typeof window === "undefined" ? { tab:"home", sub:null, seg:"" }
-                                                     : parseLocation(window.location.pathname);
+  // Açılış görünümü adresten gelir: /tr/animals/foster doğrudan o listeyi açar.
   const [tab, setTab]         = useState(initialRoute.tab);
   const [animalSub, setASub]  = useState(initialRoute.tab === "animals" && initialRoute.sub ? initialRoute.sub : "adopt");
   const [lfSub, setLFSub]     = useState("board");    // board | post
@@ -1705,10 +1742,11 @@ export default function App() {
   // doğrular. VPN, seyahat ya da yanlış ayarlı saat dilimi durumlarını yakalar.
   useEffect(() => {
     let cancelled = false;
-    let langLocked = false;
+    // Adreste dil öneki varsa dil zaten kesindir; elle seçim de IP'yi ezer.
+    let langLocked = !!initialRoute.lang;
     try {
       const saved = localStorage.getItem("paweero_lang");
-      langLocked = saved === "tr" || saved === "en"; // elle seçim her zaman önceliklidir
+      langLocked = langLocked || saved === "tr" || saved === "en";
     } catch (e) {}
 
     (async () => {
@@ -1768,10 +1806,10 @@ export default function App() {
   // "notfound" durumunda adres olduğu gibi korunur — 404 sayfası kendi adresinde
   // durmalı, sessizce /animals'a düşerse Google yine soft 404 görür.
   const currentPath = (tab === "notfound" || pendingSeg) ? here
-                    : detailAnimal ? itemPath("animals",   detailAnimal, detailAnimal.name)
-                    : detailLF     ? itemPath("lostfound", detailLF,     detailLF.name)
-                    : detailReport ? itemPath("help",      detailReport, detailReport.title?.en || detailReport.title)
-                    : tabPath(tab, tab === "animals" ? animalSub : tab === "help" ? helpSub : null);
+                    : detailAnimal ? itemPath(lang, "animals",   detailAnimal, detailAnimal.name)
+                    : detailLF     ? itemPath(lang, "lostfound", detailLF,     detailLF.name)
+                    : detailReport ? itemPath(lang, "help",      detailReport, detailReport.title?.en || detailReport.title)
+                    : tabPath(lang, tab, tab === "animals" ? animalSub : tab === "help" ? helpSub : null);
 
   useEffect(() => {
     if (typeof window === "undefined" || tab === "notfound" || pendingSeg) return;
@@ -1820,6 +1858,7 @@ export default function App() {
     if (typeof window === "undefined") return;
     const onPop = () => {
       const r = parseLocation(window.location.pathname);
+      if (r.lang) setLang(r.lang);
       setTab(r.tab);
       if (r.tab === "animals" && r.sub) setASub(r.sub);
       if (r.tab === "help"    && r.sub) setHelpSub(r.sub);
@@ -2877,7 +2916,7 @@ export default function App() {
                           `🚨 ${lang==="tr"?"Yardıma ihtiyacı olan hayvan":"Animal in need of help"}: ${typeof r.title === "object" ? (r.title[lang] || r.title.en || "") : (r.title || "")}\n` +
                           `📍 ${r.location}\n` +
                           `${typeof r.desc === "object" ? (r.desc[lang] || r.desc.en || "") : (r.desc || "")}\n\n` +
-                          `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?`${SITE_URL}${itemPath("help", r, r.title?.en || r.title)}`:""}`
+                          `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?`${SITE_URL}${itemPath(lang, "help", r, r.title?.en || r.title)}`:""}`
                         } />
                       </div>
                     </div>
@@ -3195,7 +3234,7 @@ export default function App() {
                   `🐾 ${detailAnimal.name} — ${detailAnimal.breed[lang]} · ${detailAnimal.age[lang]} · ${detailAnimal.gender[lang]}\n` +
                   `📍 ${detailAnimal.city}, ${detailAnimal.province}\n` +
                   `${detailAnimal.desc?.[lang] || ""}\n\n` +
-                  `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?`${SITE_URL}${itemPath("animals", detailAnimal, detailAnimal.name)}`:""}`
+                  `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?`${SITE_URL}${itemPath(lang, "animals", detailAnimal, detailAnimal.name)}`:""}`
                 } />
               </div>
             </div>
@@ -3237,7 +3276,7 @@ export default function App() {
                     : (lang==="tr"?"🐾 Kayıp hayvan":"🐾 Lost animal")}: ${detailLF.name === "Unknown" ? detailLF.species[lang] : detailLF.name}\n` +
                   `📍 ${[detailLF.area, detailLF.city].filter(Boolean).join(", ")}\n` +
                   `${detailLF.desc[lang] || ""}\n\n` +
-                  `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?`${SITE_URL}${itemPath("lostfound", detailLF, detailLF.name)}`:""}`
+                  `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?`${SITE_URL}${itemPath(lang, "lostfound", detailLF, detailLF.name)}`:""}`
                 } />
                 <button className="btn btn-outline btn-full" onClick={() => setDetailLF(null)}>{t.close}</button>
               </div>
@@ -3290,7 +3329,7 @@ export default function App() {
                   `🚨 ${lang==="tr"?"Yardıma ihtiyacı olan hayvan":"Animal in need of help"}: ${detailReport.title[lang]||detailReport.title}\n` +
                   `📍 ${detailReport.location}\n` +
                   `${detailReport.desc[lang]||detailReport.desc||""}\n\n` +
-                  `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?`${SITE_URL}${itemPath("help", detailReport, detailReport.title?.en || detailReport.title)}`:""}`
+                  `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?`${SITE_URL}${itemPath(lang, "help", detailReport, detailReport.title?.en || detailReport.title)}`:""}`
                 } />
                 <button className="btn btn-outline btn-full" onClick={() => setDetailReport(null)}>{t.close}</button>
               </div>
@@ -3595,7 +3634,7 @@ function ACard({ a, mode, lang, onClick }) {
               `🐾 ${a.name}${metaParts.length ? " — " + metaParts.join(" · ") : ""}\n` +
               `📍 ${[a.city, a.province].filter(Boolean).join(", ")}\n` +
               `${a.desc?.[lang] || ""}\n\n` +
-              `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?`${SITE_URL}${itemPath("animals", a, a.name)}`:""}`
+              `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?`${SITE_URL}${itemPath(lang, "animals", a, a.name)}`:""}`
             } />
             <span style={{ fontSize:11, fontWeight:600, color:"var(--muted)" }}>{lang==="tr"?"Gör →":"View →"}</span>
           </div>
