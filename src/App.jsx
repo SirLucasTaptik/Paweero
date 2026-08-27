@@ -45,10 +45,45 @@ const moderateImage = async (imageUrl) => {
   }
 };
 
+// ─── FOTOĞRAF KÜÇÜLTME ───────────────────────────────────────────────────────
+// Telefon kamerası 4000 piksel genişliğinde, 3-8 MB'lık dosyalar üretiyor ve
+// bunlar depoya olduğu gibi gidiyordu. Liste ekranında yirmi ilan = onlarca
+// megabayt indirme; mobil veride kartlar "yüklenmiyor" gibi görünüyor. Yüklemeden
+// önce tarayıcıda küçültmek hem indirmeyi hem depolama maliyetini düşürür.
+const MAX_EDGE = 1600;      // uzun kenar — tam ekran görüntüleme için fazlasıyla yeterli
+const JPEG_QUALITY = 0.82;
+
+const resizeImage = async (file) => {
+  if (!file || !/^image\//.test(file.type)) return file;
+  // GIF animasyonunu ve SVG'yi bozmamak için dokunma.
+  if (/gif|svg/.test(file.type)) return file;
+  try {
+    // createImageBitmap, telefon fotoğraflarındaki EXIF dönüklüğünü doğru uygular.
+    const bmp = await createImageBitmap(file, { imageOrientation: "from-image" });
+    const scale = Math.min(1, MAX_EDGE / Math.max(bmp.width, bmp.height));
+    // Zaten küçük ve hafifse dokunma.
+    if (scale === 1 && file.size < 600 * 1024) { bmp.close?.(); return file; }
+    const canvas = document.createElement("canvas");
+    canvas.width  = Math.round(bmp.width  * scale);
+    canvas.height = Math.round(bmp.height * scale);
+    canvas.getContext("2d").drawImage(bmp, 0, 0, canvas.width, canvas.height);
+    bmp.close?.();
+    const blob = await new Promise(res => canvas.toBlob(res, "image/jpeg", JPEG_QUALITY));
+    // Küçültme işe yaramadıysa (zaten optimize bir dosyaysa) orijinali koru.
+    if (!blob || blob.size >= file.size) return file;
+    return new File([blob], file.name.replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg" });
+  } catch (e) {
+    // Tarayıcı desteklemiyorsa ya da dosya bozuksa yükleme yine de sürsün.
+    console.warn("resizeImage atlandı:", e);
+    return file;
+  }
+};
+
 // ─── UPLOAD PHOTO WITH MODERATION ────────────────────────────────────────────
-const uploadPhoto = async (file, folder) => {
+const uploadPhoto = async (rawFile, folder) => {
   const client = await getDb();
-  const ext = file.name.split('.').pop();
+  const file = await resizeImage(rawFile);
+  const ext = (file.name.split('.').pop() || "jpg").toLowerCase();
   const path = `${folder}/${Date.now()}.${ext}`;
   const { error } = await client.storage.from("pawero-photos").upload(path, file);
   if (error) return { url: null, error: "Upload failed" };
@@ -2826,8 +2861,8 @@ export default function App() {
                       {/* Same big-image header language as every other card in the app */}
                       <div className="acard-img" style={{ overflow:"hidden", cursor:"pointer" }} onClick={() => setDetailReport(r)}>
                         {r.photo_url
-                          ? <img src={r.photo_url} alt={r.title?.[lang] || r.title?.en || (lang==="tr"?"Bildirilen hayvan":"Reported animal")} loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-                          : <img src={FALLBACK_IMAGE} alt="" aria-hidden="true" loading="lazy" style={{ width:"56%", height:"56%", objectFit:"contain", opacity:0.5 }} />
+                          ? <img src={r.photo_url} alt={r.title?.[lang] || r.title?.en || (lang==="tr"?"Bildirilen hayvan":"Reported animal")} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                          : <img src={FALLBACK_IMAGE} alt="" aria-hidden="true" style={{ width:"56%", height:"56%", objectFit:"contain", opacity:0.5 }} />
                         }
                         {r.photo_urls?.length > 1 && (
                           <span className="abadge ab-sp">+{r.photo_urls.length - 1}</span>
@@ -3596,8 +3631,8 @@ function MiniCard({ a, lang, onClick }) {
     <div className="mini-card" onClick={onClick}>
       <div style={{ height:126, background:"var(--off)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:44, position:"relative", overflow:"hidden" }}>
         {a.photo_url
-          ? <img src={a.photo_url} alt={[a.name, a.breed?.[lang], a.city].filter(Boolean).join(", ")} loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-          : <img src={FALLBACK_IMAGE} alt="" aria-hidden="true" loading="lazy" style={{ width:"50%", height:"50%", objectFit:"contain", opacity:0.5 }} />
+          ? <img src={a.photo_url} alt={[a.name, a.breed?.[lang], a.city].filter(Boolean).join(", ")} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+          : <img src={FALLBACK_IMAGE} alt="" aria-hidden="true" style={{ width:"50%", height:"50%", objectFit:"contain", opacity:0.5 }} />
         }
       </div>
       <div style={{ padding:"8px 10px" }}>
@@ -3615,8 +3650,8 @@ function ACard({ a, mode, lang, onClick }) {
     <div className="acard" onClick={onClick}>
       <div className="acard-img" style={{ overflow:"hidden" }}>
         {a.photo_url
-          ? <img src={a.photo_url} alt={[a.name, a.breed?.[lang], a.city].filter(Boolean).join(", ")} loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-          : <img src={FALLBACK_IMAGE} alt="" aria-hidden="true" loading="lazy" style={{ width:"56%", height:"56%", objectFit:"contain", opacity:0.5 }} />
+          ? <img src={a.photo_url} alt={[a.name, a.breed?.[lang], a.city].filter(Boolean).join(", ")} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+          : <img src={FALLBACK_IMAGE} alt="" aria-hidden="true" style={{ width:"56%", height:"56%", objectFit:"contain", opacity:0.5 }} />
         }
         {a.species?.[lang] && <span className="abadge ab-sp">{a.species[lang]}</span>}
         {mode === "foster"  && <span className="abadge ab-fo">{lang==="tr"?"Geçici":"Foster"}</span>}
