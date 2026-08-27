@@ -6,9 +6,6 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://uyuqcpttdbeja
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5dXFjcHR0ZGJlamFha2J3enlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0Mjk2NTgsImV4cCI6MjA5NDAwNTY1OH0.y8dJOe0yyWeKeaUU9PfPxnGn6b-2yHyG84LBdqaNH9k";
 const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ─── ADMIN ────────────────────────────────────────────────────────────────────
-const ADMIN_PASSWORD = "paweerohelpsin2026!";
-
 // If exactly one Foster/Help/Sighting/Claim purpose applies to an animal, the
 // trigger button should name that action directly instead of the generic
 // "Take Action" label — that framing only makes sense when there's a real choice.
