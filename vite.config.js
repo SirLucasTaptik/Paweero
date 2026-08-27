@@ -112,4 +112,14 @@ ${entries.join('\n')}
 export default defineConfig({
   plugins: [react(), sitemapPlugin()],
   define: { __BUILD_INFO__: JSON.stringify(BUILD_INFO) },
+  build: {
+    rollupOptions: {
+      output: {
+        // React kendi parçasında dursun: uygulama kodu her deploy'da değişiyor,
+        // React değişmiyor. Ayrı tutulunca dönen ziyaretçi onu önbellekten alır.
+        // Supabase zaten dinamik import ile ayrı parçaya düşüyor.
+        manualChunks: { react: ['react', 'react-dom'] },
+      },
+    },
+  },
 })

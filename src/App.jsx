@@ -1,10 +1,15 @@
 import { useState, useRef, useEffect } from "react";
-import { createClient } from "@supabase/supabase-js";
 
 // ─── SUPABASE ─────────────────────────────────────────────────────────────────
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://uyuqcpttdbejaakbwzyl.supabase.co";
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5dXFjcHR0ZGJlamFha2J3enlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0Mjk2NTgsImV4cCI6MjA5NDAwNTY1OH0.y8dJOe0yyWeKeaUU9PfPxnGn6b-2yHyG84LBdqaNH9k";
-const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+// İstemci ilk gerçek veritabanı çağrısında yüklenir. Supabase paketi 220 KB
+// (gzip 57 KB) — React'ten bile büyük — ve sayfanın ilk boyaması için gerekmiyor.
+// Dinamik import onu giriş paketinden çıkarır: iskelet, veritabanı istemcisi
+// ayrıştırılmadan ekrana gelir. Tüm çağrılar zaten async olduğu için maliyeti yok.
+let dbPromise = null;
+const getDb = () => (dbPromise ||= import("@supabase/supabase-js")
+  .then(m => m.createClient(SUPABASE_URL, SUPABASE_KEY)));
 
 // If exactly one Foster/Help/Sighting/Claim purpose applies to an animal, the
 // trigger button should name that action directly instead of the generic
@@ -28,7 +33,7 @@ const HERO_IMAGE = "https://uyuqcpttdbejaakbwzyl.supabase.co/storage/v1/object/p
 const moderateImage = async (imageUrl) => {
   try {
     console.log("Calling moderate-image with:", imageUrl);
-    const { data, error } = await db.functions.invoke("moderate-image", {
+    const { data, error } = await (await getDb()).functions.invoke("moderate-image", {
       body: { imageUrl }
     });
     console.log("moderate-image response:", { data, error });
@@ -42,17 +47,18 @@ const moderateImage = async (imageUrl) => {
 
 // ─── UPLOAD PHOTO WITH MODERATION ────────────────────────────────────────────
 const uploadPhoto = async (file, folder) => {
+  const client = await getDb();
   const ext = file.name.split('.').pop();
   const path = `${folder}/${Date.now()}.${ext}`;
-  const { error } = await db.storage.from("pawero-photos").upload(path, file);
+  const { error } = await client.storage.from("pawero-photos").upload(path, file);
   if (error) return { url: null, error: "Upload failed" };
-  const { data: urlData } = db.storage.from("pawero-photos").getPublicUrl(path);
+  const { data: urlData } = client.storage.from("pawero-photos").getPublicUrl(path);
   const publicUrl = urlData.publicUrl;
   // Moderate
   const modResult = await moderateImage(publicUrl);
   if (!modResult.safe) {
     // Delete the uploaded file
-    await db.storage.from("pawero-photos").remove([path]);
+    await client.storage.from("pawero-photos").remove([path]);
     return { url: null, error: modResult.reason === "not_animal" ? "not_animal" : "inappropriate" };
   }
   return { url: publicUrl, error: null };
@@ -1883,8 +1889,9 @@ export default function App() {
   const loadFromDB = async () => {
     setDbLoading(true);
     try {
+      const client = await getDb();
       // Raporları çek
-      const { data: rData, error: rErr } = await db
+      const { data: rData, error: rErr } = await client
         .from("reports")
         .select(`*, volunteers(*)`)
         .order("created_at", { ascending: false });
@@ -1913,7 +1920,7 @@ export default function App() {
       }
 
       // Kayıp & bulunan ilanlarını çek
-      const { data: lfData, error: lfErr } = await db
+      const { data: lfData, error: lfErr } = await client
         .from("lf_listings")
         .select("*")
         .order("created_at", { ascending: false });
@@ -1948,7 +1955,7 @@ export default function App() {
       }
 
       // Sitterleri çek
-      const { data: sData, error: sErr } = await db
+      const { data: sData, error: sErr } = await client
         .from("sitters")
         .select("*")
         .order("created_at", { ascending: false });
@@ -1983,7 +1990,7 @@ export default function App() {
       }
 
       // Hayvanları çek — sadece approved/active olanlar
-      const { data: aData, error: aErr } = await db
+      const { data: aData, error: aErr } = await client
         .from("animals")
         .select("*")
         .eq("status", "active")
@@ -2212,7 +2219,7 @@ export default function App() {
     }
     setContactErr({});
     setOtpSending(true);
-    const { error } = await db.auth.signInWithOtp({
+    const { error } = await (await getDb()).auth.signInWithOtp({
       email: contactInfo.email,
       options: { shouldCreateUser: true }
     });
@@ -2231,7 +2238,7 @@ export default function App() {
       return;
     }
     setOtpVerifying(true);
-    const { error } = await db.auth.verifyOtp({
+    const { error } = await (await getDb()).auth.verifyOtp({
       email: contactInfo.email,
       token: otpCode,
       type: "email"
@@ -2724,7 +2731,7 @@ export default function App() {
                 if(!lfForm.lfProvince || !lfForm.city || !lfForm.desc) { say(lang==="tr"?"Lütfen tüm zorunlu alanları doldurun":"Please fill all required fields"); return; }
                 if(lfPhotos.length === 0) { alert(lang==="tr"?"Lütfen en az 1 fotoğraf yükleyin — hayvanı tanımlamaya yardımcı olur":"Please upload at least 1 photo — it helps identify the animal"); return; }
                 const fullArea = [lfForm.lfAddress, lfForm.city].filter(Boolean).join(", ");
-                const { error } = await db.from("lf_listings").insert([{
+                const { error } = await (await getDb()).from("lf_listings").insert([{
                   type: lfForm.type,
                   name: lfForm.name || null,
                   species: lfForm.species,
@@ -3001,7 +3008,7 @@ export default function App() {
                 if(!rf.title || !rf.rProvince || !rf.rCity) { say(lang==="tr"?"Lütfen başlık, il ve semt seçin":"Please fill title, province and area"); return; }
                 if(photos.length === 0) { alert(lang==="tr"?"Lütfen hayvanın en az 1 fotoğrafını yükleyin":"Please upload at least 1 photo of the animal"); return; }
                 const fullLocation = [rf.rAddress, rf.rCity, rf.rProvince, rf.rCountry].filter(Boolean).join(", ");
-                const { error } = await db.from("reports").insert([{
+                const { error } = await (await getDb()).from("reports").insert([{
                   emoji: rf.animal || "🐾",
                   title: rf.title,
                   description: rf.desc || "",
@@ -3020,7 +3027,7 @@ export default function App() {
                 const speciesFromEmoji = { "🐕":"Dog", "🐈":"Cat", "🐦":"Bird", "🐄":"Cattle", "🐎":"Horse" }[rf.animal] || "Other";
                 const lfArea = [rf.rAddress, rf.rCity].filter(Boolean).join(", ");
                 const lfDesc = [rf.title, rf.desc].filter(Boolean).join(" — ");
-                await db.from("lf_listings").insert([{
+                await (await getDb()).from("lf_listings").insert([{
                   type: "found",
                   name: null,
                   species: speciesFromEmoji,
@@ -3406,7 +3413,7 @@ export default function App() {
               <div className="eta-grid">
                 {ETA_OPTIONS.map(opt => (
                   <button key={opt.label} className="eta-btn" onClick={() => requireContact(async (contact) => {
-                    const { error } = await db.from("volunteers").insert([{
+                    const { error } = await (await getDb()).from("volunteers").insert([{
                       report_id: etaFor.id,
                       name: contact.email,
                       eta: opt.label,
@@ -3433,7 +3440,7 @@ export default function App() {
                         };
                         console.log("[notify-owner][volunteer] Gönderilen bildirim yükü:", notifyPayload);
                         if (reporterEmail) {
-                          const { data: vData, error: vErr } = await db.functions.invoke("notify-owner", { body: notifyPayload });
+                          const { data: vData, error: vErr } = await (await getDb()).functions.invoke("notify-owner", { body: notifyPayload });
                           if (vErr) {
                             console.error("[notify-owner][volunteer] Bildirim HATASI:", vErr);
                           } else {
@@ -3540,7 +3547,7 @@ export default function App() {
                   </div>
                   <div style={{ fontSize:12, color:"var(--green)", fontWeight:600, marginBottom:16 }}>{t.photoUploaded}</div>
                   <button className="btn btn-dark btn-full" style={{ marginBottom:8 }} onClick={async () => {
-                    const { error } = await db.from("reports").update({ status:"helped", photo_url: helpProof }).eq("id", helpedFor.id);
+                    const { error } = await (await getDb()).from("reports").update({ status:"helped", photo_url: helpProof }).eq("id", helpedFor.id);
                     setHelpedFor(null); setHelpProof(null);
                     if (!error) {
                       say("✓ " + (lang==="tr"?"Yardım edildi olarak işaretlendi":"Marked as helped — thank you!"));
@@ -3769,11 +3776,11 @@ function TakeActionSheet({ animal, lang, t, onClose }) {
           { // help_offer
             why_adopt: `${form.helpType}${form.helpAvailability ? " · " + form.helpAvailability : ""}${form.helpMessage ? "\n" + form.helpMessage : ""}`,
           };
-        await db.from("applications").insert([{ ...base, ...extra }]);
+        await (await getDb()).from("applications").insert([{ ...base, ...extra }]);
       }
 
       // Single combined notification to the poster listing everything that was selected.
-      await db.functions.invoke("notify-owner", {
+      await (await getDb()).functions.invoke("notify-owner", {
         body: {
           mode: "multi_action",
           purposes: selectedTypes,
@@ -4076,7 +4083,7 @@ function AdoptAppSheet({ animal, mode, lang, t, onClose }) {
     if(step<5){ setStep(s=>s+1); return; }
     // Son adım — Supabase'e kaydet
     try {
-      await db.from("applications").insert([{
+      await (await getDb()).from("applications").insert([{
         ref_code: refCode,
         mode: mode,
         animal_id: animal.id,
@@ -4131,7 +4138,7 @@ function AdoptAppSheet({ animal, mode, lang, t, onClose }) {
       };
       console.log("[notify-owner] Gönderilen e-posta yükü:", emailPayload);
 
-      const { data: emailData, error: emailError } = await db.functions.invoke("notify-owner", {
+      const { data: emailData, error: emailError } = await (await getDb()).functions.invoke("notify-owner", {
         body: emailPayload,
       });
 
@@ -4299,7 +4306,7 @@ function FosterAppSheet({ animal, lang, t, onClose }) {
     setErr({});
     setSubmitting(true);
     try {
-      await db.from("applications").insert([{
+      await (await getDb()).from("applications").insert([{
         ref_code: refCode,
         mode: "foster",
         animal_id: animal.id,
@@ -4319,7 +4326,7 @@ function FosterAppSheet({ animal, lang, t, onClose }) {
 
     // ── E-posta gönder (notify-owner Edge Function) ──
     try {
-      await db.functions.invoke("notify-owner", {
+      await (await getDb()).functions.invoke("notify-owner", {
         body: {
           ownerEmail:        animal.submitter_email,
           lang:              lang,
@@ -4540,7 +4547,7 @@ function RehomeForm({ lang, t, onSubmit, requireContact }) {
         if(!f.name) return;
         if(!rehomePhoto) { alert(lang==="tr"?"Lütfen fotoğraf yükleyin":"Please upload a photo"); return; }
         requireContact(async () => {
-          await db.from("rehome_listings").insert([{ pet_name:f.name, species:f.species, age:f.age, reason:f.reason, photo_url:rehomePhoto }]);
+          await (await getDb()).from("rehome_listings").insert([{ pet_name:f.name, species:f.species, age:f.age, reason:f.reason, photo_url:rehomePhoto }]);
           onSubmit(f.name);
           setF({ name:"", species:"Dog", age:"", reason:"" });
           setRehomePhoto(null);
@@ -5153,7 +5160,7 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact, defaultCountry = FO
             vaccinated_rabies: f.vaccinatedRabies || null,
           };
           console.log("[PostAnimalForm] Submitting payload:", insertPayload);
-          const { data, error } = await db.from("animals").insert([insertPayload]).select();
+          const { data, error } = await (await getDb()).from("animals").insert([insertPayload]).select();
           console.log("[PostAnimalForm] Insert result:", { data, error });
           if (error) {
             console.error("Animal insert error:", error);
@@ -5225,7 +5232,7 @@ function ProfileForm({ lang, t, onSubmit }) {
       <div className="fg"><label className="flabel">{t.aboutHome}</label><textarea className="fta" placeholder={t.aboutHomePlaceholder} value={f.desc} onChange={e => setF(x => ({ ...x, desc:e.target.value }))} /></div>
       <button className="btn btn-dark btn-full" onClick={async () => {
         if(!f.name) return;
-        await db.from("adoption_profiles").insert([{ name:f.name, looking_for:f.looking, description:f.desc }]);
+        await (await getDb()).from("adoption_profiles").insert([{ name:f.name, looking_for:f.looking, description:f.desc }]);
         onSubmit(f.name);
         setF({ name:"", looking:"Dog", desc:"" });
       }}>{t.postProfileBtn}</button>
@@ -5283,7 +5290,7 @@ function RegisterSitterForm({ lang, t, onSubmit, requireContact }) {
       <button className="btn btn-dark btn-full" onClick={() => {
         if(!f.name || !f.city) return;
         requireContact(async (contact) => {
-          await db.from("sitters").insert([{
+          await (await getDb()).from("sitters").insert([{
             name: f.name, city: f.city, area: f.area,
             price: f.price, services: f.services, accepts: f.accepts,
             has_yard: f.hasYard === (lang==="tr"?"Evet":"Yes"),
