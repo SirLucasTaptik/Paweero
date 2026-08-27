@@ -1945,7 +1945,7 @@ export default function App() {
             reporter: r.reporter_name || "Anonymous",
             reporterPhone: r.reporter_phone || "",
             reporterPref: r.reporter_pref || "email",
-            photo_url: r.photo_url || (r.photo_urls && r.photo_urls[0]) || null,
+            photo_url: (r.photo_urls && r.photo_urls[0]) || r.photo_url || null,
             photo_urls: r.photo_urls || (r.photo_url ? [r.photo_url] : []),
             volunteers: (r.volunteers || []).map(v => ({ name: v.name, eta: v.eta, etaOrder: v.eta_order })),
           })));
@@ -1981,7 +1981,7 @@ export default function App() {
             reward: { en: item.reward || "", tr: item.reward || "" },
             desc: { en: item.desc_en || "", tr: item.desc_tr || "" },
             status: item.status || "open",
-            photo_url: item.photo_url || (item.photo_urls && item.photo_urls[0]) || null,
+            photo_url: (item.photo_urls && item.photo_urls[0]) || item.photo_url || null,
             photo_urls: item.photo_urls || (item.photo_url ? [item.photo_url] : []),
           })));
         } else {
@@ -2066,7 +2066,7 @@ export default function App() {
             foundHow: a.found_how || "",
             foundIdentifyingCharacteristics: a.found_identifying_characteristics || "",
             desc:     { en: a.desc_en || "", tr: a.desc_tr || "" },
-            photo_url: a.photo_url || (a.photo_urls && a.photo_urls[0]) || null,
+            photo_url: (a.photo_urls && a.photo_urls[0]) || a.photo_url || null,
             photo_urls: a.photo_urls || (a.photo_url ? [a.photo_url] : []),
             submitter_email: a.submitter_email || "",
             contactPhone: a.contact_phone || "",
@@ -2860,10 +2860,7 @@ export default function App() {
                     <div key={r.id} className={`acard ${r.status === "resolved" ? "resolved" : ""}`} style={r.status==="resolved"?{opacity:0.55}:undefined}>
                       {/* Same big-image header language as every other card in the app */}
                       <div className="acard-img" style={{ overflow:"hidden", cursor:"pointer" }} onClick={() => setDetailReport(r)}>
-                        {r.photo_url
-                          ? <img src={r.photo_url} alt={r.title?.[lang] || r.title?.en || (lang==="tr"?"Bildirilen hayvan":"Reported animal")} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-                          : <img src={FALLBACK_IMAGE} alt="" aria-hidden="true" style={{ width:"56%", height:"56%", objectFit:"contain", opacity:0.5 }} />
-                        }
+                        <ListingPhoto src={r.photo_url} alt={r.title?.[lang] || r.title?.en || (lang==="tr"?"Bildirilen hayvan":"Reported animal")} />
                         {r.photo_urls?.length > 1 && (
                           <span className="abadge ab-sp">+{r.photo_urls.length - 1}</span>
                         )}
@@ -3626,14 +3623,25 @@ export default function App() {
 // COMPONENTS
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Depoda olmayan bir adres kartı bozuyordu: tarayıcı görsel yerine alt metnini
+// basıyor ve kart kutusunun 52px font ayarıyla dev harflerle çiziyordu. Yüklenemeyen
+// görsel artık sessizce marka yer tutucusuna düşüyor.
+function ListingPhoto({ src, alt, size = "56%" }) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => { setFailed(false); }, [src]);   // yeni adres gelince tekrar dene
+  if (!src || failed) {
+    return <img src={FALLBACK_IMAGE} alt="" aria-hidden="true"
+                style={{ width:size, height:size, objectFit:"contain", opacity:0.5 }} />;
+  }
+  return <img src={src} alt={alt} onError={() => setFailed(true)}
+              style={{ width:"100%", height:"100%", objectFit:"cover" }} />;
+}
+
 function MiniCard({ a, lang, onClick }) {
   return (
     <div className="mini-card" onClick={onClick}>
       <div style={{ height:126, background:"var(--off)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:44, position:"relative", overflow:"hidden" }}>
-        {a.photo_url
-          ? <img src={a.photo_url} alt={[a.name, a.breed?.[lang], a.city].filter(Boolean).join(", ")} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-          : <img src={FALLBACK_IMAGE} alt="" aria-hidden="true" style={{ width:"50%", height:"50%", objectFit:"contain", opacity:0.5 }} />
-        }
+        <ListingPhoto src={a.photo_url} alt={[a.name, a.breed?.[lang], a.city].filter(Boolean).join(", ")} size="50%" />
       </div>
       <div style={{ padding:"8px 10px" }}>
         <div style={{ fontSize:12, fontWeight:600, color:"var(--dark)", marginBottom:1 }}>{a.name}</div>
@@ -3649,10 +3657,7 @@ function ACard({ a, mode, lang, onClick }) {
   return (
     <div className="acard" onClick={onClick}>
       <div className="acard-img" style={{ overflow:"hidden" }}>
-        {a.photo_url
-          ? <img src={a.photo_url} alt={[a.name, a.breed?.[lang], a.city].filter(Boolean).join(", ")} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-          : <img src={FALLBACK_IMAGE} alt="" aria-hidden="true" style={{ width:"56%", height:"56%", objectFit:"contain", opacity:0.5 }} />
-        }
+        <ListingPhoto src={a.photo_url} alt={[a.name, a.breed?.[lang], a.city].filter(Boolean).join(", ")} />
         {a.species?.[lang] && <span className="abadge ab-sp">{a.species[lang]}</span>}
         {mode === "foster"  && <span className="abadge ab-fo">{lang==="tr"?"Geçici":"Foster"}</span>}
       </div>
@@ -4629,6 +4634,7 @@ function ImageCarousel({ photos, emoji, height = 220, fit = "cover", alt = "" })
         <img
           src={list[idx]}
           alt={alt ? `${alt} — ${idx + 1}/${list.length}` : ""}
+          onError={e => { e.currentTarget.src = FALLBACK_IMAGE; e.currentTarget.style.objectFit = "contain"; e.currentTarget.style.opacity = 0.5; }}
           onClick={() => setLightbox(true)}
           style={{ width:"100%", height:"100%", objectFit:fit, display:"block" }}
         />
