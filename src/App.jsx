@@ -178,7 +178,7 @@ const ANIMALS = [
   { id:9, name:"Max",    emoji:"🐕", species:{en:"Dog",    tr:"Köpek"},   breed:{en:"Labrador Mix",            tr:"Labrador Mix"},             age:{en:"1 yr",     tr:"1 yaş"},    gender:{en:"Male",  tr:"Erkek"}, country:"Cyprus"      , province:"Lefkoşa",    city:"Lefkoşa",  tags:{en:["Vaccinated","Playful","Young"],           tr:["Aşılı","Oyuncu","Genç"]},                 urgent:false, isNew:true,  canFoster:true,  desc:{en:"Max is an energetic and affectionate young dog. Loves running in open spaces.",                                              tr:"Max enerjik ve sevecen genç bir köpek. Açık alanda koşmayı çok seviyor."} },
 ];
 
-const COUNTRIES = ["All Countries","Türkiye","Cyprus","BAE","Katar","Kuveyt","Bahreyn","Umman","Suudi Arabistan"];
+const COUNTRIES = ["All Countries","Türkiye","Cyprus","BAE","Katar","Kuveyt","Bahreyn","Umman","Suudi Arabistan","ABD"];
 
 const COUNTRY_META = {
   // key                  EN label                 TR label            dil    varsayılan il      saat dilimleri                          ISO   telefon                      para
@@ -190,6 +190,7 @@ const COUNTRY_META = {
   "Bahreyn":         { en:"Bahrain",            tr:"Bahreyn",         lang:"en", province:"Manama",   tz:["Asia/Bahrain"],                    iso:"BH", phone:"+973 XXXX XXXX",     currency:"BHD" },
   "Umman":           { en:"Oman",               tr:"Umman",           lang:"en", province:"Muscat",   tz:["Asia/Muscat"],                     iso:"OM", phone:"+968 XXXX XXXX",     currency:"OMR" },
   "Suudi Arabistan": { en:"Saudi Arabia",       tr:"Suudi Arabistan", lang:"en", province:"Riyadh",   tz:["Asia/Riyadh"],                     iso:"SA", phone:"+966 5X XXX XXXX",   currency:"SAR" },
+  "ABD":             { en:"United States",      tr:"ABD",             lang:"en", province:"Washington", tz:["America/Los_Angeles","America/Denver","America/Chicago","America/New_York","America/Phoenix","America/Anchorage","Pacific/Honolulu"], iso:"US", phone:"+1 (XXX) XXX-XXXX",  currency:"USD" },
 };
 
 // Kayıtlarda saklanan eski ülke değerleri. Ada tek ülkeye indirildi ama daha önce
@@ -249,6 +250,9 @@ const PROVINCES = {
   "Bahreyn":         ["All Provinces","Manama","Muharraq","Northern Bahrain","Southern Bahrain"],
   "Umman":           ["All Provinces","Muscat","Dhofar","Al Batinah North","Al Batinah South","Al Dakhiliyah","Al Sharqiyah North","Al Sharqiyah South","Al Dhahirah","Al Buraimi","Al Wusta","Musandam"],
   "Suudi Arabistan": ["All Provinces","Riyadh","Makkah","Madinah","Eastern Province","Asir","Tabuk","Hail","Northern Borders","Jazan","Najran","Al Bahah","Al Jouf","Qassim"],
+  // Şimdilik yalnızca Washington: topluluk bağı orada. Yeni eyalet eklemek
+  // bir satır + semt listesi demek.
+  "ABD":             ["All Provinces","Washington"],
 };
 const CITIES = {
   "All Provinces": ["All Cities"],
@@ -411,6 +415,9 @@ const CITIES = {
   "Al Bahah":            ["All Cities","Al Bahah City","Baljurashi","Al Mandaq","Al Aqiq Bahah","Qilwah","Al Makhwah","Al Qura"],
   "Al Jouf":             ["All Cities","Sakaka","Dumat Al Jandal","Qurayyat","Tabarjal"],
   "Qassim":              ["All Cities","Buraidah","Unaizah","Al Rass","Al Bukayriyah","Al Mithnab","Riyadh Al Khabra","Uyun Al Jiwa","Al Badayea","Al Asyah"],
+
+  // ── ABD ──
+  "Washington":          ["All Cities","Downtown Seattle","Belltown","Pioneer Square","International District","SoDo","Capitol Hill","First Hill","Central District","Beacon Hill","Mount Baker","Leschi","Madrona","Madison Park","Montlake","Eastlake","South Lake Union","Queen Anne","Magnolia","Interbay","Ballard","Fremont","Wallingford","Green Lake","Phinney Ridge","Greenwood","University District","Ravenna","Roosevelt","Wedgwood","Laurelhurst","Sand Point","Northgate","Lake City","Columbia City","Rainier Beach","Georgetown","West Seattle","Alki","Fauntleroy","Delridge","White Center","Bellevue","Redmond","Kirkland","Renton","Bothell","Issaquah","Sammamish","Shoreline","Burien","Tukwila","SeaTac","Des Moines","Federal Way","Kent","Auburn","Mercer Island","Woodinville","Snoqualmie","Everett","Lynnwood","Edmonds","Mountlake Terrace","Mukilteo","Tacoma","Puyallup","Olympia","Lacey","Gig Harbor","Bremerton","Bainbridge Island","Poulsbo","Silverdale","Vashon Island","Port Orchard","Port Angeles","Sequim","Anacortes","Mount Vernon","Bellingham","Oak Harbor","Marysville","Arlington","Monroe","Snohomish","Enumclaw","Centralia","Longview","Vancouver WA","Camas","Yakima","Ellensburg","Wenatchee","Moses Lake","Spokane","Spokane Valley","Pullman","Walla Walla","Kennewick","Richland","Pasco","Aberdeen"],
 };
 
 // ─── PROVINCE COORDINATES (approximate centers, for geolocation matching) ───
@@ -457,6 +464,8 @@ const PROVINCE_COORDS = {
   "Madinah":[24.47,39.61],"Eastern Province":[26.42,50.09],"Asir":[18.22,42.51],"Tabuk":[28.38,36.57],
   "Hail":[27.52,41.69],"Northern Borders":[30.98,41.04],"Jazan":[16.89,42.57],"Najran":[17.49,44.13],
   "Al Bahah":[20.01,41.47],"Al Jouf":[29.97,40.20],"Qassim":[26.33,43.97],
+  // ABD
+  "Washington":[47.61,-122.33],
 };
 
 // Haversine-ish nearest-province lookup (good enough at province scale)
