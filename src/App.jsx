@@ -250,9 +250,7 @@ const PROVINCES = {
   "Bahreyn":         ["All Provinces","Manama","Muharraq","Northern Bahrain","Southern Bahrain"],
   "Umman":           ["All Provinces","Muscat","Dhofar","Al Batinah North","Al Batinah South","Al Dakhiliyah","Al Sharqiyah North","Al Sharqiyah South","Al Dhahirah","Al Buraimi","Al Wusta","Musandam"],
   "Suudi Arabistan": ["All Provinces","Riyadh","Makkah","Madinah","Eastern Province","Asir","Tabuk","Hail","Northern Borders","Jazan","Najran","Al Bahah","Al Jouf","Qassim"],
-  // Şimdilik yalnızca Washington: topluluk bağı orada. Yeni eyalet eklemek
-  // bir satır + semt listesi demek.
-  "ABD":             ["All Provinces","Washington"],
+  "ABD":             ["All Provinces","Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut","Delaware","District of Columbia","Florida","Georgia","Hawaii","Idaho","Illinois","Indiana","Iowa","Kansas","Kentucky","Louisiana","Maine","Maryland","Massachusetts","Michigan","Minnesota","Mississippi","Missouri","Montana","Nebraska","Nevada","New Hampshire","New Jersey","New Mexico","New York","North Carolina","North Dakota","Ohio","Oklahoma","Oregon","Pennsylvania","Rhode Island","South Carolina","South Dakota","Tennessee","Texas","Utah","Vermont","Virginia","Washington","West Virginia","Wisconsin","Wyoming"],
 };
 const CITIES = {
   "All Provinces": ["All Cities"],
@@ -417,6 +415,56 @@ const CITIES = {
   "Qassim":              ["All Cities","Buraidah","Unaizah","Al Rass","Al Bukayriyah","Al Mithnab","Riyadh Al Khabra","Uyun Al Jiwa","Al Badayea","Al Asyah"],
 
   // ── ABD ──
+  "Alabama":               ["All Cities","Birmingham","Montgomery","Huntsville","Mobile","Tuscaloosa","Hoover","Dothan","Auburn","Decatur","Madison","Florence","Gadsden","Prattville","Vestavia Hills"],
+  "Alaska":                ["All Cities","Anchorage","Fairbanks","Juneau","Wasilla","Sitka","Ketchikan","Kenai","Kodiak","Bethel","Palmer","Homer","Soldotna"],
+  "Arizona":               ["All Cities","Phoenix","Tucson","Mesa","Chandler","Scottsdale","Glendale","Gilbert","Tempe","Peoria","Surprise","Yuma","Flagstaff","Prescott","Sedona","Goodyear","Buckeye","Casa Grande","Lake Havasu City"],
+  "Arkansas":              ["All Cities","Little Rock","Fort Smith","Fayetteville","Springdale","Jonesboro","Rogers","Conway","Bentonville","Hot Springs","Pine Bluff","North Little Rock","Benton"],
+  "California":            ["All Cities","Los Angeles","San Diego","San Jose","San Francisco","Fresno","Sacramento","Long Beach","Oakland","Bakersfield","Anaheim","Santa Ana","Riverside","Irvine","Stockton","Chula Vista","Fremont","San Bernardino","Modesto","Oxnard","Fontana","Moreno Valley","Huntington Beach","Glendale","Santa Clarita","Santa Rosa","Pasadena","Berkeley","Santa Monica","Ventura","Napa","Monterey","Palm Springs","Torrance","Sunnyvale","Palo Alto","Mountain View","Redwood City","San Mateo","Walnut Creek","Concord","Vallejo","Salinas","Visalia","Temecula","Murrieta","Carlsbad","Escondido","Oceanside","Thousand Oaks","Simi Valley","Burbank","Inglewood","Culver City","Redondo Beach","Malibu","Lake Tahoe","Santa Barbara","San Luis Obispo","Chico","Redding","Bakersfield East"],
+  "Colorado":              ["All Cities","Denver","Colorado Springs","Aurora","Fort Collins","Lakewood","Thornton","Arvada","Westminster","Pueblo","Boulder","Greeley","Longmont","Loveland","Castle Rock","Broomfield","Littleton","Parker","Vail","Aspen","Durango","Grand Junction","Steamboat Springs"],
+  "Connecticut":           ["All Cities","Bridgeport","New Haven","Stamford","Hartford","Waterbury","Norwalk","Danbury","New Britain","Greenwich","Milford","Bristol","West Hartford","Meriden","Middletown","Fairfield","Stratford"],
+  "Delaware":              ["All Cities","Wilmington","Dover","Newark","Middletown","Bear","Smyrna","Rehoboth Beach","Lewes","Milford DE","Seaford"],
+  "District of Columbia":  ["All Cities","Downtown DC","Georgetown","Capitol Hill","Dupont Circle","Adams Morgan","Columbia Heights","Anacostia","Navy Yard","Foggy Bottom","Shaw","Petworth","Brookland","Tenleytown","Woodley Park","H Street","NoMa"],
+  "Florida":               ["All Cities","Jacksonville","Miami","Tampa","Orlando","St. Petersburg","Hialeah","Port St. Lucie","Cape Coral","Tallahassee","Fort Lauderdale","Pembroke Pines","Hollywood","Gainesville","Miramar","Coral Springs","Clearwater","Palm Bay","West Palm Beach","Lakeland","Pompano Beach","Boca Raton","Sarasota","Naples","Key West","Kissimmee","Daytona Beach","Fort Myers","Melbourne","Ocala","Bradenton","Pensacola","Delray Beach","Jupiter","Winter Park","Coral Gables","Miami Beach","Doral","Homestead","Sanford","Venice"],
+  "Georgia":               ["All Cities","Atlanta","Augusta","Columbus GA","Macon","Savannah","Athens","Sandy Springs","Roswell","Johns Creek","Albany GA","Warner Robins","Alpharetta","Marietta","Valdosta","Smyrna","Dunwoody","Brookhaven","Peachtree City","Decatur GA","Kennesaw","Gainesville GA","Rome"],
+  "Hawaii":                ["All Cities","Honolulu","Waikiki","Pearl City","Hilo","Kailua","Waipahu","Kaneohe","Kahului","Mililani","Kihei","Lahaina","Kona","Wailuku","Ewa Beach","Haleiwa","Princeville"],
+  "Idaho":                 ["All Cities","Boise","Meridian","Nampa","Idaho Falls","Pocatello","Caldwell","Coeur d'Alene","Twin Falls","Lewiston","Post Falls","Sun Valley","Moscow","Rexburg"],
+  "Illinois":              ["All Cities","Chicago","Aurora IL","Naperville","Joliet","Rockford","Springfield IL","Elgin","Peoria IL","Champaign","Waukegan","Cicero","Bloomington IL","Evanston","Schaumburg","Oak Park","Skokie","Decatur IL","Arlington Heights","Berwyn","Wheaton","Urbana","Palatine","Des Plaines","Orland Park","Oak Lawn"],
+  "Indiana":               ["All Cities","Indianapolis","Fort Wayne","Evansville","South Bend","Carmel","Fishers","Bloomington","Hammond","Gary","Lafayette","Muncie","Noblesville","Terre Haute","Kokomo","Elkhart","Mishawaka","Greenwood","West Lafayette"],
+  "Iowa":                  ["All Cities","Des Moines","Cedar Rapids","Davenport","Sioux City","Iowa City","Waterloo","Ames","West Des Moines","Council Bluffs","Dubuque","Ankeny","Urbandale","Cedar Falls","Marion"],
+  "Kansas":                ["All Cities","Wichita","Overland Park","Kansas City KS","Olathe","Topeka","Lawrence","Shawnee","Manhattan KS","Lenexa","Salina","Hutchinson","Leawood","Dodge City","Emporia"],
+  "Kentucky":              ["All Cities","Louisville","Lexington","Bowling Green","Owensboro","Covington","Richmond KY","Georgetown KY","Florence KY","Hopkinsville","Nicholasville","Elizabethtown","Frankfort","Paducah","Newport KY"],
+  "Louisiana":             ["All Cities","New Orleans","Baton Rouge","Shreveport","Lafayette LA","Lake Charles","Kenner","Bossier City","Monroe LA","Alexandria LA","Houma","Metairie","Slidell","New Iberia","Hammond LA"],
+  "Maine":                 ["All Cities","Portland ME","Lewiston","Bangor","South Portland","Auburn ME","Biddeford","Augusta ME","Saco","Brunswick","Bar Harbor","Westbrook","Scarborough","Kennebunkport"],
+  "Maryland":              ["All Cities","Baltimore","Columbia MD","Germantown","Silver Spring","Waldorf","Glen Burnie","Ellicott City","Frederick","Rockville","Gaithersburg","Bethesda","Annapolis","Bowie","Towson","Ocean City","Hagerstown","Salisbury","College Park","Laurel"],
+  "Massachusetts":         ["All Cities","Boston","Worcester","Springfield MA","Cambridge","Lowell","Brockton","Quincy","Lynn","New Bedford","Fall River","Newton","Somerville","Framingham","Medford","Salem MA","Brookline","Plymouth","Provincetown","Waltham","Malden","Revere","Peabody","Arlington MA","Beverly","Northampton","Amherst"],
+  "Michigan":              ["All Cities","Detroit","Grand Rapids","Warren","Sterling Heights","Ann Arbor","Lansing","Flint","Dearborn","Livonia","Troy","Westland","Farmington Hills","Kalamazoo","Southfield","Rochester Hills","Traverse City","Royal Oak","Novi","Pontiac","Saginaw","East Lansing","Holland","Midland MI"],
+  "Minnesota":             ["All Cities","Minneapolis","St. Paul","Rochester MN","Duluth","Bloomington MN","Brooklyn Park","Plymouth MN","Woodbury","Maple Grove","St. Cloud","Eagan","Eden Prairie","Burnsville","Minnetonka","Edina","Apple Valley","Mankato","Moorhead"],
+  "Mississippi":           ["All Cities","Jackson","Gulfport","Southaven","Hattiesburg","Biloxi","Meridian MS","Tupelo","Olive Branch","Greenville MS","Starkville","Oxford MS","Ridgeland","Pascagoula"],
+  "Missouri":              ["All Cities","Kansas City","St. Louis","Springfield MO","Columbia MO","Independence","Lee's Summit","O'Fallon","St. Joseph","St. Charles","Blue Springs","Joplin","Chesterfield","Jefferson City","Cape Girardeau","Branson"],
+  "Montana":               ["All Cities","Billings","Missoula","Great Falls","Bozeman","Butte","Helena","Kalispell","Havre","Whitefish","Livingston","Anaconda","Belgrade"],
+  "Nebraska":              ["All Cities","Omaha","Lincoln","Bellevue NE","Grand Island","Kearney","Fremont NE","Hastings","Norfolk NE","North Platte","Papillion","La Vista","Columbus NE"],
+  "Nevada":                ["All Cities","Las Vegas","Henderson","Reno","North Las Vegas","Sparks","Carson City","Enterprise","Spring Valley","Sunrise Manor","Paradise","Elko","Mesquite","Summerlin","Boulder City"],
+  "New Hampshire":         ["All Cities","Manchester","Nashua","Concord","Derry","Dover NH","Rochester NH","Salem NH","Merrimack","Keene","Portsmouth NH","Laconia","Hanover"],
+  "New Jersey":            ["All Cities","Newark","Jersey City","Paterson","Elizabeth","Edison","Woodbridge","Lakewood NJ","Toms River","Hamilton NJ","Trenton","Clifton","Camden","Brick","Cherry Hill","Princeton","Atlantic City","Hoboken","Union City","Bayonne","Passaic","East Orange","Montclair","Morristown","New Brunswick"],
+  "New Mexico":            ["All Cities","Albuquerque","Las Cruces","Rio Rancho","Santa Fe","Roswell NM","Farmington","Clovis","Hobbs","Alamogordo","Carlsbad NM","Taos","Gallup","Los Alamos"],
+  "New York":              ["All Cities","Manhattan","Brooklyn","Queens","Bronx","Staten Island","Buffalo","Rochester NY","Yonkers","Syracuse","Albany","New Rochelle","Mount Vernon NY","Schenectady","Utica","White Plains","Ithaca","Poughkeepsie","Hempstead","Long Beach NY","Huntington","Babylon","Islip","Hamptons","Saratoga Springs","Binghamton","Niagara Falls","Troy NY"],
+  "North Carolina":        ["All Cities","Charlotte","Raleigh","Greensboro","Durham","Winston-Salem","Fayetteville NC","Cary","Wilmington NC","High Point","Concord NC","Asheville","Greenville NC","Chapel Hill","Huntersville","Gastonia","Apex","Burlington NC","Jacksonville NC","Outer Banks"],
+  "North Dakota":          ["All Cities","Fargo","Bismarck","Grand Forks","Minot","West Fargo","Williston","Dickinson","Mandan","Jamestown","Devils Lake"],
+  "Ohio":                  ["All Cities","Columbus","Cleveland","Cincinnati","Toledo","Akron","Dayton","Parma","Canton","Youngstown","Lorain","Springfield OH","Hamilton OH","Kettering","Dublin OH","Westerville","Cuyahoga Falls","Elyria","Lakewood OH","Athens OH","Oxford OH"],
+  "Oklahoma":              ["All Cities","Oklahoma City","Tulsa","Norman","Broken Arrow","Edmond","Lawton","Moore","Midwest City","Enid","Stillwater","Muskogee","Bartlesville"],
+  "Oregon":                ["All Cities","Portland","Eugene","Salem OR","Gresham","Hillsboro","Beaverton","Bend","Medford OR","Springfield OR","Corvallis","Albany OR","Tigard","Lake Oswego","Ashland","Hood River","Astoria","Newport OR","Klamath Falls"],
+  "Pennsylvania":          ["All Cities","Philadelphia","Pittsburgh","Allentown","Erie","Reading","Scranton","Bethlehem","Lancaster","Harrisburg","York","Altoona","State College","Wilkes-Barre","Chester","Bethel Park","Norristown","West Chester","Doylestown","Gettysburg"],
+  "Rhode Island":          ["All Cities","Providence","Warwick","Cranston","Pawtucket","East Providence","Woonsocket","Newport RI","Central Falls","Westerly","Narragansett","Bristol RI"],
+  "South Carolina":        ["All Cities","Charleston","Columbia SC","North Charleston","Mount Pleasant","Rock Hill","Greenville SC","Summerville","Sumter","Goose Creek","Hilton Head Island","Myrtle Beach","Spartanburg","Florence SC","Aiken","Beaufort"],
+  "South Dakota":          ["All Cities","Sioux Falls","Rapid City","Aberdeen SD","Brookings","Watertown","Mitchell","Yankton","Pierre","Spearfish","Vermillion"],
+  "Tennessee":             ["All Cities","Nashville","Memphis","Knoxville","Chattanooga","Clarksville","Murfreesboro","Franklin","Jackson TN","Johnson City","Bartlett","Hendersonville","Kingsport","Gatlinburg","Brentwood","Cookeville","Germantown TN"],
+  "Texas":                 ["All Cities","Houston","San Antonio","Dallas","Austin","Fort Worth","El Paso","Arlington TX","Corpus Christi","Plano","Laredo","Lubbock","Garland","Irving","Amarillo","Grand Prairie","Brownsville","McKinney","Frisco","Pasadena TX","Killeen","McAllen","Waco","Denton","Midland","Abilene","Round Rock","Galveston","College Station","Richardson","Sugar Land","The Woodlands","Tyler","Beaumont","Wichita Falls","San Marcos","New Braunfels","Georgetown TX","Allen","Lewisville","Carrollton","Odessa","San Angelo"],
+  "Utah":                  ["All Cities","Salt Lake City","West Valley City","Provo","West Jordan","Orem","Sandy","Ogden","St. George","Layton","South Jordan","Lehi","Millcreek","Park City","Moab","Draper","Bountiful","Logan","Cedar City"],
+  "Vermont":               ["All Cities","Burlington","South Burlington","Rutland","Barre","Montpelier","Winooski","St. Albans","Brattleboro","Stowe","Middlebury","Bennington"],
+  "Virginia":              ["All Cities","Virginia Beach","Chesapeake","Norfolk VA","Richmond VA","Newport News","Alexandria VA","Hampton","Roanoke","Portsmouth VA","Suffolk","Lynchburg","Harrisonburg","Charlottesville","Arlington VA","Reston","Fairfax","Leesburg","Manassas","Blacksburg","Williamsburg","Winchester","Danville"],
+  "West Virginia":         ["All Cities","Charleston WV","Huntington","Morgantown","Parkersburg","Wheeling","Weirton","Martinsburg","Fairmont","Beckley","Clarksburg","Vienna WV","Bridgeport WV"],
+  "Wisconsin":             ["All Cities","Milwaukee","Madison","Green Bay","Kenosha","Racine","Appleton","Waukesha","Eau Claire","Oshkosh","Janesville","La Crosse","Sheboygan","Wausau","Fond du Lac","Brookfield","Stevens Point","Door County"],
+  "Wyoming":               ["All Cities","Cheyenne","Casper","Laramie","Gillette","Rock Springs","Sheridan","Jackson WY","Cody","Green River","Evanston WY","Riverton"],
   "Washington":          ["All Cities","Downtown Seattle","Belltown","Pioneer Square","International District","SoDo","Capitol Hill","First Hill","Central District","Beacon Hill","Mount Baker","Leschi","Madrona","Madison Park","Montlake","Eastlake","South Lake Union","Queen Anne","Magnolia","Interbay","Ballard","Fremont","Wallingford","Green Lake","Phinney Ridge","Greenwood","University District","Ravenna","Roosevelt","Wedgwood","Laurelhurst","Sand Point","Northgate","Lake City","Columbia City","Rainier Beach","Georgetown","West Seattle","Alki","Fauntleroy","Delridge","White Center","Bellevue","Redmond","Kirkland","Renton","Bothell","Issaquah","Sammamish","Shoreline","Burien","Tukwila","SeaTac","Des Moines","Federal Way","Kent","Auburn","Mercer Island","Woodinville","Snoqualmie","Everett","Lynnwood","Edmonds","Mountlake Terrace","Mukilteo","Tacoma","Puyallup","Olympia","Lacey","Gig Harbor","Bremerton","Bainbridge Island","Poulsbo","Silverdale","Vashon Island","Port Orchard","Port Angeles","Sequim","Anacortes","Mount Vernon","Bellingham","Oak Harbor","Marysville","Arlington","Monroe","Snohomish","Enumclaw","Centralia","Longview","Vancouver WA","Camas","Yakima","Ellensburg","Wenatchee","Moses Lake","Spokane","Spokane Valley","Pullman","Walla Walla","Kennewick","Richland","Pasco","Aberdeen"],
 };
 
@@ -464,17 +512,75 @@ const PROVINCE_COORDS = {
   "Madinah":[24.47,39.61],"Eastern Province":[26.42,50.09],"Asir":[18.22,42.51],"Tabuk":[28.38,36.57],
   "Hail":[27.52,41.69],"Northern Borders":[30.98,41.04],"Jazan":[16.89,42.57],"Najran":[17.49,44.13],
   "Al Bahah":[20.01,41.47],"Al Jouf":[29.97,40.20],"Qassim":[26.33,43.97],
-  // ABD
-  "Washington":[47.61,-122.33],
+  // ABD — eyalet başına nüfus merkezleri. Coğrafi merkez kullanmak New York'u
+  // New Jersey'ye, Chicago'yu Indiana'ya düşürüyordu.
+  "Alabama":                 [[33.52,-86.81],[30.69,-88.04]],
+  "Alaska":                  [[61.22,-149.90],[64.84,-147.72],[58.30,-134.42]],
+  "Arizona":                 [[33.45,-112.07],[32.22,-110.93],[35.20,-111.65]],
+  "Arkansas":                [[34.75,-92.29],[36.06,-94.16]],
+  "California":              [[34.05,-118.24],[37.77,-122.42],[32.72,-117.16],[36.75,-119.77],[38.58,-121.49]],
+  "Colorado":                [[39.74,-104.99],[38.83,-104.82],[39.07,-108.55]],
+  "Connecticut":             [[41.30,-72.93],[41.76,-72.68]],
+  "Delaware":                [[39.74,-75.55],[39.16,-75.52]],
+  "District of Columbia":    [[38.90,-77.04]],
+  "Florida":                 [[25.76,-80.19],[30.33,-81.66],[28.54,-81.38],[27.95,-82.46],[30.44,-84.28]],
+  "Georgia":                 [[33.75,-84.39],[32.08,-81.09],[31.58,-84.16]],
+  "Hawaii":                  [[21.31,-157.86],[19.71,-155.08],[20.89,-156.47]],
+  "Idaho":                   [[43.62,-116.20],[47.68,-116.78],[43.49,-112.03]],
+  "Illinois":                [[41.88,-87.63],[39.80,-89.64],[37.72,-89.22]],
+  "Indiana":                 [[39.77,-86.16],[41.68,-86.25],[37.97,-87.56]],
+  "Iowa":                    [[41.59,-93.62],[41.52,-90.58],[42.50,-96.40]],
+  "Kansas":                  [[37.69,-97.34],[38.96,-94.68],[39.05,-95.68]],
+  "Kentucky":                [[38.25,-85.76],[38.04,-84.50],[36.99,-86.44]],
+  "Louisiana":               [[29.95,-90.07],[30.45,-91.19],[32.53,-93.75]],
+  "Maine":                   [[43.66,-70.26],[44.80,-68.77]],
+  "Maryland":                [[39.29,-76.61],[39.08,-77.15],[39.41,-77.41]],
+  "Massachusetts":           [[42.36,-71.06],[42.26,-71.80],[42.10,-72.59]],
+  "Michigan":                [[42.33,-83.05],[42.96,-85.67],[46.49,-87.66]],
+  "Minnesota":               [[44.98,-93.27],[46.79,-92.10],[44.02,-92.47]],
+  "Mississippi":             [[32.30,-90.18],[30.37,-89.09],[34.26,-88.70]],
+  "Missouri":                [[39.10,-94.58],[38.63,-90.20],[37.21,-93.29]],
+  "Montana":                 [[45.78,-108.50],[46.87,-113.99],[47.50,-111.30]],
+  "Nebraska":                [[41.26,-95.94],[40.81,-96.68],[41.13,-100.77]],
+  "Nevada":                  [[36.17,-115.14],[39.53,-119.81],[40.83,-115.76]],
+  "New Hampshire":           [[42.99,-71.46],[43.21,-71.54]],
+  "New Jersey":              [[40.74,-74.17],[40.22,-74.74],[39.36,-74.42]],
+  "New Mexico":              [[35.08,-106.65],[32.32,-106.76],[35.69,-105.94]],
+  "New York":                [[40.71,-74.01],[42.89,-78.88],[43.05,-76.15],[42.65,-73.76]],
+  "North Carolina":          [[35.23,-80.84],[35.78,-78.64],[35.60,-82.55],[34.23,-77.94]],
+  "North Dakota":            [[46.88,-96.79],[46.81,-100.78],[48.23,-101.30]],
+  "Ohio":                    [[39.96,-83.00],[41.50,-81.69],[39.10,-84.51],[41.65,-83.54]],
+  "Oklahoma":                [[35.47,-97.52],[36.15,-95.99]],
+  "Oregon":                  [[45.52,-122.68],[44.05,-123.09],[42.33,-122.87],[44.06,-121.31]],
+  "Pennsylvania":            [[39.95,-75.17],[40.44,-80.00],[40.27,-76.88],[41.41,-75.66]],
+  "Rhode Island":            [[41.82,-71.41],[41.49,-71.31]],
+  "South Carolina":          [[32.78,-79.93],[34.00,-81.03],[34.85,-82.39],[33.69,-78.89]],
+  "South Dakota":            [[43.55,-96.73],[44.08,-103.23],[44.37,-100.35]],
+  "Tennessee":               [[36.16,-86.78],[35.15,-90.05],[35.96,-83.92],[35.05,-85.31]],
+  "Texas":                   [[29.76,-95.37],[32.78,-96.80],[30.27,-97.74],[31.76,-106.49],[27.80,-97.40],[33.58,-101.86]],
+  "Utah":                    [[40.76,-111.89],[40.23,-111.66],[37.10,-113.58]],
+  "Vermont":                 [[44.48,-73.21],[44.26,-72.58]],
+  "Virginia":                [[36.85,-75.98],[37.54,-77.44],[38.88,-77.10],[37.27,-79.94]],
+  "Washington":              [[47.61,-122.33],[47.66,-117.43],[46.60,-120.51],[45.63,-122.67]],
+  "West Virginia":           [[38.35,-81.63],[39.63,-79.96],[38.42,-82.44]],
+  "Wisconsin":               [[43.04,-87.91],[43.07,-89.40],[44.51,-88.02],[44.80,-91.50]],
+  "Wyoming":                 [[41.14,-104.82],[42.85,-106.31],[43.48,-110.76]],
 };
 
 // Haversine-ish nearest-province lookup (good enough at province scale)
+// Bir bölge tek bir noktayla temsil edilemeyebilir: New York'un coğrafi merkezi
+// kuzeyde kalıyor ve New York şehri, New Jersey'nin merkezine daha yakın düşüyor.
+// Bu yüzden bir bölge birden fazla çapa noktası tanımlayabilir; en yakın olan sayılır.
+const anchorsOf = (v) => (Array.isArray(v[0]) ? v : [v]);
+
 function findNearestProvince(lat, lon) {
   let best = null, bestDist = Infinity;
-  for (const [name, [plat, plon]] of Object.entries(PROVINCE_COORDS)) {
-    const dLat = lat - plat, dLon = lon - plon;
-    const dist = dLat * dLat + dLon * dLon; // squared distance is fine for comparison
-    if (dist < bestDist) { bestDist = dist; best = name; }
+  for (const [name, coords] of Object.entries(PROVINCE_COORDS)) {
+    for (const [plat, plon] of anchorsOf(coords)) {
+      const dLat = lat - plat, dLon = lon - plon;
+      const dist = dLat * dLat + dLon * dLon; // karşılaştırma için karesi yeterli
+      if (dist < bestDist) { bestDist = dist; best = name; }
+    }
   }
   return best;
 }
@@ -488,7 +594,7 @@ function findCountryForProvince(province) {
 
 // ─── REGION DETECTION ───────────────────────────────────────────────────────
 // Ziyaretçinin ülkesine göre dil ve ülke seçimi (COUNTRY_META.lang):
-//   Türkiye → Türkçe,  Kıbrıs ve Körfez → İngilizce.
+//   Türkiye → Türkçe,  diğer tüm ülkeler → İngilizce.
 // Saat dilimi anında sonuç verir (ağ beklemeden ilk boyamada doğru dil),
 // IP sorgusu sonradan doğrular — VPN ya da yanlış ayarlı saat dilimi için.
 function countryFromTimezone() {
@@ -644,6 +750,10 @@ const swapLang = (path, lang) => {
 // sayfayı JS çalıştırdıktan sonra okuduğu için bunlar indekse girer; ancak
 // WhatsApp/Facebook gibi link önizlemeleri JS çalıştırmaz — onlar index.html'deki
 // sabit og etiketlerini görür. Kalıcı çözüm sunucu tarafı render.
+// Açıklamalarda geçen ülke sayısı COUNTRIES'ten türetilir; yeni ülke eklendiğinde
+// güncellenmesi unutulan bir metin kalmasın diye.
+const COUNTRY_COUNT = COUNTRIES.length - 1;
+
 const PAGE_META = {
   notfound: {
     en: { title:"Page not found | Paweero",
@@ -653,21 +763,21 @@ const PAGE_META = {
   },
   home: {
     en: { title:"Paweero — Free Animal Welfare Platform",
-          desc:"Adopt, foster, find a pet sitter, post a lost & found, or report animals in distress across Turkey, Cyprus and the Gulf. Always free." },
+          desc:`Adopt, foster, find a pet sitter, post a lost & found, or report animals in distress. Free across ${COUNTRY_COUNT} countries including Turkey, Cyprus, the UAE and the US.` },
     tr: { title:"Paweero — Ücretsiz Hayvan Refahı Platformu",
-          desc:"Türkiye, Kıbrıs ve Körfez'de sahiplen, geçici bakım ver, bakıcı bul, kayıp ilanı ver ya da tehlikedeki hayvanları bildir. Her zaman ücretsiz." },
+          desc:`Sahiplen, geçici bakım ver, bakıcı bul, kayıp ilanı ver ya da tehlikedeki hayvanları bildir. Türkiye, Kıbrıs, BAE ve ABD dahil ${COUNTRY_COUNT} ülkede ücretsiz.` },
   },
   animals: {
     en: { title:"Adopt or Foster an Animal | Paweero",
-          desc:"Browse animals waiting for adoption or foster care. Free listings from rescuers and shelters across Turkey, Cyprus and the Gulf." },
+          desc:`Browse animals waiting for adoption or foster care. Free listings from rescuers and shelters in ${COUNTRY_COUNT} countries.` },
     tr: { title:"Sahiplen ya da Geçici Bakım Ver | Paweero",
-          desc:"Sahiplenilmeyi veya geçici bakımı bekleyen hayvanlara göz at. Türkiye, Kıbrıs ve Körfez'den ücretsiz ilanlar." },
+          desc:`Sahiplenilmeyi veya geçici bakımı bekleyen hayvanlara göz at. ${COUNTRY_COUNT} ülkeden ücretsiz ilanlar.` },
   },
   lostfound: {
     en: { title:"Lost & Found Pets | Paweero",
-          desc:"Report a lost pet or an animal you have found. Free lost and found listings for Turkey, Cyprus and the Gulf." },
+          desc:`Report a lost pet or an animal you have found. Free lost and found listings across ${COUNTRY_COUNT} countries.` },
     tr: { title:"Kayıp ve Bulunan Hayvanlar | Paweero",
-          desc:"Kaybolan hayvanını bildir ya da bulduğun bir hayvanı paylaş. Türkiye, Kıbrıs ve Körfez için ücretsiz kayıp ilanları." },
+          desc:`Kaybolan hayvanını bildir ya da bulduğun bir hayvanı paylaş. ${COUNTRY_COUNT} ülkede ücretsiz kayıp ilanları.` },
   },
   help: {
     en: { title:"Report an Animal in Distress | Paweero",
@@ -682,9 +792,9 @@ const PAGE_META = {
 const SUB_META = {
   "animals/foster": {
     en: { title:"Foster an Animal | Paweero",
-          desc:"Offer a temporary home to an animal in need. Browse animals looking for foster care across Turkey, Cyprus and the Gulf." },
+          desc:`Offer a temporary home to an animal in need. Browse animals looking for foster care across ${COUNTRY_COUNT} countries.` },
     tr: { title:"Geçici Bakım Ver | Paweero",
-          desc:"İhtiyacı olan bir hayvana geçici yuva ol. Türkiye, Kıbrıs ve Körfez'de geçici bakım bekleyen hayvanlara göz at." },
+          desc:`İhtiyacı olan bir hayvana geçici yuva ol. ${COUNTRY_COUNT} ülkede geçici bakım bekleyen hayvanlara göz at.` },
   },
   "help/helped": {
     en: { title:"Rescued Animals | Paweero",
@@ -1309,7 +1419,11 @@ const CSS = `
   @media (min-width:768px) {
     .hero-media::after { background:linear-gradient(to right, var(--white) 0%, transparent 14%); }
   }
-  .hero-label { font-size:12px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-bottom:14px; }
+  /* Ülke listesi COUNTRIES'ten geliyor ve ülke eklendikçe uzuyor. Dar ekranda
+     harf aralığı ve punto kısılır; böylece hepsi tek tek yazılı kalırken etiket
+     iki satırı geçmez ve başlıkla yarışmaz. */
+  .hero-label { font-size:10.5px; font-weight:600; letter-spacing:0.4px; text-transform:uppercase; color:var(--muted); margin-bottom:14px; line-height:1.5; }
+  @media (min-width:768px) { .hero-label { font-size:12px; letter-spacing:1.5px; } }
   .hero-h1 { font-size:clamp(30px,6vw,46px); font-weight:700; color:var(--dark); line-height:1.1; margin-bottom:14px; letter-spacing:-1px; }
   .hero-h1 em { color:var(--amber); font-style:italic; }
   .hero-p  { font-size:15px; color:var(--muted); max-width:440px; line-height:1.65; margin-bottom:28px; }
