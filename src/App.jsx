@@ -677,6 +677,24 @@ const TABS = [
   { id:"help",     icon:"🚨", label:"Help"         },
 ];
 
+// ─── ÖRNEK VERİ ──────────────────────────────────────────────────────────────
+// Aşağıdaki seed listeleri yalnızca yerel geliştirme içindir. Üretimde bunlar
+// gösterilirse kullanıcı var olmayan bir hayvana başvurur ya da sahte bir acil
+// duruma koşar; bir kurtarma platformunda bu, boş liste göstermekten kötüdür.
+const USE_SEED = import.meta.env.DEV;
+
+// ─── BİLDİREN KİMLİĞİ ────────────────────────────────────────────────────────
+// reports.reporter_name alanına doğrulama sırasında alınan e-posta yazılıyor ve
+// bu, herkese açık ilan kartında olduğu gibi gösteriliyordu. Kullanıcı adresini
+// yayınlamak için değil doğrulama için verdi; açıkta durması spam botlarına
+// davetiye. Gerçek iletişim bilgisi, gönüllü yola çıkmayı onayladıktan sonra
+// açılan iletişim ekranında zaten veriliyor — asıl yeri orası.
+const looksLikeEmail = (v) => /\S+@\S+\.\S+/.test(v || "");
+const publicReporterLabel = (name, lang) =>
+  (!name || looksLikeEmail(name))
+    ? (lang === "tr" ? "✓ Doğrulanmış bildirim" : "✓ Verified reporter")
+    : null;   // gerçek bir ad varsa olduğu gibi gösterilir
+
 // ─── ROUTING ──────────────────────────────────────────────────────────────────
 // Uygulama tek sayfaydı; her şey "/" adresinde yaşıyordu. Bu, Google'a
 // indeksleyecek tek bir sayfa vermek demek. Artık her görünümün gerçek bir
@@ -1711,6 +1729,11 @@ const CSS = `
                  padding:18px 0 calc(var(--nav-h) + 14px + env(safe-area-inset-bottom,0px)); }
   @media (min-width:768px) { .build-stamp { padding-bottom:22px; } }
 
+  .db-error { display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;
+              max-width:960px; margin:14px auto 0; padding:14px var(--pad);
+              background:rgba(192,57,43,0.07); border:1px solid rgba(192,57,43,0.25); border-radius:var(--r);
+              font-size:13.5px; color:var(--dark); line-height:1.5; }
+
   html.sheet-open, html.sheet-open body { overflow:hidden; overscroll-behavior:none; }
   .sheet-overlay { position:fixed; inset:0; z-index:200; background:rgba(0,0,0,0.3); display:flex; align-items:flex-end; overflow:hidden; }
   @media (min-width:640px) { .sheet-overlay { align-items:center; justify-content:center; padding:24px; } }
@@ -2015,7 +2038,7 @@ export default function App() {
   const [reports, setReports] = useState([]);
   const [lfItems, setLFItems] = useState([]);
   const [sitters, setSitters] = useState([]);
-  const [animals, setAnimals] = useState(ANIMALS);
+  const [animals, setAnimals] = useState(USE_SEED ? ANIMALS : []);
 
   // Geri/ileri tuşu: adresi tekrar duruma çevir.
   useEffect(() => {
@@ -2038,6 +2061,7 @@ export default function App() {
     return () => window.removeEventListener("popstate", onPop);
   }, [animals, lfItems, reports]);
   const [dbLoading, setDbLoading] = useState(true);
+  const [dbError, setDbError]     = useState(false);
   const [photos, setPhotos]   = useState([]);
   const [lfPhotos, setLFPhotos] = useState([]);
   const [rf, setRf]           = useState({ title:"", location:"", desc:"", type:"Injured", animal:"", rCountry:FORM_COUNTRY, rProvince:FORM_PROVINCE, rCity:"", rAddress:"" });
@@ -2046,6 +2070,10 @@ export default function App() {
   // ── Supabase: veri çek ──
   const loadFromDB = async () => {
     setDbLoading(true);
+    setDbError(false);
+    // supabase-js HTTP hatasında exception fırlatmaz; {data:null, error} döner.
+    // Bu yüzden hem sorgu hatalarını toplamak hem de catch'i tutmak gerekiyor.
+    let failed = false;
     try {
       const client = await getDb();
       // Raporları çek
@@ -2054,7 +2082,7 @@ export default function App() {
         .select(`*, volunteers(*)`)
         .order("created_at", { ascending: false });
 
-      if (rErr) console.error("Reports error:", rErr);
+      if (rErr) { console.error("Reports error:", rErr); failed = true; }
       if (rData) {
         if (rData.length > 0) {
           setReports(rData.map(r => ({
@@ -2073,7 +2101,7 @@ export default function App() {
             volunteers: (r.volunteers || []).map(v => ({ name: v.name, eta: v.eta, etaOrder: v.eta_order })),
           })));
         } else {
-          setReports(REPORTS_SEED); // DB boşsa seed göster
+          setReports(USE_SEED ? REPORTS_SEED : []);
         }
       }
 
@@ -2083,7 +2111,7 @@ export default function App() {
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (lfErr) console.error("LF error:", lfErr);
+      if (lfErr) { console.error("LF error:", lfErr); failed = true; }
       if (lfData) {
         if (lfData.length > 0) {
           setLFItems(lfData.map(item => ({
@@ -2108,7 +2136,7 @@ export default function App() {
             photo_urls: item.photo_urls || (item.photo_url ? [item.photo_url] : []),
           })));
         } else {
-          setLFItems(LF_SEED); // DB boşsa seed göster
+          setLFItems(USE_SEED ? LF_SEED : []);
         }
       }
 
@@ -2118,7 +2146,7 @@ export default function App() {
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (sErr) console.error("Sitters error:", sErr);
+      if (sErr) { console.error("Sitters error:", sErr); failed = true; }
       if (sData) {
         if (sData.length > 0) {
           const dbSitters = sData.map(s => ({
@@ -2141,9 +2169,9 @@ export default function App() {
             contact_pref: s.contact_pref || "email",
           }));
           // DB sitterlarını seed ile birleştir (seed her zaman gösterilsin)
-          setSitters([...dbSitters, ...SITTERS_SEED]);
+          setSitters(USE_SEED ? [...dbSitters, ...SITTERS_SEED] : dbSitters);
         } else {
-          setSitters(SITTERS_SEED);
+          setSitters(USE_SEED ? SITTERS_SEED : []);
         }
       }
 
@@ -2154,7 +2182,7 @@ export default function App() {
         .eq("status", "active")
         .order("created_at", { ascending: false });
 
-      if (aErr) console.error("Animals error:", aErr);
+      if (aErr) { console.error("Animals error:", aErr); failed = true; }
       if (aData && aData.length > 0) {
         const dbAnimals = aData.map(a => {
           const healthTags = { en: [], tr: [] };
@@ -2202,16 +2230,18 @@ export default function App() {
         // DB hayvanlarını seed ile birleştir
         setAnimals([...dbAnimals, ...ANIMALS]);
       } else {
-        setAnimals(ANIMALS);
+        setAnimals(USE_SEED ? ANIMALS : []);
       }
 
     } catch (err) {
       console.error("Supabase yükleme hatası:", err);
-      // Hata durumunda seed datayı göster
-      setReports(REPORTS_SEED);
-      setLFItems(LF_SEED);
-      setSitters(SITTERS_SEED);
+      // Sahte ilan gösterme: kullanıcı var olmayan bir hayvana başvurabilir.
+      // Bunun yerine açıkça "yüklenemedi" de ve tekrar deneme imkânı ver.
+      setDbError(true);
+      if (USE_SEED) { setReports(REPORTS_SEED); setLFItems(LF_SEED); setSitters(SITTERS_SEED); }
+      failed = true;
     }
+    if (failed) setDbError(true);
     setDbLoading(false);
   };
 
@@ -2568,6 +2598,19 @@ export default function App() {
       <div className="app">
         {dbLoading && (
           <div style={{ position:"fixed", top:0, left:0, right:0, height:3, background:"var(--amber)", zIndex:999, animation:"loadbar 1.5s ease-in-out infinite" }} />
+        )}
+
+        {/* İlanlar yüklenemediyse bunu açıkça söyle. Sessizce boş liste göstermek,
+            "hiç ilan yok" izlenimi verir ve kullanıcı sorunu bilmeden ayrılır. */}
+        {dbError && !dbLoading && (
+          <div className="db-error" role="alert">
+            <span>{lang==="tr"
+              ? "İlanlar yüklenemedi. Bağlantını kontrol edip tekrar dene."
+              : "Listings couldn't be loaded. Check your connection and try again."}</span>
+            <button className="btn btn-dark" style={{ padding:"7px 16px", fontSize:13, flexShrink:0 }} onClick={loadFromDB}>
+              {lang==="tr" ? "Tekrar dene" : "Try again"}
+            </button>
+          </div>
         )}
 
         {/* ══════════════════════════ NOT FOUND ═════════════════════════════ */}
@@ -3004,7 +3047,11 @@ export default function App() {
                         <div className="r-meta" style={{ marginBottom:10 }}>
                           <span className="r-mi">📍 {r.location}</span>
                           <span className="r-mi">{rTime}</span>
-                          {!r.fromAnimalListing && <span className="r-mi">{t.reportedBy} {r.reporter}</span>}
+                          {!r.fromAnimalListing && (
+                            <span className="r-mi">
+                              {publicReporterLabel(r.reporter, lang) || `${t.reportedBy} ${r.reporter}`}
+                            </span>
+                          )}
                         </div>
 
                         {/* Volunteer list — sorted by etaOrder (closest first), Coordinating last */}
