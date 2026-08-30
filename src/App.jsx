@@ -2379,12 +2379,38 @@ export default function App() {
 
   // ── Email OTP verification ──
   const [contactModal, setContactModal] = useState(null); // { onConfirm }
-  const [contactInfo, setContactInfo]   = useState({ email:"", phone:"", contactPref:"email" });
+  const [contactInfo, setContactInfo]   = useState({ email:"", phone:"", username:"", contactPref:"email" });
   const [contactErr, setContactErr]     = useState({});
   const [otpStep, setOtpStep]           = useState("email"); // "email" | "otp"
   const [otpCode, setOtpCode]           = useState("");
   const [otpSending, setOtpSending]     = useState(false);
   const [otpVerifying, setOtpVerifying] = useState(false);
+
+  // Doğrulanmış oturumu açılışta geri yükle.
+  // signInWithOtp zaten gerçek bir Supabase kullanıcısı yaratıyor ve supabase-js
+  // oturumu localStorage'da tutuyordu — ama uygulama onu hiç okumuyordu. Bu yüzden
+  // sayfa her yenilendiğinde e-posta baştan soruluyordu ve kullanıcılar "her ilanda
+  // e-posta istiyor" diye şikâyet ediyordu. Oturum varsa artık hiç sorulmuyor.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await (await getDb()).auth.getSession();
+        const user = data?.session?.user;
+        if (!user || cancelled) return;
+        setContactInfo(f => ({
+          ...f,
+          email:    user.email || f.email,
+          username: user.user_metadata?.username || f.username || "",
+          phone:    f.phone || user.user_metadata?.phone || "",
+          verified: true,
+        }));
+      } catch (e) {
+        // Oturum yoksa ya da okunamadıysa normal akış sürer: kod istenir.
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const requireContact = (onConfirm) => {
     // If already verified this session, skip
@@ -2436,6 +2462,13 @@ export default function App() {
       setContactErr({ otp: lang==="tr"?"Kod yanlış veya süresi dolmuş":"Invalid or expired code" });
     } else {
       setContactInfo(f => ({ ...f, verified: true }));
+      // Kullanıcı adı ve telefon kullanıcıya iliştirilir; bir sonraki ziyarette
+      // oturumla birlikte geri gelir ve tekrar sorulmaz.
+      try {
+        await (await getDb()).auth.updateUser({
+          data: { username: contactInfo.username || "", phone: contactInfo.phone || "" },
+        });
+      } catch (e) { console.warn("updateUser atlandı:", e); }
       const fn = contactModal.onConfirm;
       setContactModal(null);
       fn({ ...contactInfo, verified: true });
@@ -3277,8 +3310,17 @@ export default function App() {
               {otpStep === "email" ? <>
                 <div className="inote">
                   {lang==="tr"
-                    ? "İlanınızı yayınlamak için e-posta adresinizi doğrulamamız gerekiyor."
-                    : "We need to verify your email before publishing your listing."}
+                    ? "İlanını yayınlamak için e-postanı bir kez doğrulamamız yeterli. Şifre yok — maile gelen 6 haneli kodu gir. Bir daha sorulmayacak."
+                    : "We just need to verify your email once. No password — enter the 6-digit code we email you. You won't be asked again."}
+                </div>
+
+                {/* Kullanıcı adı - opsiyonel. İlanlarda e-posta yerine bu görünecek. */}
+                <div className="fg">
+                  <label className="flabel">{lang==="tr"?"Kullanıcı adı (opsiyonel)":"Username (optional)"}</label>
+                  <input className="fi" type="text" maxLength={30}
+                    placeholder={lang==="tr"?"örn. kedisever34":"e.g. catlover34"}
+                    value={contactInfo.username}
+                    onChange={e => setContactInfo(f => ({ ...f, username:e.target.value }))} />
                 </div>
 
                 {/* Email - zorunlu */}
