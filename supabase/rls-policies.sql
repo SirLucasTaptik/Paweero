@@ -65,6 +65,13 @@ alter table public.adoption_profiles  enable row level security;
 alter table public.rehome_listings    enable row level security;
 
 create policy "applications_insert"      on public.applications      for insert to anon, authenticated with check (true);
+
+-- Tek istisna: "Hesabım → Başvurularım" ekranı kullanıcının KENDİ başvurularını
+-- listeliyor. Politika e-postayı oturum token'ından okur, istemciden gelen
+-- filtreye güvenmez — yani biri sorguyu değiştirse bile başkasının başvurusunu
+-- göremez.
+create policy "applications_read_own" on public.applications for select to authenticated
+  using (applicant_email = auth.jwt() ->> 'email');
 create policy "adoption_profiles_insert" on public.adoption_profiles for insert to anon, authenticated with check (true);
 create policy "rehome_insert"            on public.rehome_listings   for insert to anon, authenticated with check (true);
 

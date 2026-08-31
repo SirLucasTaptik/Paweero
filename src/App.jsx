@@ -1731,6 +1731,25 @@ const CSS = `
                  padding:18px 0 calc(var(--nav-h) + 14px + env(safe-area-inset-bottom,0px)); }
   @media (min-width:768px) { .build-stamp { padding-bottom:22px; } }
 
+  /* Giriş yapıldığını gösteren rozet. Dar ekranda ad gizlenir, baş harf kalır. */
+  .me-chip { display:flex; align-items:center; gap:6px; background:var(--off); border:1px solid var(--border);
+             border-radius:999px; padding:3px 10px 3px 3px; cursor:pointer; font-family:var(--font);
+             max-width:150px; transition:background 0.12s; }
+  .me-chip:active { background:var(--light); }
+  @media (hover:hover) { .me-chip:hover { background:var(--light); } }
+  .me-avatar { width:22px; height:22px; border-radius:50%; background:var(--amber); color:#fff;
+               font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .me-name { font-size:12px; font-weight:600; color:var(--dark); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  @media (max-width:400px) { .me-name { display:none; } .me-chip { padding:3px; } }
+
+  .me-sec   { font-size:11px; font-weight:700; letter-spacing:0.6px; text-transform:uppercase;
+              color:var(--muted); margin:20px 0 8px; }
+  .me-row   { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); cursor:pointer; }
+  .me-row:last-child { border-bottom:none; }
+  .me-row-t { font-size:14px; font-weight:600; color:var(--dark); }
+  .me-row-s { font-size:12px; color:var(--muted); margin-top:2px; }
+  .me-empty { font-size:13px; color:var(--muted); padding:6px 0 2px; }
+
   .db-error { display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;
               max-width:960px; margin:14px auto 0; padding:14px var(--pad);
               background:rgba(192,57,43,0.07); border:1px solid rgba(192,57,43,0.25); border-radius:var(--r);
@@ -2416,6 +2435,44 @@ export default function App() {
     return () => { cancelled = true; };
   }, []);
 
+  // ── Hesabım ekranı ──────────────────────────────────────────────────────
+  // "Benim" ölçütü doğrulanmış e-posta: her tablo zaten sahibinin adresini
+  // saklıyor (animals.submitter_email, reports.reporter_name,
+  // lf_listings.contact_email, applications.applicant_email).
+  const [showMe, setShowMe] = useState(false);
+  const [myApps, setMyApps] = useState(null);   // null = henüz çekilmedi
+
+  const myEmail = (contactInfo.email || "").toLowerCase();
+  const mine = (v) => myEmail && String(v || "").toLowerCase() === myEmail;
+
+  const myAnimals = myEmail ? animals.filter(a => mine(a.submitter_email)) : [];
+  const myReports = myEmail ? reports.filter(r => mine(r.reporter)) : [];
+  const myLF      = myEmail ? lfItems.filter(i => mine(i.contact_email) || mine(i.contact)) : [];
+
+  // Başvurular listede tutulmuyor; ekran açıldığında bir kez çekilir.
+  useEffect(() => {
+    if (!showMe || myApps !== null || !myEmail) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data, error } = await (await getDb())
+          .from("applications").select("*")
+          .eq("applicant_email", contactInfo.email)
+          .order("created_at", { ascending: false });
+        if (!cancelled) setMyApps(error ? [] : (data || []));
+      } catch (e) { if (!cancelled) setMyApps([]); }
+    })();
+    return () => { cancelled = true; };
+  }, [showMe, myApps, myEmail]);
+
+  const signOut = async () => {
+    try { await (await getDb()).auth.signOut(); } catch (e) {}
+    setContactInfo({ email:"", phone:"", username:"", contactPref:"email" });
+    setMyApps(null);
+    setShowMe(false);
+    say(lang==="tr" ? "Çıkış yapıldı" : "Signed out");
+  };
+
   const requireContact = (onConfirm) => {
     if (contactInfo.email && contactInfo.verified) {
       // Doğrulama zaten var. Ama kullanıcı adı hiç sorulmamışsa bir kez sor:
@@ -2647,9 +2704,18 @@ export default function App() {
             </button>
           ))}
         </nav>
-        <div className="lang-sel">
-          <button className={`lang-btn ${lang==="en"?"on":""}`} onClick={()=>changeLang("en")}>EN</button>
-          <button className={`lang-btn ${lang==="tr"?"on":""}`} onClick={()=>changeLang("tr")}>TR</button>
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          {contactInfo.verified && (
+            <button className="me-chip" onClick={() => setShowMe(true)}
+              title={lang==="tr"?"Hesabım":"My account"}>
+              <span className="me-avatar">{(contactInfo.username || contactInfo.email || "?").charAt(0).toUpperCase()}</span>
+              <span className="me-name">{contactInfo.username || (contactInfo.email || "").split("@")[0]}</span>
+            </button>
+          )}
+          <div className="lang-sel">
+            <button className={`lang-btn ${lang==="en"?"on":""}`} onClick={()=>changeLang("en")}>EN</button>
+            <button className={`lang-btn ${lang==="tr"?"on":""}`} onClick={()=>changeLang("tr")}>TR</button>
+          </div>
         </div>
       </header>
 
@@ -3319,6 +3385,113 @@ export default function App() {
         </div>
       )}
               </div>
+
+      {/* ── HESABIM ── Kim olduğun ve bu hesapla yaptığın her şey tek yerde. */}
+      {showMe && (
+        <div className="sheet-overlay" style={{ zIndex:250 }} onClick={() => setShowMe(false)}>
+          <div className="sheet" style={{ maxHeight:"88vh" }} onClick={e => e.stopPropagation()}>
+            <div className="sh-handle" />
+            <div className="sh-hd">
+              <div className="sh-title">{lang==="tr"?"Hesabım":"My Account"}</div>
+              <button className="sh-close" onClick={() => setShowMe(false)}>✕</button>
+            </div>
+            <div className="sh-body">
+              <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:4 }}>
+                <span className="me-avatar" style={{ width:44, height:44, fontSize:18 }}>
+                  {(contactInfo.username || contactInfo.email || "?").charAt(0).toUpperCase()}
+                </span>
+                <div style={{ minWidth:0 }}>
+                  <div style={{ fontSize:16, fontWeight:700, color:"var(--dark)" }}>
+                    {contactInfo.username || (contactInfo.email || "").split("@")[0]}
+                  </div>
+                  <div style={{ fontSize:12, color:"var(--muted)", overflow:"hidden", textOverflow:"ellipsis" }}>
+                    {contactInfo.email}
+                  </div>
+                </div>
+              </div>
+
+              {!contactInfo.username && (
+                <button className="btn btn-outline btn-full" style={{ marginTop:14, fontSize:13 }}
+                  onClick={() => { setShowMe(false); setOtpStep("username"); setContactModal({ onConfirm: () => {} }); }}>
+                  {lang==="tr"?"Kullanıcı adı belirle":"Set a username"}
+                </button>
+              )}
+
+              {/* Hayvan ilanları */}
+              <div className="me-sec">{lang==="tr"?`İlanlarım (${myAnimals.length})`:`My listings (${myAnimals.length})`}</div>
+              {myAnimals.length === 0
+                ? <div className="me-empty">{lang==="tr"?"Henüz ilan vermedin.":"You haven't posted a listing yet."}</div>
+                : myAnimals.map(a => (
+                    <div key={a.id} className="me-row" onClick={() => { setShowMe(false); setTab("animals"); setDetailA(a); }}>
+                      <span style={{ fontSize:20 }}>{a.emoji}</span>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div className="me-row-t">{a.name}</div>
+                        <div className="me-row-s">{[a.breed?.[lang], a.city].filter(Boolean).join(" · ")}</div>
+                      </div>
+                      <span className="ql-chev">›</span>
+                    </div>
+                  ))}
+
+              {/* Acil bildirimler */}
+              <div className="me-sec">{lang==="tr"?`Acil bildirimlerim (${myReports.length})`:`My reports (${myReports.length})`}</div>
+              {myReports.length === 0
+                ? <div className="me-empty">{lang==="tr"?"Henüz bildirim oluşturmadın.":"You haven't reported anything yet."}</div>
+                : myReports.map(r => (
+                    <div key={r.id} className="me-row" onClick={() => { setShowMe(false); setTab("help"); setDetailReport(r); }}>
+                      <span style={{ fontSize:20 }}>{r.emoji}</span>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div className="me-row-t">{r.title?.[lang] || r.title?.en || ""}</div>
+                        <div className="me-row-s">{r.status === "active" ? (lang==="tr"?"Aktif":"Active") : (lang==="tr"?"Yardım edildi":"Helped")} · {r.location}</div>
+                      </div>
+                      <span className="ql-chev">›</span>
+                    </div>
+                  ))}
+
+              {/* Kayıp & bulundu */}
+              <div className="me-sec">{lang==="tr"?`Kayıp & bulundu ilanlarım (${myLF.length})`:`My lost & found posts (${myLF.length})`}</div>
+              {myLF.length === 0
+                ? <div className="me-empty">{lang==="tr"?"Henüz kayıp ya da bulundu ilanın yok.":"No lost or found posts yet."}</div>
+                : myLF.map(i => (
+                    <div key={i.id} className="me-row" onClick={() => { setShowMe(false); setTab("lostfound"); setDetailLF(i); }}>
+                      <span style={{ fontSize:20 }}>{i.emoji}</span>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div className="me-row-t">{i.name || (lang==="tr"?"İsimsiz":"Unnamed")}</div>
+                        <div className="me-row-s">{[i.type === "lost" ? (lang==="tr"?"Kayıp":"Lost") : (lang==="tr"?"Bulundu":"Found"), i.area].filter(Boolean).join(" · ")}</div>
+                      </div>
+                      <span className="ql-chev">›</span>
+                    </div>
+                  ))}
+
+              {/* Başvurular — ekran açılınca çekilir */}
+              <div className="me-sec">
+                {lang==="tr"?"Başvurularım":"My applications"}{myApps ? ` (${myApps.length})` : ""}
+              </div>
+              {myApps === null
+                ? <div className="me-empty">{lang==="tr"?"Yükleniyor…":"Loading…"}</div>
+                : myApps.length === 0
+                ? <div className="me-empty">{lang==="tr"?"Henüz başvuru yapmadın.":"You haven't applied for anything yet."}</div>
+                : myApps.map(a => (
+                    <div key={a.id || a.ref_code} className="me-row" style={{ cursor:"default" }}>
+                      <span style={{ fontSize:20 }}>📋</span>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div className="me-row-t">{a.animal_name || "—"}</div>
+                        <div className="me-row-s">
+                          {a.mode === "foster" ? (lang==="tr"?"Geçici bakım":"Foster") : (lang==="tr"?"Sahiplenme":"Adoption")}
+                          {a.ref_code ? ` · ${a.ref_code}` : ""}
+                          {a.created_at ? ` · ${new Date(a.created_at).toLocaleDateString(lang)}` : ""}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+              <button className="btn btn-full" style={{ marginTop:24, background:"none", color:"var(--red)", fontSize:13 }}
+                onClick={signOut}>
+                {lang==="tr"?"Çıkış yap":"Sign out"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── EMAIL OTP VERIFICATION MODAL ── */}
       {contactModal && (
