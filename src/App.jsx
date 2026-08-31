@@ -690,10 +690,12 @@ const USE_SEED = import.meta.env.DEV;
 // davetiye. Gerçek iletişim bilgisi, gönüllü yola çıkmayı onayladıktan sonra
 // açılan iletişim ekranında zaten veriliyor — asıl yeri orası.
 const looksLikeEmail = (v) => /\S+@\S+\.\S+/.test(v || "");
-const publicReporterLabel = (name, lang) =>
-  (!name || looksLikeEmail(name))
-    ? (lang === "tr" ? "✓ Doğrulanmış bildirim" : "✓ Verified reporter")
-    : null;   // gerçek bir ad varsa olduğu gibi gösterilir
+// Öncelik: kullanıcının seçtiği ad → yoksa doğrulanmış işareti. E-posta asla.
+const publicReporterLabel = (username, name, lang) => {
+  if (username) return null;                       // null → çağıran taraf "Bildiren: <ad>" yazar
+  if (name && !looksLikeEmail(name)) return null;  // gerçek ad saklanmışsa o da gösterilir
+  return lang === "tr" ? "✓ Doğrulanmış bildirim" : "✓ Verified reporter";
+};
 
 // ─── ROUTING ──────────────────────────────────────────────────────────────────
 // Uygulama tek sayfaydı; her şey "/" adresinde yaşıyordu. Bu, Google'a
@@ -2094,6 +2096,7 @@ export default function App() {
             time: { en: new Date(r.created_at).toLocaleDateString("en"), tr: new Date(r.created_at).toLocaleDateString("tr") },
             status: r.status,
             reporter: r.reporter_name || "Anonymous",
+            reporterUsername: r.reporter_username || "",
             reporterPhone: r.reporter_phone || "",
             reporterPref: r.reporter_pref || "email",
             photo_url: (r.photo_urls && r.photo_urls[0]) || r.photo_url || null,
@@ -3082,7 +3085,8 @@ export default function App() {
                           <span className="r-mi">{rTime}</span>
                           {!r.fromAnimalListing && (
                             <span className="r-mi">
-                              {publicReporterLabel(r.reporter, lang) || `${t.reportedBy} ${r.reporter}`}
+                              {publicReporterLabel(r.reporterUsername, r.reporter, lang)
+                                || `${t.reportedBy} ${r.reporterUsername || r.reporter}`}
                             </span>
                           )}
                         </div>
@@ -3248,7 +3252,8 @@ export default function App() {
                   title: rf.title,
                   description: rf.desc || "",
                   location: fullLocation,
-                  reporter_name: contact.email,
+                  reporter_name: contact.email,          // notify-owner alıcı adresi olarak bunu kullanıyor
+                  reporter_username: contact.username || null,  // kartta gösterilen ad
                   reporter_phone: contact.phone || null,
                   reporter_pref: contact.contactPref || "email",
                   status: "active",
