@@ -2405,6 +2405,7 @@ export default function App() {
           ...f,
           email:    user.email || f.email,
           username: user.user_metadata?.username || f.username || "",
+          usernameAsked: !!user.user_metadata?.username_asked,
           phone:    f.phone || user.user_metadata?.phone || "",
           verified: true,
         }));
@@ -2416,9 +2417,17 @@ export default function App() {
   }, []);
 
   const requireContact = (onConfirm) => {
-    // If already verified this session, skip
     if (contactInfo.email && contactInfo.verified) {
-      console.log("[requireContact] Already verified, calling onConfirm directly");
+      // Doğrulama zaten var. Ama kullanıcı adı hiç sorulmamışsa bir kez sor:
+      // kullanıcı adı yalnızca doğrulama ekranında isteniyordu, dolayısıyla
+      // daha önce doğrulamış herkes (yani mevcut kullanıcıların tamamı) onu
+      // hiçbir zaman belirleyemiyordu. E-posta ve kod tekrar sorulmaz.
+      if (!contactInfo.username && !contactInfo.usernameAsked) {
+        setOtpStep("username");
+        setContactErr({});
+        setContactModal({ onConfirm });
+        return;
+      }
       onConfirm(contactInfo);
     } else {
       console.log("[requireContact] Not verified — opening OTP modal");
@@ -2427,6 +2436,19 @@ export default function App() {
       setContactErr({});
       setContactModal({ onConfirm });
     }
+  };
+
+  // Kullanıcı adı adımını tamamlar. Boş bırakılabilir — "soruldu" işareti sayesinde
+  // geçen kullanıcı bir daha rahatsız edilmez.
+  const saveUsername = async (username) => {
+    const clean = (username || "").trim().slice(0, 30);
+    setContactInfo(f => ({ ...f, username: clean, usernameAsked: true }));
+    try {
+      await (await getDb()).auth.updateUser({ data: { username: clean, username_asked: true } });
+    } catch (e) { console.warn("updateUser atlandı:", e); }
+    const fn = contactModal?.onConfirm;
+    setContactModal(null);
+    if (fn) fn({ ...contactInfo, username: clean, usernameAsked: true });
   };
 
   const sendOtp = async () => {
@@ -2464,12 +2486,12 @@ export default function App() {
     if (error) {
       setContactErr({ otp: lang==="tr"?"Kod yanlış veya süresi dolmuş":"Invalid or expired code" });
     } else {
-      setContactInfo(f => ({ ...f, verified: true }));
+      setContactInfo(f => ({ ...f, verified: true, usernameAsked: true }));
       // Kullanıcı adı ve telefon kullanıcıya iliştirilir; bir sonraki ziyarette
       // oturumla birlikte geri gelir ve tekrar sorulmaz.
       try {
         await (await getDb()).auth.updateUser({
-          data: { username: contactInfo.username || "", phone: contactInfo.phone || "" },
+          data: { username: contactInfo.username || "", username_asked: true, phone: contactInfo.phone || "" },
         });
       } catch (e) { console.warn("updateUser atlandı:", e); }
       const fn = contactModal.onConfirm;
@@ -3305,14 +3327,36 @@ export default function App() {
             <div className="sh-handle" />
             <div className="sh-hd">
               <div className="sh-title">
-                {otpStep === "email"
+                {otpStep === "username"
+                  ? (lang==="tr"?"Kullanıcı Adın":"Your Username")
+                  : otpStep === "email"
                   ? (lang==="tr"?"İletişim Bilgileri":"Contact Details")
                   : (lang==="tr"?"E-posta Doğrulama":"Email Verification")}
               </div>
               <button className="sh-close" onClick={() => setContactModal(null)}>✕</button>
             </div>
             <div className="sh-body">
-              {otpStep === "email" ? <>
+              {otpStep === "username" ? <>
+                <div className="inote">
+                  {lang==="tr"
+                    ? "İlanlarında görünecek bir kullanıcı adı seç. E-postan hiçbir zaman herkese gösterilmez. Bir kez soruyoruz."
+                    : "Pick a username to show on your listings. Your email is never shown publicly. We only ask once."}
+                </div>
+                <div className="fg">
+                  <label className="flabel">{lang==="tr"?"Kullanıcı adı":"Username"}</label>
+                  <input className="fi" type="text" maxLength={30} autoFocus
+                    placeholder={lang==="tr"?"örn. kedisever34":"e.g. catlover34"}
+                    value={contactInfo.username}
+                    onChange={e => setContactInfo(f => ({ ...f, username:e.target.value }))} />
+                </div>
+                <button className="btn btn-dark btn-full" onClick={() => saveUsername(contactInfo.username)}>
+                  {lang==="tr"?"Devam":"Continue"}
+                </button>
+                <button className="btn btn-full" style={{ background:"none", color:"var(--muted)", fontSize:13, marginTop:6 }}
+                  onClick={() => saveUsername("")}>
+                  {lang==="tr"?"Şimdilik geç":"Skip for now"}
+                </button>
+              </> : otpStep === "email" ? <>
                 <div className="inote">
                   {lang==="tr"
                     ? "İlanını yayınlamak için e-postanı bir kez doğrulamamız yeterli. Şifre yok — maile gelen 6 haneli kodu gir. Bir daha sorulmayacak."
