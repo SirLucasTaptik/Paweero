@@ -1450,7 +1450,7 @@ const CSS = `
   .hero-cta { display:flex; gap:10px; flex-wrap:wrap; }
 
   /* ─ STATS ─ */
-  .stats { display:grid; grid-template-columns:repeat(3,1fr); border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
+  .stats { display:grid; grid-template-columns:repeat(4,1fr); border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
   .stat.clickable { cursor:pointer; transition:background 0.12s; }
   .stat.clickable:active { background:var(--off); }
   @media (hover:hover) { .stat.clickable:hover { background:var(--off); } }
@@ -1562,6 +1562,8 @@ const CSS = `
   .ab-fo   { bottom:12px; left:12px; background:rgba(45,122,79,0.9); color:#fff; }
 
   /* home mini card */
+  .adopted-badge { position:absolute; left:8px; top:8px; background:var(--green); color:#fff; font-size:10px;
+                   font-weight:700; letter-spacing:0.3px; padding:3px 7px; border-radius:999px; }
   .mini-row { display:flex; gap:14px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none; margin:0 calc(-1 * var(--pad)); padding-left:var(--pad); padding-right:var(--pad); }
   .mini-row::-webkit-scrollbar { display:none; }
   .mini-card { flex-shrink:0; width:168px; background:var(--white); border:none; border-radius:var(--r); overflow:hidden; cursor:pointer; transition:transform 0.12s, box-shadow 0.12s; box-shadow:var(--shadow-sm); }
@@ -1748,7 +1750,6 @@ const CSS = `
   .me-act:disabled { opacity:0.5; cursor:default; }
   .me-act.on   { background:var(--dark); border-color:var(--dark); color:#fff; }
   .me-act.warn { color:var(--red); border-color:rgba(192,57,43,0.3); }
-  .me-act.warn.armed { background:var(--red); border-color:var(--red); color:#fff; }
 
   .me-sec   { font-size:11px; font-weight:700; letter-spacing:0.6px; text-transform:uppercase;
               color:var(--muted); margin:20px 0 8px; }
@@ -1757,6 +1758,8 @@ const CSS = `
               display:flex; align-items:center; justify-content:center; font-size:22px; }
   .me-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
   .me-thumb.off { opacity:0.45; filter:grayscale(1); }
+  .me-why   { margin-top:8px; padding:10px; background:var(--off); border-radius:var(--r-sm); }
+  .me-why-q { font-size:12px; font-weight:600; color:var(--dark); margin-bottom:8px; }
   .me-name-btn { display:flex; align-items:center; gap:6px; background:none; border:none; padding:0; cursor:pointer;
                  font-size:16px; font-weight:700; color:var(--dark); font-family:inherit; letter-spacing:-0.2px; }
   .me-name-btn .pencil { font-size:12px; opacity:0.45; }
@@ -1882,6 +1885,27 @@ const CSS = `
   .purpose-foster { background:rgba(37,99,235,0.12);  color:var(--blue);  }
   .purpose-adopt  { background:rgba(212,134,43,0.14); color:var(--amber); }
 `;
+
+// İlanı kaldırma sebepleri. Sebep yalnızca kayıt için değil: "yuvalandı" ilanı
+// silmek yerine adopted durumuna alıyor, ana sayfadaki sayaç da onu sayıyor.
+// Acil bildirimde tek sebep var — bildiren kişi hayvanın sahibi değil, sadece
+// erişimini kaybetmiş olabilir.
+const REMOVE_REASONS = {
+  animals: [
+    { key:"adopted",     status:"adopted", tr:"Yuvalandı",                 en:"Found a home" },
+    { key:"unreachable", status:"removed", tr:"Artık iletişimde değilim",  en:"No longer in contact" },
+  ],
+  lf: [
+    { key:"adopted",     status:"adopted", tr:"Yuvalandı",                 en:"Found a home" },
+    { key:"unreachable", status:"removed", tr:"Artık iletişimde değilim",  en:"No longer in contact" },
+  ],
+  reports: [
+    { key:"noaccess",    status:"removed", tr:"Artık erişimim yok",        en:"I no longer have access" },
+  ],
+};
+
+// Sahibi listeden düşürmüş: kaldırılmış ya da yuvalanmış.
+const isOffline = (status) => status === "removed" || status === "adopted";
 
 // Veritabanı satırını uygulamanın kullandığı biçime çevirir. Hem ana liste hem de
 // "Hesabım" ekranındaki kaldırılmış ilanlar aynı çeviriden geçsin diye dışarıda.
@@ -2151,6 +2175,10 @@ export default function App() {
   const [rf, setRf]           = useState({ title:"", location:"", desc:"", type:"Injured", animal:"", rCountry:FORM_COUNTRY, rProvince:FORM_PROVINCE, rCity:"", rAddress:"" });
   const [lfForm, setLFForm]   = useState({ type:"lost", name:"", species:"Dog", breed:"", color:"", area:"", city:"", contact:"", reward:"", desc:"", lfCountry:FORM_COUNTRY, lfProvince:FORM_PROVINCE, lfAddress:"" });
 
+  // Yuvasına kavuşanlar: ana sayfadaki sayaç ve şerit için.
+  const [adoptedAnimals, setAdoptedAnimals] = useState([]);
+  const [adoptedCount, setAdoptedCount]     = useState(0);
+
   // ── Supabase: veri çek ──
   const loadFromDB = async () => {
     setDbLoading(true);
@@ -2266,6 +2294,18 @@ export default function App() {
         .select("*")
         .eq("status", "active")
         .order("created_at", { ascending: false });
+
+      // Yuvalananlar ayrı bir sorgu: listelerde görünmüyorlar ama ana sayfada
+      // sayılıyorlar. count exact toplamı verir, limit yalnızca gösterilecek
+      // kartları getirir — binlerce kayıt olsa da tek sayfa yükü sabit kalır.
+      const { data: adoptedData, count: adoptedTotal } = await client
+        .from("animals")
+        .select("*", { count: "exact" })
+        .eq("status", "adopted")
+        .order("created_at", { ascending: false })
+        .limit(12);
+      setAdoptedAnimals((adoptedData || []).map(mapAnimalRow));
+      setAdoptedCount(adoptedTotal || 0);
 
       if (aErr) { console.error("Animals error:", aErr); failed = true; }
       if (aData && aData.length > 0) {
@@ -2468,13 +2508,13 @@ export default function App() {
 
   // Ana liste sorgusu yalnızca status=active çektiği için kaldırdığım ilanlar
   // hiç gelmiyor; geri alabilmek için kendi kaldırılmışlarımı ayrıca çekiyorum.
-  const [myRemovedAnimals, setMyRemovedAnimals] = useState([]);
+  const [myRemovedAnimals, setMyRemovedAnimals] = useState([]);   // kaldırılmış + yuvalanmış
   const loadMyRemoved = async (email) => {
     if (!email) { setMyRemovedAnimals([]); return; }
     try {
       const { data, error } = await (await getDb())
         .from("animals").select("*")
-        .eq("status", "removed").eq("submitter_email", email)
+        .in("status", ["removed", "adopted"]).eq("submitter_email", email)
         .order("created_at", { ascending: false });
       setMyRemovedAnimals(error ? [] : (data || []).map(mapAnimalRow));
     } catch (e) { setMyRemovedAnimals([]); }
@@ -2533,8 +2573,16 @@ export default function App() {
   const ownerPatch = async (table, id, ownerField, patch, okMsg) => {
     setBusyRow(id);
     try {
-      const { error } = await (await getDb())
-        .from(table).update(patch).eq("id", id).eq(ownerField, contactInfo.email);
+      const client = await getDb();
+      const send = (body) => client.from(table).update(body).eq("id", id).eq(ownerField, contactInfo.email);
+      let { error } = await send(patch);
+      if (error && patch.removed_reason) {
+        // removed_reason kolonu henüz eklenmemiş olabilir (supabase/removal-reason.sql).
+        // Sebep kaydedilemese bile kaldırma işleminin çalışması gerekiyor.
+        console.warn("removed_reason yazılamadı, sebepsiz deneniyor:", error.message);
+        const { removed_reason, ...rest } = patch;
+        ({ error } = await send(rest));
+      }
       if (error) throw error;
       say(okMsg);
       await Promise.all([loadFromDB(), loadMyRemoved(contactInfo.email)]);
@@ -2546,21 +2594,46 @@ export default function App() {
     setConfirm(null);
   };
 
-  const removeAnimal = (a) => ownerPatch("animals", a.id, "submitter_email", { status:"removed" },
-    lang==="tr" ? "İlan kaldırıldı" : "Listing removed");
+  // Sebep hem satıra yazılıyor hem de hangi duruma geçileceğini belirliyor.
+  const removedMsg = (reason) => reason.status === "adopted"
+    ? (lang==="tr" ? "Yuvalandı olarak işaretlendi 🎉" : "Marked as adopted 🎉")
+    : (lang==="tr" ? "İlan kaldırıldı" : "Listing removed");
+
+  const removeAnimal = (a, reason) => ownerPatch("animals", a.id, "submitter_email",
+    { status: reason.status, removed_reason: reason.key }, removedMsg(reason));
   const setAnimalPurpose = (a, patch) => ownerPatch("animals", a.id, "submitter_email", patch,
     lang==="tr" ? "İlan güncellendi" : "Listing updated");
-  const removeLF = (i) => ownerPatch("lf_listings", i.id, "contact_email", { status:"removed" },
-    lang==="tr" ? "İlan kaldırıldı" : "Post removed");
+  const removeLF = (i, reason) => ownerPatch("lf_listings", i.id, "contact_email",
+    { status: reason.status, removed_reason: reason.key }, removedMsg(reason));
   const markReunited = (i) => ownerPatch("lf_listings", i.id, "contact_email", { status:"reunited" },
     lang==="tr" ? "Bulundu olarak işaretlendi" : "Marked as found");
-  const removeReport = (r) => ownerPatch("reports", r.id, "reporter_name", { status:"removed" },
+  const removeReport = (r, reason) => ownerPatch("reports", r.id, "reporter_name",
+    { status: reason.status, removed_reason: reason.key },
     lang==="tr" ? "Bildirim kaldırıldı" : "Report removed");
 
   // Kaldırma kaydı silmediği için geri alınabiliyor.
   const restore = (table, id, ownerField, status) => ownerPatch(table, id, ownerField, { status },
     lang==="tr" ? "İlan tekrar yayında" : "Listing is live again");
-  const removedNote = () => lang==="tr" ? "Kaldırıldı — listelerde görünmüyor" : "Removed — not shown in any list";
+  const offlineNote = (status) => status === "adopted"
+    ? (lang==="tr" ? "Yuvalandı 🎉 — listelerde görünmüyor" : "Found a home 🎉 — not shown in any list")
+    : (lang==="tr" ? "Kaldırıldı — listelerde görünmüyor" : "Removed — not shown in any list");
+
+  // "Kaldır" tek adımda silmiyor: önce sebep soruluyor. Sebep aynı zamanda onay
+  // görevi görüyor, ayrıca "Emin misin?" adımına gerek kalmıyor.
+  const ReasonPicker = ({ kind, onPick }) => (
+    <div className="me-why" onClick={e => e.stopPropagation()}>
+      <div className="me-why-q">{lang==="tr"?"Neden kaldırıyorsun?":"Why are you removing this?"}</div>
+      <div className="me-acts">
+        {REMOVE_REASONS[kind].map(r => (
+          <button key={r.key} className={`me-act ${r.status === "adopted" ? "on" : "warn"}`}
+            onClick={() => onPick(r)}>{r[lang] || r.en}</button>
+        ))}
+        <button className="me-act" onClick={() => setConfirm(null)}>
+          {lang==="tr"?"Vazgeç":"Cancel"}
+        </button>
+      </div>
+    </div>
+  );
 
   const signOut = async () => {
     try { await (await getDb()).auth.signOut(); } catch (e) {}
@@ -2711,7 +2784,7 @@ export default function App() {
   // lf_listings.city actually stores the province (set at submission time),
   // and area holds the neighbourhood/open-address text.
   const filteredLF = lfItems.filter(item => {
-    if (item.status === "removed") return false;   // sahibi kaldırmış
+    if (isOffline(item.status)) return false;   // sahibi kaldırmış ya da yuvalanmış
     const okType = lfTypeFilter === "all" || item.type === lfTypeFilter;
     const okP    = fProvince === "All Provinces" || item.city === fProvince;
     const okCi   = fCity     === "All Cities"    || (item.area || "").toLowerCase().includes(fCity.toLowerCase());
@@ -2915,6 +2988,8 @@ export default function App() {
               const helpedCount  = reports.filter(r => r.status === "helped" || r.status === "resolved").length;
               const statDefs = [
                 { n: waitingCount, l: t.waiting, onClick: () => goTab("animals") },
+                { n: adoptedCount, l: lang==="tr"?"Yuvalandı":"Adopted",
+                  onClick: () => document.getElementById("adopted-sec")?.scrollIntoView({ behavior:"smooth", block:"center" }) },
                 { n: rescueCount,  l: t.rescues, onClick: () => { goTab("help"); setHelpSub("active"); } },
                 { n: helpedCount,  l: t.helped || (lang==="tr"?"Yardım Edildi":"Helped"), onClick: () => { goTab("help"); setHelpSub("helped"); } },
               ];
@@ -2949,6 +3024,35 @@ export default function App() {
             <div className="mini-row">
               {animals.map(a => <MiniCard key={a.id} a={a} lang={lang} onClick={() => setDetailA(a)} />)}
             </div>
+
+            {/* Yuvasına kavuşanlar — sayfanın hedefini gösteren bölüm. Kartlar
+                tıklanmıyor: ilan artık yayında değil, açılacak bir sayfası yok. */}
+            {adoptedCount > 0 && (
+              <div id="adopted-sec">
+                <div className="divider" />
+                <div className="sec-label">
+                  {lang==="tr" ? "Yuvasına kavuşanlar" : "They found a home"}
+                  <span style={{ marginLeft:6, color:"var(--green)", fontWeight:700 }}>{adoptedCount}</span>
+                </div>
+                <div className="mini-row">
+                  {adoptedAnimals.map(a => (
+                    <div key={a.id} className="mini-card" style={{ cursor:"default" }}>
+                      <div style={{ height:126, background:"var(--off)", display:"flex", alignItems:"center",
+                                    justifyContent:"center", fontSize:44, position:"relative", overflow:"hidden" }}>
+                        <ListingPhoto src={a.photo_url} alt={[a.name, a.breed?.[lang]].filter(Boolean).join(", ")} size="50%" />
+                        <span className="adopted-badge">{lang==="tr"?"Yuvalandı":"Adopted"}</span>
+                      </div>
+                      <div style={{ padding:"8px 10px" }}>
+                        <div style={{ fontSize:12, fontWeight:600, color:"var(--dark)", marginBottom:1 }}>{a.name}</div>
+                        <div style={{ fontSize:10, color:"var(--muted)" }}>
+                          {[a.species?.[lang], a.city].filter(Boolean).join(" · ")}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </>}
 
@@ -3584,27 +3688,31 @@ export default function App() {
                 ? <div className="me-empty">{lang==="tr"?"Henüz ilan vermedin.":"You haven't posted a listing yet."}</div>
                 : myAnimals.map(a => (
                     <div key={a.id} className="me-row" style={{ alignItems:"flex-start",
-                        cursor: a.status === "removed" ? "default" : "pointer" }}
-                      onClick={() => { if (a.status !== "removed") { setShowMe(false); setTab("animals"); setDetailA(a); } }}>
-                      <MeThumb src={a.photo_url} emoji={a.emoji} dim={a.status === "removed"}
+                        cursor: isOffline(a.status) ? "default" : "pointer" }}
+                      onClick={() => { if (!isOffline(a.status)) { setShowMe(false); setTab("animals"); setDetailA(a); } }}>
+                      <MeThumb src={a.photo_url} emoji={a.emoji} dim={isOffline(a.status)}
                         alt={[a.name, a.breed?.[lang]].filter(Boolean).join(", ")} />
                       <div style={{ flex:1, minWidth:0 }}>
                         <div className="me-row-t">{a.name}</div>
                         <div className="me-row-s">{[a.breed?.[lang], a.city].filter(Boolean).join(" · ")}</div>
-                        {a.status === "removed"
-                          ? <div className="me-row-s" style={{ color:"var(--red)" }}>{removedNote()}</div>
+                        {isOffline(a.status)
+                          ? <div className="me-row-s" style={{ color: a.status === "adopted" ? "var(--green)" : "var(--red)" }}>
+                              {offlineNote(a.status)}
+                            </div>
                           : (!a.canAdopt && !a.canFoster) && (
                               <div className="me-row-s" style={{ color:"var(--red)" }}>
                                 {lang==="tr"?"Listelerde görünmüyor":"Not shown in any list"}
                               </div>
                             )}
-                        {a.status === "removed" ? (
+                        {isOffline(a.status) ? (
                           <div className="me-acts" onClick={e => e.stopPropagation()}>
                             <button className="me-act" disabled={busyRow === a.id}
                               onClick={() => restore("animals", a.id, "submitter_email", "active")}>
                               {lang==="tr"?"Tekrar yayınla":"Republish"}
                             </button>
                           </div>
+                        ) : confirmRow === a.id ? (
+                          <ReasonPicker kind="animals" onPick={r => removeAnimal(a, r)} />
                         ) : (
                         <div className="me-acts" onClick={e => e.stopPropagation()}>
                           <button className={`me-act ${a.canAdopt ? "on" : ""}`} disabled={busyRow === a.id}
@@ -3615,9 +3723,9 @@ export default function App() {
                             onClick={() => setAnimalPurpose(a, { can_foster: !a.canFoster })}>
                             {lang==="tr"?"Geçici bakım":"Foster"}
                           </button>
-                          <button className={`me-act warn ${confirmRow === a.id ? "armed" : ""}`} disabled={busyRow === a.id}
-                            onClick={() => confirmRow === a.id ? removeAnimal(a) : setConfirm(a.id)}>
-                            {confirmRow === a.id ? (lang==="tr"?"Emin misin?":"Are you sure?") : (lang==="tr"?"Kaldır":"Remove")}
+                          <button className="me-act warn" disabled={busyRow === a.id}
+                            onClick={() => setConfirm(a.id)}>
+                            {lang==="tr"?"Kaldır":"Remove"}
                           </button>
                         </div>
                         )}
@@ -3641,7 +3749,10 @@ export default function App() {
                           {r.status !== "removed" && ((r.status === "active" ? (lang==="tr"?"Aktif":"Active") : (lang==="tr"?"Yardım edildi":"Helped")) + " · ")}
                           {r.location}
                         </div>
-                        {r.status === "removed" && <div className="me-row-s" style={{ color:"var(--red)" }}>{removedNote()}</div>}
+                        {r.status === "removed" && <div className="me-row-s" style={{ color:"var(--red)" }}>{offlineNote(r.status)}</div>}
+                        {confirmRow === r.id && r.status !== "removed" ? (
+                          <ReasonPicker kind="reports" onPick={x => removeReport(r, x)} />
+                        ) : (
                         <div className="me-acts" onClick={e => e.stopPropagation()}>
                           {r.status === "removed" ? (
                             <button className="me-act" disabled={busyRow === r.id}
@@ -3649,11 +3760,11 @@ export default function App() {
                               {lang==="tr"?"Tekrar yayınla":"Republish"}
                             </button>
                           ) : (
-                          <button className={`me-act warn ${confirmRow === r.id ? "armed" : ""}`} disabled={busyRow === r.id}
-                            onClick={() => confirmRow === r.id ? removeReport(r) : setConfirm(r.id)}>
-                            {confirmRow === r.id ? (lang==="tr"?"Emin misin?":"Are you sure?") : (lang==="tr"?"Kaldır":"Remove")}
+                          <button className="me-act warn" disabled={busyRow === r.id}
+                            onClick={() => setConfirm(r.id)}>
+                            {lang==="tr"?"Kaldır":"Remove"}
                           </button>)}
-                        </div>
+                        </div>)}
                       </div>
                     </div>
                   ))}
@@ -3664,9 +3775,9 @@ export default function App() {
                 ? <div className="me-empty">{lang==="tr"?"Henüz kayıp ya da bulundu ilanın yok.":"No lost or found posts yet."}</div>
                 : myLF.map(i => (
                     <div key={i.id} className="me-row" style={{ alignItems:"flex-start",
-                        cursor: i.status === "removed" ? "default" : "pointer" }}
-                      onClick={() => { if (i.status !== "removed") { setShowMe(false); setTab("lostfound"); setDetailLF(i); } }}>
-                      <MeThumb src={i.photo_url} emoji={i.emoji} dim={i.status === "removed"}
+                        cursor: isOffline(i.status) ? "default" : "pointer" }}
+                      onClick={() => { if (!isOffline(i.status)) { setShowMe(false); setTab("lostfound"); setDetailLF(i); } }}>
+                      <MeThumb src={i.photo_url} emoji={i.emoji} dim={isOffline(i.status)}
                         alt={i.name || ""} />
                       <div style={{ flex:1, minWidth:0 }}>
                         <div className="me-row-t">{i.name || (lang==="tr"?"İsimsiz":"Unnamed")}</div>
@@ -3674,25 +3785,32 @@ export default function App() {
                           {[i.type === "lost" ? (lang==="tr"?"Kayıp":"Lost") : (lang==="tr"?"Bulundu":"Found"), i.area].filter(Boolean).join(" · ")}
                           {i.status === "reunited" && ` · ${lang==="tr"?"Kavuştu ✓":"Reunited ✓"}`}
                         </div>
-                        {i.status === "removed" && <div className="me-row-s" style={{ color:"var(--red)" }}>{removedNote()}</div>}
+                        {isOffline(i.status) && (
+                          <div className="me-row-s" style={{ color: i.status === "adopted" ? "var(--green)" : "var(--red)" }}>
+                            {offlineNote(i.status)}
+                          </div>
+                        )}
+                        {confirmRow === i.id && !isOffline(i.status) ? (
+                          <ReasonPicker kind="lf" onPick={x => removeLF(i, x)} />
+                        ) : (
                         <div className="me-acts" onClick={e => e.stopPropagation()}>
-                          {i.status === "removed" && (
+                          {isOffline(i.status) && (
                             <button className="me-act" disabled={busyRow === i.id}
                               onClick={() => restore("lf_listings", i.id, "contact_email", "open")}>
                               {lang==="tr"?"Tekrar yayınla":"Republish"}
                             </button>
                           )}
-                          {i.status !== "reunited" && i.status !== "removed" && (
+                          {i.status !== "reunited" && !isOffline(i.status) && (
                             <button className="me-act" disabled={busyRow === i.id} onClick={() => markReunited(i)}>
                               {lang==="tr"?"Bulundu olarak işaretle":"Mark as found"}
                             </button>
                           )}
-                          {i.status !== "removed" && (
-                          <button className={`me-act warn ${confirmRow === i.id ? "armed" : ""}`} disabled={busyRow === i.id}
-                            onClick={() => confirmRow === i.id ? removeLF(i) : setConfirm(i.id)}>
-                            {confirmRow === i.id ? (lang==="tr"?"Emin misin?":"Are you sure?") : (lang==="tr"?"Kaldır":"Remove")}
+                          {!isOffline(i.status) && (
+                          <button className="me-act warn" disabled={busyRow === i.id}
+                            onClick={() => setConfirm(i.id)}>
+                            {lang==="tr"?"Kaldır":"Remove"}
                           </button>)}
-                        </div>
+                        </div>)}
                       </div>
                     </div>
                   ))}
