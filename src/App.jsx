@@ -1753,6 +1753,10 @@ const CSS = `
   .me-sec   { font-size:11px; font-weight:700; letter-spacing:0.6px; text-transform:uppercase;
               color:var(--muted); margin:20px 0 8px; }
   .me-row   { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); cursor:pointer; }
+  .me-thumb { width:44px; height:44px; flex-shrink:0; border-radius:10px; overflow:hidden; background:var(--off);
+              display:flex; align-items:center; justify-content:center; font-size:22px; }
+  .me-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+  .me-thumb.off { opacity:0.45; filter:grayscale(1); }
   .me-row:last-child { border-bottom:none; }
   .me-row-t { font-size:14px; font-weight:600; color:var(--dark); }
   .me-row-s { font-size:12px; color:var(--muted); margin-top:2px; }
@@ -2532,7 +2536,7 @@ export default function App() {
 
   // Kaldırma kaydı silmediği için geri alınabiliyor.
   const restore = (table, id, ownerField, status) => ownerPatch(table, id, ownerField, { status },
-    lang==="tr" ? "İlan geri alındı" : "Listing restored");
+    lang==="tr" ? "İlan tekrar yayında" : "Listing is live again");
   const removedNote = () => lang==="tr" ? "Kaldırıldı — listelerde görünmüyor" : "Removed — not shown in any list";
 
   const signOut = async () => {
@@ -3494,7 +3498,8 @@ export default function App() {
                 ? <div className="me-empty">{lang==="tr"?"Henüz ilan vermedin.":"You haven't posted a listing yet."}</div>
                 : myAnimals.map(a => (
                     <div key={a.id} className="me-row" style={{ alignItems:"flex-start" }}>
-                      <span style={{ fontSize:20 }}>{a.emoji}</span>
+                      <MeThumb src={a.photo_url} emoji={a.emoji} dim={a.status === "removed"}
+                        alt={[a.name, a.breed?.[lang]].filter(Boolean).join(", ")} />
                       <div style={{ flex:1, minWidth:0 }}>
                         <div className="me-row-t" style={{ cursor:"pointer" }}
                           onClick={() => { setShowMe(false); setTab("animals"); setDetailA(a); }}>{a.name}</div>
@@ -3510,7 +3515,7 @@ export default function App() {
                           <div className="me-acts">
                             <button className="me-act" disabled={busyRow === a.id}
                               onClick={() => restore("animals", a.id, "submitter_email", "active")}>
-                              {lang==="tr"?"Geri al":"Restore"}
+                              {lang==="tr"?"Tekrar yayınla":"Republish"}
                             </button>
                           </div>
                         ) : (
@@ -3539,7 +3544,8 @@ export default function App() {
                 ? <div className="me-empty">{lang==="tr"?"Henüz bildirim oluşturmadın.":"You haven't reported anything yet."}</div>
                 : myReports.map(r => (
                     <div key={r.id} className="me-row" style={{ alignItems:"flex-start" }}>
-                      <span style={{ fontSize:20 }}>{r.emoji}</span>
+                      <MeThumb src={r.photo_url} emoji={r.emoji} dim={r.status === "removed"}
+                        alt={r.title?.[lang] || r.title?.en || ""} />
                       <div style={{ flex:1, minWidth:0 }}>
                         <div className="me-row-t" style={{ cursor:"pointer" }}
                           onClick={() => { setShowMe(false); setTab("help"); setDetailReport(r); }}>
@@ -3554,7 +3560,7 @@ export default function App() {
                           {r.status === "removed" ? (
                             <button className="me-act" disabled={busyRow === r.id}
                               onClick={() => restore("reports", r.id, "reporter_name", "active")}>
-                              {lang==="tr"?"Geri al":"Restore"}
+                              {lang==="tr"?"Tekrar yayınla":"Republish"}
                             </button>
                           ) : (
                           <button className={`me-act warn ${confirmRow === r.id ? "armed" : ""}`} disabled={busyRow === r.id}
@@ -3572,7 +3578,8 @@ export default function App() {
                 ? <div className="me-empty">{lang==="tr"?"Henüz kayıp ya da bulundu ilanın yok.":"No lost or found posts yet."}</div>
                 : myLF.map(i => (
                     <div key={i.id} className="me-row" style={{ alignItems:"flex-start" }}>
-                      <span style={{ fontSize:20 }}>{i.emoji}</span>
+                      <MeThumb src={i.photo_url} emoji={i.emoji} dim={i.status === "removed"}
+                        alt={i.name || ""} />
                       <div style={{ flex:1, minWidth:0 }}>
                         <div className="me-row-t" style={{ cursor:"pointer" }}
                           onClick={() => { setShowMe(false); setTab("lostfound"); setDetailLF(i); }}>
@@ -3587,7 +3594,7 @@ export default function App() {
                           {i.status === "removed" && (
                             <button className="me-act" disabled={busyRow === i.id}
                               onClick={() => restore("lf_listings", i.id, "contact_email", "open")}>
-                              {lang==="tr"?"Geri al":"Restore"}
+                              {lang==="tr"?"Tekrar yayınla":"Republish"}
                             </button>
                           )}
                           {i.status !== "reunited" && i.status !== "removed" && (
@@ -3615,7 +3622,8 @@ export default function App() {
                 ? <div className="me-empty">{lang==="tr"?"Henüz başvuru yapmadın.":"You haven't applied for anything yet."}</div>
                 : myApps.map(a => (
                     <div key={a.id || a.ref_code} className="me-row" style={{ cursor:"default" }}>
-                      <span style={{ fontSize:20 }}>📋</span>
+                      <MeThumb emoji="📋" alt={a.animal_name || ""}
+                        src={animals.find(x => String(x.id) === String(a.animal_id))?.photo_url} />
                       <div style={{ flex:1, minWidth:0 }}>
                         <div className="me-row-t">{a.animal_name || "—"}</div>
                         <div className="me-row-s">
@@ -4212,6 +4220,21 @@ function ListingPhoto({ src, alt, size = "56%" }) {
   }
   return <img src={src} alt={alt} onError={() => setFailed(true)}
               style={{ width:"100%", height:"100%", objectFit:"cover" }} />;
+}
+
+// "Hesabım" satırlarındaki küçük görsel. İlanı emojiden tanımak zor; kendi
+// fotoğrafını görünce hangi ilan olduğu bir bakışta anlaşılıyor. Fotoğrafı
+// olmayan ya da yüklenemeyen ilan emojiye düşer, kutu boş kalmaz.
+function MeThumb({ src, emoji, alt, dim = false }) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => { setFailed(false); }, [src]);
+  const cls = `me-thumb${dim ? " off" : ""}`;
+  if (!src || failed) return <span className={cls} aria-hidden="true">{emoji}</span>;
+  return (
+    <span className={cls}>
+      <img src={src} alt={alt || ""} onError={() => setFailed(true)} />
+    </span>
+  );
 }
 
 function MiniCard({ a, lang, onClick }) {
