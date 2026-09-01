@@ -1757,6 +1757,10 @@ const CSS = `
               display:flex; align-items:center; justify-content:center; font-size:22px; }
   .me-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
   .me-thumb.off { opacity:0.45; filter:grayscale(1); }
+  .me-name-btn { display:flex; align-items:center; gap:6px; background:none; border:none; padding:0; cursor:pointer;
+                 font-size:16px; font-weight:700; color:var(--dark); font-family:inherit; letter-spacing:-0.2px; }
+  .me-name-btn .pencil { font-size:12px; opacity:0.45; }
+  .me-name-btn:active .pencil, .me-name-btn:hover .pencil { opacity:0.9; }
   .me-row:last-child { border-bottom:none; }
   .me-row-t { font-size:14px; font-weight:600; color:var(--dark); }
   .me-row-s { font-size:12px; color:var(--muted); margin-top:2px; }
@@ -2599,6 +2603,38 @@ export default function App() {
     const fn = contactModal?.onConfirm;
     setContactModal(null);
     if (fn) fn({ ...contactInfo, username: clean, usernameAsked: true });
+  };
+
+  // Kullanıcı adını hesap ekranından değiştirme. Doğrulama modalını yeniden
+  // açmak yerine satır içinde düzenleniyor: e-posta zaten doğrulanmış, tekrar
+  // sormanın anlamı yok. Ad geçmiş ihbarlara da yazılıyor — yoksa eski
+  // ilanlarında eski adın, yenilerinde yenisi görünürdü.
+  const [editName, setEditName]   = useState(null);   // null = düzenleme kapalı
+  const [nameErr, setNameErr]     = useState("");
+  const [savingName, setSaving]   = useState(false);
+
+  const updateUsername = async (raw) => {
+    const clean = (raw || "").trim().slice(0, 30);
+    if (clean.length < 2) {
+      setNameErr(lang==="tr" ? "En az 2 karakter" : "At least 2 characters");
+      return;
+    }
+    setSaving(true);
+    setNameErr("");
+    try {
+      const client = await getDb();
+      const { error } = await client.auth.updateUser({ data: { username: clean, username_asked: true } });
+      if (error) throw error;
+      await client.from("reports").update({ reporter_username: clean }).eq("reporter_name", contactInfo.email);
+      setContactInfo(f => ({ ...f, username: clean, usernameAsked: true }));
+      setEditName(null);
+      await loadFromDB();
+      say(lang==="tr" ? "Kullanıcı adın güncellendi" : "Username updated");
+    } catch (e) {
+      console.error("updateUsername:", e);
+      setNameErr(lang==="tr" ? "Kaydedilemedi, tekrar dene" : "Could not save, please try again");
+    }
+    setSaving(false);
   };
 
   const sendOtp = async () => {
@@ -3494,21 +3530,52 @@ export default function App() {
                 <span className="me-avatar" style={{ width:44, height:44, fontSize:18 }}>
                   {(contactInfo.username || contactInfo.email || "?").charAt(0).toUpperCase()}
                 </span>
-                <div style={{ minWidth:0 }}>
-                  <div style={{ fontSize:16, fontWeight:700, color:"var(--dark)" }}>
-                    {contactInfo.username || (contactInfo.email || "").split("@")[0]}
-                  </div>
-                  <div style={{ fontSize:12, color:"var(--muted)", overflow:"hidden", textOverflow:"ellipsis" }}>
+                <div style={{ minWidth:0, flex:1 }}>
+                  {editName === null ? (
+                    <button className="me-name-btn"
+                      title={lang==="tr"?"Kullanıcı adını değiştir":"Change your username"}
+                      onClick={() => { setNameErr(""); setEditName(contactInfo.username || ""); }}>
+                      <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                        {contactInfo.username || (contactInfo.email || "").split("@")[0]}
+                      </span>
+                      <span className="pencil" aria-hidden="true">✏️</span>
+                    </button>
+                  ) : (
+                    <input className="fi" type="text" maxLength={30} autoFocus disabled={savingName}
+                      style={{ fontSize:15, padding:"8px 10px" }}
+                      placeholder={lang==="tr"?"örn. kedisever34":"e.g. catlover34"}
+                      value={editName}
+                      onChange={e => setEditName(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === "Enter") updateUsername(editName);
+                        if (e.key === "Escape") { setEditName(null); setNameErr(""); }
+                      }} />
+                  )}
+                  <div style={{ fontSize:12, color:"var(--muted)", overflow:"hidden", textOverflow:"ellipsis", marginTop:2 }}>
                     {contactInfo.email}
                   </div>
                 </div>
               </div>
 
-              {!contactInfo.username && (
-                <button className="btn btn-outline btn-full" style={{ marginTop:14, fontSize:13 }}
-                  onClick={() => { setShowMe(false); setOtpStep("username"); setContactModal({ onConfirm: () => {} }); }}>
-                  {lang==="tr"?"Kullanıcı adı belirle":"Set a username"}
-                </button>
+              {editName !== null && (
+                <div style={{ marginTop:10 }}>
+                  {nameErr && <div style={{ fontSize:12, color:"var(--red)", marginBottom:8 }}>{nameErr}</div>}
+                  <div style={{ display:"flex", gap:8 }}>
+                    <button className="btn btn-dark" style={{ flex:1, fontSize:13 }} disabled={savingName}
+                      onClick={() => updateUsername(editName)}>
+                      {savingName ? (lang==="tr"?"Kaydediliyor…":"Saving…") : (lang==="tr"?"Kaydet":"Save")}
+                    </button>
+                    <button className="btn btn-outline" style={{ flex:1, fontSize:13 }} disabled={savingName}
+                      onClick={() => { setEditName(null); setNameErr(""); }}>
+                      {lang==="tr"?"Vazgeç":"Cancel"}
+                    </button>
+                  </div>
+                  <div style={{ fontSize:12, color:"var(--muted)", marginTop:8, lineHeight:1.5 }}>
+                    {lang==="tr"
+                      ? "İlanlarında bu ad görünür; e-postan hiçbir zaman gösterilmez."
+                      : "This is the name shown on your listings; your email is never shown."}
+                  </div>
+                </div>
               )}
 
               {/* Hayvan ilanları */}
