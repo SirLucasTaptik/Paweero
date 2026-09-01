@@ -3003,6 +3003,12 @@ export default function App() {
           </div>
 
           <div className="wrap">
+            <div className="sec-label">{t.recentlyAdded}</div>
+            <div className="mini-row">
+              {animals.map(a => <MiniCard key={a.id} a={a} lang={lang} onClick={() => setDetailA(a)} />)}
+            </div>
+
+            <div className="divider" />
             <div className="sec-label">{t.browseByGoal}</div>
             <div className="ql-list">
               {[
@@ -3017,12 +3023,6 @@ export default function App() {
                   <div className="ql-chev">›</div>
                 </div>
               ))}
-            </div>
-
-            <div className="divider" />
-            <div className="sec-label">{t.recentlyAdded}</div>
-            <div className="mini-row">
-              {animals.map(a => <MiniCard key={a.id} a={a} lang={lang} onClick={() => setDetailA(a)} />)}
             </div>
 
             {/* Yuvasına kavuşanlar — sayfanın hedefini gösteren bölüm. Kartlar
