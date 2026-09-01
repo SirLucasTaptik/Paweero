@@ -2484,16 +2484,35 @@ export default function App() {
   const myLF      = myEmail ? lfItems.filter(i => mine(i.contact_email) || mine(i.contact)) : [];
 
   // Başvurular listede tutulmuyor; ekran açıldığında bir kez çekilir.
+  // Başvuru satırı yalnızca hayvanın adını saklıyor; fotoğrafı ve ilana gitme
+  // bağlantısı için ilgili ilanları ayrıca çekiyoruz. Ana listeden okumak
+  // yetmez: başvurduğun ilan bu arada kaldırılmış olabilir, o zaman fotoğrafı
+  // da kaybolurdu.
+  const [appAnimals, setAppAnimals] = useState({});   // id → ilan
   useEffect(() => {
     if (!showMe || myApps !== null || !myEmail) return;
     let cancelled = false;
     (async () => {
       try {
-        const { data, error } = await (await getDb())
+        const client = await getDb();
+        const { data, error } = await client
           .from("applications").select("*")
           .eq("applicant_email", contactInfo.email)
           .order("created_at", { ascending: false });
-        if (!cancelled) setMyApps(error ? [] : (data || []));
+        const apps = error ? [] : (data || []);
+
+        // İlanlar setMyApps'ten ÖNCE çekiliyor: myApps bu effect'in bağımlılığı,
+        // erken yazınca effect yeniden kurulur, temizlik fonksiyonu cancelled'ı
+        // true yapar ve yolda olan ilan sorgusunun sonucu çöpe giderdi.
+        const ids = [...new Set(apps.map(a => a.animal_id).filter(Boolean))];
+        let byId = {};
+        if (ids.length) {
+          const { data: aData } = await client.from("animals").select("*").in("id", ids);
+          byId = Object.fromEntries((aData || []).map(r => [String(r.id), mapAnimalRow(r)]));
+        }
+        if (cancelled) return;
+        setAppAnimals(byId);
+        setMyApps(apps);
       } catch (e) { if (!cancelled) setMyApps([]); }
     })();
     return () => { cancelled = true; };
@@ -3497,12 +3516,13 @@ export default function App() {
               {myAnimals.length === 0
                 ? <div className="me-empty">{lang==="tr"?"Henüz ilan vermedin.":"You haven't posted a listing yet."}</div>
                 : myAnimals.map(a => (
-                    <div key={a.id} className="me-row" style={{ alignItems:"flex-start" }}>
+                    <div key={a.id} className="me-row" style={{ alignItems:"flex-start",
+                        cursor: a.status === "removed" ? "default" : "pointer" }}
+                      onClick={() => { if (a.status !== "removed") { setShowMe(false); setTab("animals"); setDetailA(a); } }}>
                       <MeThumb src={a.photo_url} emoji={a.emoji} dim={a.status === "removed"}
                         alt={[a.name, a.breed?.[lang]].filter(Boolean).join(", ")} />
                       <div style={{ flex:1, minWidth:0 }}>
-                        <div className="me-row-t" style={{ cursor:"pointer" }}
-                          onClick={() => { setShowMe(false); setTab("animals"); setDetailA(a); }}>{a.name}</div>
+                        <div className="me-row-t">{a.name}</div>
                         <div className="me-row-s">{[a.breed?.[lang], a.city].filter(Boolean).join(" · ")}</div>
                         {a.status === "removed"
                           ? <div className="me-row-s" style={{ color:"var(--red)" }}>{removedNote()}</div>
@@ -3512,14 +3532,14 @@ export default function App() {
                               </div>
                             )}
                         {a.status === "removed" ? (
-                          <div className="me-acts">
+                          <div className="me-acts" onClick={e => e.stopPropagation()}>
                             <button className="me-act" disabled={busyRow === a.id}
                               onClick={() => restore("animals", a.id, "submitter_email", "active")}>
                               {lang==="tr"?"Tekrar yayınla":"Republish"}
                             </button>
                           </div>
                         ) : (
-                        <div className="me-acts">
+                        <div className="me-acts" onClick={e => e.stopPropagation()}>
                           <button className={`me-act ${a.canAdopt ? "on" : ""}`} disabled={busyRow === a.id}
                             onClick={() => setAnimalPurpose(a, { can_adopt: !a.canAdopt })}>
                             {lang==="tr"?"Sahiplenme":"Adoption"}
@@ -3543,20 +3563,19 @@ export default function App() {
               {myReports.length === 0
                 ? <div className="me-empty">{lang==="tr"?"Henüz bildirim oluşturmadın.":"You haven't reported anything yet."}</div>
                 : myReports.map(r => (
-                    <div key={r.id} className="me-row" style={{ alignItems:"flex-start" }}>
+                    <div key={r.id} className="me-row" style={{ alignItems:"flex-start",
+                        cursor: r.status === "removed" ? "default" : "pointer" }}
+                      onClick={() => { if (r.status !== "removed") { setShowMe(false); setTab("help"); setDetailReport(r); } }}>
                       <MeThumb src={r.photo_url} emoji={r.emoji} dim={r.status === "removed"}
                         alt={r.title?.[lang] || r.title?.en || ""} />
                       <div style={{ flex:1, minWidth:0 }}>
-                        <div className="me-row-t" style={{ cursor:"pointer" }}
-                          onClick={() => { setShowMe(false); setTab("help"); setDetailReport(r); }}>
-                          {r.title?.[lang] || r.title?.en || ""}
-                        </div>
+                        <div className="me-row-t">{r.title?.[lang] || r.title?.en || ""}</div>
                         <div className="me-row-s">
                           {r.status !== "removed" && ((r.status === "active" ? (lang==="tr"?"Aktif":"Active") : (lang==="tr"?"Yardım edildi":"Helped")) + " · ")}
                           {r.location}
                         </div>
                         {r.status === "removed" && <div className="me-row-s" style={{ color:"var(--red)" }}>{removedNote()}</div>}
-                        <div className="me-acts">
+                        <div className="me-acts" onClick={e => e.stopPropagation()}>
                           {r.status === "removed" ? (
                             <button className="me-act" disabled={busyRow === r.id}
                               onClick={() => restore("reports", r.id, "reporter_name", "active")}>
@@ -3577,20 +3596,19 @@ export default function App() {
               {myLF.length === 0
                 ? <div className="me-empty">{lang==="tr"?"Henüz kayıp ya da bulundu ilanın yok.":"No lost or found posts yet."}</div>
                 : myLF.map(i => (
-                    <div key={i.id} className="me-row" style={{ alignItems:"flex-start" }}>
+                    <div key={i.id} className="me-row" style={{ alignItems:"flex-start",
+                        cursor: i.status === "removed" ? "default" : "pointer" }}
+                      onClick={() => { if (i.status !== "removed") { setShowMe(false); setTab("lostfound"); setDetailLF(i); } }}>
                       <MeThumb src={i.photo_url} emoji={i.emoji} dim={i.status === "removed"}
                         alt={i.name || ""} />
                       <div style={{ flex:1, minWidth:0 }}>
-                        <div className="me-row-t" style={{ cursor:"pointer" }}
-                          onClick={() => { setShowMe(false); setTab("lostfound"); setDetailLF(i); }}>
-                          {i.name || (lang==="tr"?"İsimsiz":"Unnamed")}
-                        </div>
+                        <div className="me-row-t">{i.name || (lang==="tr"?"İsimsiz":"Unnamed")}</div>
                         <div className="me-row-s">
                           {[i.type === "lost" ? (lang==="tr"?"Kayıp":"Lost") : (lang==="tr"?"Bulundu":"Found"), i.area].filter(Boolean).join(" · ")}
                           {i.status === "reunited" && ` · ${lang==="tr"?"Kavuştu ✓":"Reunited ✓"}`}
                         </div>
                         {i.status === "removed" && <div className="me-row-s" style={{ color:"var(--red)" }}>{removedNote()}</div>}
-                        <div className="me-acts">
+                        <div className="me-acts" onClick={e => e.stopPropagation()}>
                           {i.status === "removed" && (
                             <button className="me-act" disabled={busyRow === i.id}
                               onClick={() => restore("lf_listings", i.id, "contact_email", "open")}>
@@ -3620,20 +3638,30 @@ export default function App() {
                 ? <div className="me-empty">{lang==="tr"?"Yükleniyor…":"Loading…"}</div>
                 : myApps.length === 0
                 ? <div className="me-empty">{lang==="tr"?"Henüz başvuru yapmadın.":"You haven't applied for anything yet."}</div>
-                : myApps.map(a => (
-                    <div key={a.id || a.ref_code} className="me-row" style={{ cursor:"default" }}>
-                      <MeThumb emoji="📋" alt={a.animal_name || ""}
-                        src={animals.find(x => String(x.id) === String(a.animal_id))?.photo_url} />
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <div className="me-row-t">{a.animal_name || "—"}</div>
-                        <div className="me-row-s">
-                          {a.mode === "foster" ? (lang==="tr"?"Geçici bakım":"Foster") : (lang==="tr"?"Sahiplenme":"Adoption")}
-                          {a.ref_code ? ` · ${a.ref_code}` : ""}
-                          {a.created_at ? ` · ${new Date(a.created_at).toLocaleDateString(lang)}` : ""}
+                : myApps.map(a => {
+                    const ani  = appAnimals[String(a.animal_id)];
+                    const live = ani && ani.status === "active";
+                    const open = () => { if (live) { setShowMe(false); setTab("animals"); setDetailA(ani); } };
+                    return (
+                      <div key={a.id || a.ref_code} className="me-row"
+                        style={{ cursor: live ? "pointer" : "default" }} onClick={open}>
+                        <MeThumb emoji="📋" alt={a.animal_name || ""} src={ani?.photo_url} dim={!!ani && !live} />
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div className="me-row-t">{a.animal_name || "—"}</div>
+                          <div className="me-row-s">
+                            {a.mode === "foster" ? (lang==="tr"?"Geçici bakım":"Foster") : (lang==="tr"?"Sahiplenme":"Adoption")}
+                            {a.ref_code ? ` · ${a.ref_code}` : ""}
+                            {a.created_at ? ` · ${new Date(a.created_at).toLocaleDateString(lang)}` : ""}
+                          </div>
+                          {ani && !live && (
+                            <div className="me-row-s" style={{ color:"var(--muted)" }}>
+                              {lang==="tr"?"İlan artık yayında değil":"This listing is no longer live"}
+                            </div>
+                          )}
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
 
               <button className="btn btn-full" style={{ marginTop:24, background:"none", color:"var(--red)", fontSize:13 }}
                 onClick={signOut}>
