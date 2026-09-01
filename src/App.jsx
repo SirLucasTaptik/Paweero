@@ -1742,6 +1742,14 @@ const CSS = `
   .me-name { font-size:12px; font-weight:600; color:var(--dark); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   @media (max-width:400px) { .me-name { display:none; } .me-chip { padding:3px; } }
 
+  .me-acts  { display:flex; gap:6px; flex-wrap:wrap; margin-top:7px; }
+  .me-act   { font-family:var(--font); font-size:11.5px; font-weight:600; padding:4px 9px; border-radius:999px;
+              border:1px solid var(--border); background:var(--white); color:var(--body); cursor:pointer; }
+  .me-act:disabled { opacity:0.5; cursor:default; }
+  .me-act.on   { background:var(--dark); border-color:var(--dark); color:#fff; }
+  .me-act.warn { color:var(--red); border-color:rgba(192,57,43,0.3); }
+  .me-act.warn.armed { background:var(--red); border-color:var(--red); color:#fff; }
+
   .me-sec   { font-size:11px; font-weight:700; letter-spacing:0.6px; text-transform:uppercase;
               color:var(--muted); margin:20px 0 8px; }
   .me-row   { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); cursor:pointer; }
@@ -1866,6 +1874,53 @@ const CSS = `
   .purpose-foster { background:rgba(37,99,235,0.12);  color:var(--blue);  }
   .purpose-adopt  { background:rgba(212,134,43,0.14); color:var(--amber); }
 `;
+
+// Veritabanı satırını uygulamanın kullandığı biçime çevirir. Hem ana liste hem de
+// "Hesabım" ekranındaki kaldırılmış ilanlar aynı çeviriden geçsin diye dışarıda.
+function mapAnimalRow(a) {
+  const healthTags = { en: [], tr: [] };
+  if (a.is_neutered === "yes") { healthTags.en.push("Neutered/Spayed"); healthTags.tr.push("Kısırlaştırıldı"); }
+  if (a.vaccinated_parasite === "yes") { healthTags.en.push("Parasite Treated"); healthTags.tr.push("Parazit Aşılı"); }
+  if (a.vaccinated_rabies === "yes") { healthTags.en.push("Rabies Vaccinated"); healthTags.tr.push("Kuduz Aşılı"); }
+  return {
+    id: a.id,
+    name: a.name || "",
+    emoji: a.emoji || "🐾",
+    species:  { en: a.species || "", tr: a.species || "" },
+    breed:    { en: a.breed   || "", tr: a.breed   || "" },
+    age:      { en: a.age     || "", tr: a.age     || "" },
+    gender:   { en: a.gender  || "", tr: a.gender  || "" },
+    country:  a.country  || "",
+    province: a.province || "",
+    city:     a.city     || "",
+    tags:     healthTags,
+    urgent:   a.urgent   || false,
+    isNew:    a.is_new   || false,
+    canFoster: a.can_foster || false,
+    canAdopt:  a.can_adopt  !== false,
+    needsHelp: a.needs_help || false,
+    helpSituation: a.help_situation || "",
+    helpUrgency: a.help_urgency || "",
+    isLost: a.is_lost || false,
+    isFound: a.is_found || false,
+    colour: a.colour || "",
+    lostLastSeenLocation: a.lost_last_seen_location || "",
+    lostCollarAccessories: a.lost_collar_accessories || "",
+    lostIdentifyingCharacteristics: a.lost_identifying_characteristics || "",
+    foundHow: a.found_how || "",
+    foundIdentifyingCharacteristics: a.found_identifying_characteristics || "",
+    desc:     { en: a.desc_en || "", tr: a.desc_tr || "" },
+    photo_url: (a.photo_urls && a.photo_urls[0]) || a.photo_url || null,
+    photo_urls: a.photo_urls || (a.photo_url ? [a.photo_url] : []),
+    submitter_email: a.submitter_email || "",
+    contactPhone: a.contact_phone || "",
+    contactPref: a.contact_pref || "email",
+    isNeutered: a.is_neutered || "unknown",
+    vaccinatedParasite: a.vaccinated_parasite || "unknown",
+    vaccinatedRabies: a.vaccinated_rabies || "unknown",
+    status: a.status || "active",
+  };
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ROOT
@@ -2206,49 +2261,7 @@ export default function App() {
 
       if (aErr) { console.error("Animals error:", aErr); failed = true; }
       if (aData && aData.length > 0) {
-        const dbAnimals = aData.map(a => {
-          const healthTags = { en: [], tr: [] };
-          if (a.is_neutered === "yes") { healthTags.en.push("Neutered/Spayed"); healthTags.tr.push("Kısırlaştırıldı"); }
-          if (a.vaccinated_parasite === "yes") { healthTags.en.push("Parasite Treated"); healthTags.tr.push("Parazit Aşılı"); }
-          if (a.vaccinated_rabies === "yes") { healthTags.en.push("Rabies Vaccinated"); healthTags.tr.push("Kuduz Aşılı"); }
-          return {
-            id: a.id,
-            name: a.name || "",
-            emoji: a.emoji || "🐾",
-            species:  { en: a.species || "", tr: a.species || "" },
-            breed:    { en: a.breed   || "", tr: a.breed   || "" },
-            age:      { en: a.age     || "", tr: a.age     || "" },
-            gender:   { en: a.gender  || "", tr: a.gender  || "" },
-            country:  a.country  || "",
-            province: a.province || "",
-            city:     a.city     || "",
-            tags:     healthTags,
-            urgent:   a.urgent   || false,
-            isNew:    a.is_new   || false,
-            canFoster: a.can_foster || false,
-            canAdopt:  a.can_adopt  !== false,
-            needsHelp: a.needs_help || false,
-            helpSituation: a.help_situation || "",
-            helpUrgency: a.help_urgency || "",
-            isLost: a.is_lost || false,
-            isFound: a.is_found || false,
-            colour: a.colour || "",
-            lostLastSeenLocation: a.lost_last_seen_location || "",
-            lostCollarAccessories: a.lost_collar_accessories || "",
-            lostIdentifyingCharacteristics: a.lost_identifying_characteristics || "",
-            foundHow: a.found_how || "",
-            foundIdentifyingCharacteristics: a.found_identifying_characteristics || "",
-            desc:     { en: a.desc_en || "", tr: a.desc_tr || "" },
-            photo_url: (a.photo_urls && a.photo_urls[0]) || a.photo_url || null,
-            photo_urls: a.photo_urls || (a.photo_url ? [a.photo_url] : []),
-            submitter_email: a.submitter_email || "",
-            contactPhone: a.contact_phone || "",
-            contactPref: a.contact_pref || "email",
-            isNeutered: a.is_neutered || "unknown",
-            vaccinatedParasite: a.vaccinated_parasite || "unknown",
-            vaccinatedRabies: a.vaccinated_rabies || "unknown",
-          };
-        });
+        const dbAnimals = aData.map(mapAnimalRow);
         // DB hayvanlarını seed ile birleştir
         setAnimals([...dbAnimals, ...ANIMALS]);
       } else {
@@ -2445,7 +2458,24 @@ export default function App() {
   const myEmail = (contactInfo.email || "").toLowerCase();
   const mine = (v) => myEmail && String(v || "").toLowerCase() === myEmail;
 
-  const myAnimals = myEmail ? animals.filter(a => mine(a.submitter_email)) : [];
+  // Ana liste sorgusu yalnızca status=active çektiği için kaldırdığım ilanlar
+  // hiç gelmiyor; geri alabilmek için kendi kaldırılmışlarımı ayrıca çekiyorum.
+  const [myRemovedAnimals, setMyRemovedAnimals] = useState([]);
+  const loadMyRemoved = async (email) => {
+    if (!email) { setMyRemovedAnimals([]); return; }
+    try {
+      const { data, error } = await (await getDb())
+        .from("animals").select("*")
+        .eq("status", "removed").eq("submitter_email", email)
+        .order("created_at", { ascending: false });
+      setMyRemovedAnimals(error ? [] : (data || []).map(mapAnimalRow));
+    } catch (e) { setMyRemovedAnimals([]); }
+  };
+  useEffect(() => { loadMyRemoved(contactInfo.email); }, [contactInfo.email]);
+
+  const myAnimals = myEmail
+    ? [...animals.filter(a => mine(a.submitter_email)), ...myRemovedAnimals]
+    : [];
   const myReports = myEmail ? reports.filter(r => mine(r.reporter)) : [];
   const myLF      = myEmail ? lfItems.filter(i => mine(i.contact_email) || mine(i.contact)) : [];
 
@@ -2464,6 +2494,46 @@ export default function App() {
     })();
     return () => { cancelled = true; };
   }, [showMe, myApps, myEmail]);
+
+  // ── Kendi ilanım üzerindeki yetkiler ────────────────────────────────────
+  // Silme yerine durum değiştiriyoruz: kayıt duruyor, listelerden düşüyor.
+  // Böylece o ilana yapılmış başvurular kopmuyor, işlem geri alınabiliyor ve
+  // veritabanında hiçbir tabloya DELETE yetkisi açmamız gerekmiyor.
+  // Sorguya sahip e-postası da ekleniyor — RLS'in yanında ikinci bir bariyer.
+  const [busyRow, setBusyRow]   = useState(null);
+  const [confirmRow, setConfirm] = useState(null);   // silmeden önce tek adımlık onay
+
+  const ownerPatch = async (table, id, ownerField, patch, okMsg) => {
+    setBusyRow(id);
+    try {
+      const { error } = await (await getDb())
+        .from(table).update(patch).eq("id", id).eq(ownerField, contactInfo.email);
+      if (error) throw error;
+      say(okMsg);
+      await Promise.all([loadFromDB(), loadMyRemoved(contactInfo.email)]);
+    } catch (e) {
+      console.error("ownerPatch:", e);
+      say(lang==="tr" ? "İşlem başarısız, tekrar dene" : "Action failed, please try again");
+    }
+    setBusyRow(null);
+    setConfirm(null);
+  };
+
+  const removeAnimal = (a) => ownerPatch("animals", a.id, "submitter_email", { status:"removed" },
+    lang==="tr" ? "İlan kaldırıldı" : "Listing removed");
+  const setAnimalPurpose = (a, patch) => ownerPatch("animals", a.id, "submitter_email", patch,
+    lang==="tr" ? "İlan güncellendi" : "Listing updated");
+  const removeLF = (i) => ownerPatch("lf_listings", i.id, "contact_email", { status:"removed" },
+    lang==="tr" ? "İlan kaldırıldı" : "Post removed");
+  const markReunited = (i) => ownerPatch("lf_listings", i.id, "contact_email", { status:"reunited" },
+    lang==="tr" ? "Bulundu olarak işaretlendi" : "Marked as found");
+  const removeReport = (r) => ownerPatch("reports", r.id, "reporter_name", { status:"removed" },
+    lang==="tr" ? "Bildirim kaldırıldı" : "Report removed");
+
+  // Kaldırma kaydı silmediği için geri alınabiliyor.
+  const restore = (table, id, ownerField, status) => ownerPatch(table, id, ownerField, { status },
+    lang==="tr" ? "İlan geri alındı" : "Listing restored");
+  const removedNote = () => lang==="tr" ? "Kaldırıldı — listelerde görünmüyor" : "Removed — not shown in any list";
 
   const signOut = async () => {
     try { await (await getDb()).auth.signOut(); } catch (e) {}
@@ -2582,6 +2652,7 @@ export default function App() {
   // lf_listings.city actually stores the province (set at submission time),
   // and area holds the neighbourhood/open-address text.
   const filteredLF = lfItems.filter(item => {
+    if (item.status === "removed") return false;   // sahibi kaldırmış
     const okType = lfTypeFilter === "all" || item.type === lfTypeFilter;
     const okP    = fProvince === "All Provinces" || item.city === fProvince;
     const okCi   = fCity     === "All Cities"    || (item.area || "").toLowerCase().includes(fCity.toLowerCase());
@@ -3422,13 +3493,43 @@ export default function App() {
               {myAnimals.length === 0
                 ? <div className="me-empty">{lang==="tr"?"Henüz ilan vermedin.":"You haven't posted a listing yet."}</div>
                 : myAnimals.map(a => (
-                    <div key={a.id} className="me-row" onClick={() => { setShowMe(false); setTab("animals"); setDetailA(a); }}>
+                    <div key={a.id} className="me-row" style={{ alignItems:"flex-start" }}>
                       <span style={{ fontSize:20 }}>{a.emoji}</span>
                       <div style={{ flex:1, minWidth:0 }}>
-                        <div className="me-row-t">{a.name}</div>
+                        <div className="me-row-t" style={{ cursor:"pointer" }}
+                          onClick={() => { setShowMe(false); setTab("animals"); setDetailA(a); }}>{a.name}</div>
                         <div className="me-row-s">{[a.breed?.[lang], a.city].filter(Boolean).join(" · ")}</div>
+                        {a.status === "removed"
+                          ? <div className="me-row-s" style={{ color:"var(--red)" }}>{removedNote()}</div>
+                          : (!a.canAdopt && !a.canFoster) && (
+                              <div className="me-row-s" style={{ color:"var(--red)" }}>
+                                {lang==="tr"?"Listelerde görünmüyor":"Not shown in any list"}
+                              </div>
+                            )}
+                        {a.status === "removed" ? (
+                          <div className="me-acts">
+                            <button className="me-act" disabled={busyRow === a.id}
+                              onClick={() => restore("animals", a.id, "submitter_email", "active")}>
+                              {lang==="tr"?"Geri al":"Restore"}
+                            </button>
+                          </div>
+                        ) : (
+                        <div className="me-acts">
+                          <button className={`me-act ${a.canAdopt ? "on" : ""}`} disabled={busyRow === a.id}
+                            onClick={() => setAnimalPurpose(a, { can_adopt: !a.canAdopt })}>
+                            {lang==="tr"?"Sahiplenme":"Adoption"}
+                          </button>
+                          <button className={`me-act ${a.canFoster ? "on" : ""}`} disabled={busyRow === a.id}
+                            onClick={() => setAnimalPurpose(a, { can_foster: !a.canFoster })}>
+                            {lang==="tr"?"Geçici bakım":"Foster"}
+                          </button>
+                          <button className={`me-act warn ${confirmRow === a.id ? "armed" : ""}`} disabled={busyRow === a.id}
+                            onClick={() => confirmRow === a.id ? removeAnimal(a) : setConfirm(a.id)}>
+                            {confirmRow === a.id ? (lang==="tr"?"Emin misin?":"Are you sure?") : (lang==="tr"?"Kaldır":"Remove")}
+                          </button>
+                        </div>
+                        )}
                       </div>
-                      <span className="ql-chev">›</span>
                     </div>
                   ))}
 
@@ -3437,13 +3538,31 @@ export default function App() {
               {myReports.length === 0
                 ? <div className="me-empty">{lang==="tr"?"Henüz bildirim oluşturmadın.":"You haven't reported anything yet."}</div>
                 : myReports.map(r => (
-                    <div key={r.id} className="me-row" onClick={() => { setShowMe(false); setTab("help"); setDetailReport(r); }}>
+                    <div key={r.id} className="me-row" style={{ alignItems:"flex-start" }}>
                       <span style={{ fontSize:20 }}>{r.emoji}</span>
                       <div style={{ flex:1, minWidth:0 }}>
-                        <div className="me-row-t">{r.title?.[lang] || r.title?.en || ""}</div>
-                        <div className="me-row-s">{r.status === "active" ? (lang==="tr"?"Aktif":"Active") : (lang==="tr"?"Yardım edildi":"Helped")} · {r.location}</div>
+                        <div className="me-row-t" style={{ cursor:"pointer" }}
+                          onClick={() => { setShowMe(false); setTab("help"); setDetailReport(r); }}>
+                          {r.title?.[lang] || r.title?.en || ""}
+                        </div>
+                        <div className="me-row-s">
+                          {r.status !== "removed" && ((r.status === "active" ? (lang==="tr"?"Aktif":"Active") : (lang==="tr"?"Yardım edildi":"Helped")) + " · ")}
+                          {r.location}
+                        </div>
+                        {r.status === "removed" && <div className="me-row-s" style={{ color:"var(--red)" }}>{removedNote()}</div>}
+                        <div className="me-acts">
+                          {r.status === "removed" ? (
+                            <button className="me-act" disabled={busyRow === r.id}
+                              onClick={() => restore("reports", r.id, "reporter_name", "active")}>
+                              {lang==="tr"?"Geri al":"Restore"}
+                            </button>
+                          ) : (
+                          <button className={`me-act warn ${confirmRow === r.id ? "armed" : ""}`} disabled={busyRow === r.id}
+                            onClick={() => confirmRow === r.id ? removeReport(r) : setConfirm(r.id)}>
+                            {confirmRow === r.id ? (lang==="tr"?"Emin misin?":"Are you sure?") : (lang==="tr"?"Kaldır":"Remove")}
+                          </button>)}
+                        </div>
                       </div>
-                      <span className="ql-chev">›</span>
                     </div>
                   ))}
 
@@ -3452,13 +3571,37 @@ export default function App() {
               {myLF.length === 0
                 ? <div className="me-empty">{lang==="tr"?"Henüz kayıp ya da bulundu ilanın yok.":"No lost or found posts yet."}</div>
                 : myLF.map(i => (
-                    <div key={i.id} className="me-row" onClick={() => { setShowMe(false); setTab("lostfound"); setDetailLF(i); }}>
+                    <div key={i.id} className="me-row" style={{ alignItems:"flex-start" }}>
                       <span style={{ fontSize:20 }}>{i.emoji}</span>
                       <div style={{ flex:1, minWidth:0 }}>
-                        <div className="me-row-t">{i.name || (lang==="tr"?"İsimsiz":"Unnamed")}</div>
-                        <div className="me-row-s">{[i.type === "lost" ? (lang==="tr"?"Kayıp":"Lost") : (lang==="tr"?"Bulundu":"Found"), i.area].filter(Boolean).join(" · ")}</div>
+                        <div className="me-row-t" style={{ cursor:"pointer" }}
+                          onClick={() => { setShowMe(false); setTab("lostfound"); setDetailLF(i); }}>
+                          {i.name || (lang==="tr"?"İsimsiz":"Unnamed")}
+                        </div>
+                        <div className="me-row-s">
+                          {[i.type === "lost" ? (lang==="tr"?"Kayıp":"Lost") : (lang==="tr"?"Bulundu":"Found"), i.area].filter(Boolean).join(" · ")}
+                          {i.status === "reunited" && ` · ${lang==="tr"?"Kavuştu ✓":"Reunited ✓"}`}
+                        </div>
+                        {i.status === "removed" && <div className="me-row-s" style={{ color:"var(--red)" }}>{removedNote()}</div>}
+                        <div className="me-acts">
+                          {i.status === "removed" && (
+                            <button className="me-act" disabled={busyRow === i.id}
+                              onClick={() => restore("lf_listings", i.id, "contact_email", "open")}>
+                              {lang==="tr"?"Geri al":"Restore"}
+                            </button>
+                          )}
+                          {i.status !== "reunited" && i.status !== "removed" && (
+                            <button className="me-act" disabled={busyRow === i.id} onClick={() => markReunited(i)}>
+                              {lang==="tr"?"Bulundu olarak işaretle":"Mark as found"}
+                            </button>
+                          )}
+                          {i.status !== "removed" && (
+                          <button className={`me-act warn ${confirmRow === i.id ? "armed" : ""}`} disabled={busyRow === i.id}
+                            onClick={() => confirmRow === i.id ? removeLF(i) : setConfirm(i.id)}>
+                            {confirmRow === i.id ? (lang==="tr"?"Emin misin?":"Are you sure?") : (lang==="tr"?"Kaldır":"Remove")}
+                          </button>)}
+                        </div>
                       </div>
-                      <span className="ql-chev">›</span>
                     </div>
                   ))}
 

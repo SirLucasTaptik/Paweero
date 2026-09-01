@@ -35,12 +35,29 @@ create policy "animals_insert"    on public.animals     for insert to anon, auth
 create policy "lf_insert"         on public.lf_listings for insert to anon, authenticated with check (true);
 create policy "sitters_insert"    on public.sitters     for insert to anon, authenticated with check (true);
 
--- Güncelleme: uygulamada tek bir yer var — bir ihbarı "yardım edildi" işaretlemek.
--- Doğrulanmış kullanıcıyla sınırlıyoruz; anonim biri artık ihbar kapatamaz.
+-- ── GÜNCELLEME ─────────────────────────────────────────────────────────────
+-- İhbarı "yardım edildi" işaretlemeyi ilanı açan değil, YARDIM EDEN yapıyor.
+-- Bu bilinçli bir ürün kararı, o yüzden sahip şartı koyamayız; doğrulanmış
+-- kullanıcı olmak yeterli. Anonim biri artık ihbar kapatamaz.
+-- Bunun bedeli: doğrulanmış bir kullanıcı teknik olarak başkasının ihbarını da
+-- güncelleyebilir. Uygulama yalnızca kendi ihbarına düğme gösteriyor; daha sıkısı
+-- gerekirse kolon bazlı kontrol için trigger yazmak gerekir.
 create policy "reports_update_auth" on public.reports for update to authenticated
   using (true) with check (true);
 
--- DELETE için hiçbir politika yok → RLS açıkken silme tamamen reddedilir.
+-- Hayvan ilanı ve kayıp/bulundu ilanı yalnızca SAHİBİ tarafından değiştirilebilir.
+-- E-posta oturum token'ından okunuyor, istemciden gelen filtreye güvenilmiyor.
+create policy "animals_update_own" on public.animals for update to authenticated
+  using (submitter_email = auth.jwt() ->> 'email')
+  with check (submitter_email = auth.jwt() ->> 'email');
+
+create policy "lf_update_own" on public.lf_listings for update to authenticated
+  using (contact_email = auth.jwt() ->> 'email')
+  with check (contact_email = auth.jwt() ->> 'email');
+
+-- DELETE için hiçbir politika yok → silme her yerde reddedilir. Uygulamadaki
+-- "Kaldır" düğmesi kaydı silmiyor, status alanını "removed" yapıyor: ilana
+-- yapılmış başvurular kopmuyor ve işlem geri alınabilir.
 
 
 -- ── 2. GÖNÜLLÜLER ──────────────────────────────────────────────────────────
