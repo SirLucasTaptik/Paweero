@@ -4067,6 +4067,10 @@ export default function App() {
                 {(detailAnimal.canFoster || detailAnimal.needsHelp || detailAnimal.isLost || detailAnimal.isFound) && (
                   <button className={`btn btn-full ${detailAnimal.canAdopt ? "btn-outline" : "btn-dark"}`} onClick={() => { setTakeActionFor(detailAnimal); setDetailA(null); }}>{getSingleActionLabel(detailAnimal, lang) || t.takeAction}</button>
                 )}
+                {detailAnimal.contactPref === "phone" && (
+                  <CallButton phone={detailAnimal.contactPhone} lang={lang}
+                    variant={detailAnimal.canAdopt || detailAnimal.canFoster ? "outline" : "dark"} />
+                )}
                 <WhatsAppShareButton lang={lang} t={t} text={
                   `🐾 ${detailAnimal.name} — ${detailAnimal.breed[lang]} · ${detailAnimal.age[lang]} · ${detailAnimal.gender[lang]}\n` +
                   `📍 ${detailAnimal.city}, ${detailAnimal.province}\n` +
@@ -4104,9 +4108,17 @@ export default function App() {
               </div>
               <div className="d-desc">{detailLF.desc[lang]}</div>
               <div className="d-acts">
-                {detailLF.status !== "reunited" && (
-                  <button className="btn btn-dark btn-full" onClick={() => { setDetailLF(null); say(t.contactCopied); }}>📞 {t.contactInfo} {detailLF.contact}</button>
-                )}
+                {detailLF.status !== "reunited" && (() => {
+                  const c = lfContact(detailLF);
+                  if (!c) return null;
+                  return c.kind === "phone"
+                    ? <CallButton phone={c.value} lang={lang} variant="dark" />
+                    : <a className="btn btn-dark btn-full" style={{ textDecoration:"none" }}
+                        href={`mailto:${c.value}?subject=${encodeURIComponent(
+                          (lang==="tr" ? "Paweero ilanın hakkında: " : "About your Paweero post: ") + (detailLF.name || ""))}`}>
+                        ✉️ {lang==="tr" ? "E-posta gönder" : "Send email"}
+                      </a>;
+                })()}
                 <WhatsAppShareButton lang={lang} t={t} text={
                   `${detailLF.type === "found"
                     ? (lang==="tr"?"🐾 Bulunan hayvan":"🐾 Found animal")
@@ -4162,6 +4174,9 @@ export default function App() {
                     </button>
                   );
                 })()}
+                {detailReport.status === "active" && detailReport.reporterPref === "phone" && (
+                  <CallButton phone={detailReport.reporterPhone} lang={lang} variant="outline" />
+                )}
                 <WhatsAppShareButton lang={lang} t={t} text={
                   `🚨 ${lang==="tr"?"Yardıma ihtiyacı olan hayvan":"Animal in need of help"}: ${detailReport.title[lang]||detailReport.title}\n` +
                   `📍 ${detailReport.location}\n` +
@@ -4438,6 +4453,32 @@ function ListingPhoto({ src, alt, size = "56%" }) {
 // "Hesabım" satırlarındaki küçük görsel. İlanı emojiden tanımak zor; kendi
 // fotoğrafını görünce hangi ilan olduğu bir bakışta anlaşılıyor. Fotoğrafı
 // olmayan ya da yüklenemeyen ilan emojiye düşer, kutu boş kalmaz.
+// Kayıt sırasında iletişim tercihi olarak telefonu seçenler için arama düğmesi.
+// Numara yalnızca tercihi telefon olan ilanlarda görünür: e-posta seçen kimsenin
+// numarası ilanda yazmaz. <a href="tel:"> kullanılıyor, çünkü telefonda basılı
+// tutup "numarayı kopyala/kaydet" seçenekleri ancak gerçek bağlantıda çıkar.
+function CallButton({ phone, lang, variant = "outline" }) {
+  const tel = String(phone || "").replace(/[^\d+]/g, "");
+  if (!tel) return null;
+  return (
+    <a className={`btn btn-${variant} btn-full`} href={`tel:${tel}`} style={{ textDecoration:"none" }}>
+      📞 {lang==="tr" ? "Ara" : "Call"} · {phone}
+    </a>
+  );
+}
+
+// Kayıp/bulundu ilanlarında iletişim bilgisi üç ayrı alana dağılmış olabilir:
+// tercih + numara yeni kayıtlarda, tek bir "contact" metni eski kayıtlarda.
+// Eski kayıtta ne yazdığı belli olmadığı için içeriğine bakıp karar veriyoruz.
+function lfContact(i) {
+  if (i.contact_pref === "phone" && i.contact_phone) return { kind:"phone", value:i.contact_phone };
+  const c = String(i.contact || "").trim();
+  if (c.includes("@")) return { kind:"email", value:c };
+  if (c && c.replace(/\D/g, "").length >= 6) return { kind:"phone", value:c };
+  if (i.contact_email) return { kind:"email", value:i.contact_email };
+  return null;
+}
+
 function MeThumb({ src, emoji, alt, dim = false }) {
   const [failed, setFailed] = useState(false);
   useEffect(() => { setFailed(false); }, [src]);
