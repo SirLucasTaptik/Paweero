@@ -145,20 +145,91 @@ const shareOnWhatsApp = (text) => {
   window.open(url, "_blank", "noopener,noreferrer");
 };
 
+// ─── INSTAGRAM SHARE ─────────────────────────────────────────────────────────
+// Instagram'ın WhatsApp gibi hazır metin alan bir bağlantı biçimi yok; web'den
+// gönderi ya da story oluşturmanın yolu bulunmuyor. Gerçekten çalışan tek yol
+// cihazın kendi paylaşım penceresi: Instagram orada bir seçenek olarak çıkıyor
+// ve fotoğrafı da beraberinde alabiliyor. Pencere yoksa (masaüstü tarayıcıların
+// çoğu) metni panoya kopyalayıp Instagram'ı açıyoruz.
+const shareOnInstagram = async (text, photoUrl, lang, notify) => {
+  try {
+    if (navigator.share) {
+      if (photoUrl && navigator.canShare) {
+        try {
+          const res  = await fetch(photoUrl);
+          const blob = await res.blob();
+          const file = new File([blob], "paweero.jpg", { type: blob.type || "image/jpeg" });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file], text });
+            return;
+          }
+        } catch (e) { /* fotoğraf alınamadı — metinle devam */ }
+      }
+      await navigator.share({ text });
+      return;
+    }
+  } catch (e) {
+    if (e && e.name === "AbortError") return;   // kullanıcı vazgeçti, hata değil
+  }
+  try { await navigator.clipboard.writeText(text); } catch (e) {}
+  notify?.(lang === "tr"
+    ? "Metin kopyalandı — Instagram'a yapıştırabilirsin"
+    : "Text copied — paste it into Instagram");
+  window.open("https://www.instagram.com/", "_blank", "noopener,noreferrer");
+};
+
 // Reusable small WhatsApp share button used across every listing type.
-function WhatsAppShareButton({ text, lang, t }) {
+function WhatsAppShareButton({ text, lang, t, compact }) {
   return (
     <button
       className="btn btn-sm"
-      style={{ background:"#25D366", color:"#fff", border:"none", display:"inline-flex", alignItems:"center", gap:5 }}
+      style={{ background:"#25D366", color:"#fff", border:"none", display:"inline-flex", alignItems:"center",
+               gap:5, flex:"0 0 auto", padding: compact ? "8px 10px" : undefined,
+               width: compact ? undefined : "100%", justifyContent:"center" }}
       title={lang === "tr" ? "WhatsApp'ta paylaş" : "Share on WhatsApp"}
+      aria-label={lang === "tr" ? "WhatsApp'ta paylaş" : "Share on WhatsApp"}
       onClick={e => { e.stopPropagation(); shareOnWhatsApp(text); }}
     >
       <svg viewBox="0 0 24 24" width="14" height="14" fill="#fff" style={{ flexShrink:0 }}>
         <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38c1.45.79 3.08 1.21 4.79 1.21h.01c5.46 0 9.91-4.45 9.91-9.91C21.96 6.45 17.5 2 12.04 2zm5.8 14.16c-.24.68-1.42 1.31-1.96 1.36-.5.05-1.14.07-1.84-.12-.42-.13-.97-.31-1.67-.61-2.94-1.27-4.86-4.23-5.01-4.43-.15-.2-1.2-1.6-1.2-3.05 0-1.45.76-2.16 1.03-2.46.27-.3.59-.37.79-.37.2 0 .39.002.56.01.18.008.42-.07.66.5.24.58.82 2.01.89 2.16.07.15.12.32.02.52-.1.2-.15.32-.3.5-.15.18-.31.39-.44.53-.15.15-.3.31-.13.6.17.3.76 1.25 1.63 2.03 1.12 1 2.07 1.31 2.36 1.46.29.15.46.13.63-.08.17-.2.72-.84.91-1.13.19-.29.39-.24.66-.15.27.1 1.7.8 1.99.95.29.15.48.22.55.34.07.12.07.7-.17 1.38z"/>
       </svg>
-      {t?.shareWA || (lang === "tr" ? "Paylaş" : "Share")}
+      {!compact && (t?.shareWA || (lang === "tr" ? "WhatsApp'ta Paylaş" : "Share on WhatsApp"))}
     </button>
+  );
+}
+
+function InstagramShareButton({ text, photo, lang, t, compact, notify }) {
+  return (
+    <button
+      className="btn btn-sm"
+      style={{ background:"linear-gradient(45deg,#f09433,#dc2743,#bc1888)", color:"#fff", border:"none",
+               display:"inline-flex", alignItems:"center", gap:5, flex:"0 0 auto",
+               padding: compact ? "8px 10px" : undefined,
+               width: compact ? undefined : "100%", justifyContent:"center" }}
+      title={lang === "tr" ? "Instagram'da paylaş" : "Share on Instagram"}
+      aria-label={lang === "tr" ? "Instagram'da paylaş" : "Share on Instagram"}
+      onClick={e => { e.stopPropagation(); shareOnInstagram(text, photo, lang, notify); }}
+    >
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" strokeWidth="2"
+           strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}>
+        <rect x="2" y="2" width="20" height="20" rx="5" />
+        <circle cx="12" cy="12" r="4" />
+        <circle cx="17.5" cy="6.5" r="1.2" fill="#fff" stroke="none" />
+      </svg>
+      {!compact && (t?.shareIG || (lang === "tr" ? "Instagram'da Paylaş" : "Share on Instagram"))}
+    </button>
+  );
+}
+
+// İki paylaşım düğmesi yan yana. Kartlarda yalnızca ikon (yer dar), ilan
+// ekranlarında etiketli ve eşit genişlikte.
+function ShareButtons({ text, photo, lang, t, compact, notify }) {
+  return (
+    <div style={{ display:"flex", gap:8, alignItems:"center",
+                  flexDirection: compact ? "row" : "column" }}>
+      <WhatsAppShareButton text={text} lang={lang} t={t} compact={compact} />
+      <InstagramShareButton text={text} photo={photo} lang={lang} t={t} compact={compact} notify={notify} />
+    </div>
   );
 }
 
@@ -952,7 +1023,7 @@ const T = {
     // hero
     heroH1:"A free platform for", heroH1Em:"animal welfare.",
     heroP:"Adopt, foster, find a pet sitter, post a lost & found, or report animals in distress — always free, for every animal.",
-    browseAnimals:"Browse Animals", postAnimal:"Post an Animal", reportAnimal:"Report Animal in Need", shareWA:"Share",
+    browseAnimals:"Browse Animals", postAnimal:"Post an Animal", reportAnimal:"Report Animal in Need", shareWA:"Share on WhatsApp", shareIG:"Share on Instagram",
     // stats
     adopted:"Adopted", waiting:"Waiting", rescues:"Rescue", shelters:"Shelters", helped:"Helped",
     // home quick links
@@ -1169,7 +1240,7 @@ const T = {
     // hero
     heroH1:"Hayvan refahı için", heroH1Em:"ücretsiz platform.",
     heroP:"Sahiplen, geçici bakım ver, bakıcı bul, kayıp ilanı ver ya da tehlikedeki hayvanları bildir — her zaman ücretsiz, her hayvan için.",
-    browseAnimals:"Hayvanlara Göz At", postAnimal:"Hayvan İlanı Ver", reportAnimal:"Tehlikedeki Hayvan Bildir", shareWA:"Paylaş",
+    browseAnimals:"Hayvanlara Göz At", postAnimal:"Hayvan İlanı Ver", reportAnimal:"Tehlikedeki Hayvan Bildir", shareWA:"WhatsApp'ta Paylaş", shareIG:"Instagram'da Paylaş",
     // istatistikler
     adopted:"Sahiplenilen", waiting:"Bekleyen", rescues:"Kurtarma", shelters:"Barınak", helped:"Yardım Edildi",
     // hızlı bağlantılar
@@ -3757,7 +3828,7 @@ export default function App() {
 
                       {/* WhatsApp share — available on every report */}
                       <div style={{ marginTop:10, display:"flex", justifyContent:"flex-end" }}>
-                        <WhatsAppShareButton lang={lang} t={t} text={
+                        <ShareButtons lang={lang} t={t} compact notify={say} photo={r.photo_url} text={
                           `🚨 ${lang==="tr"?"Yardıma ihtiyacı olan hayvan":"Animal in need of help"}: ${typeof r.title === "object" ? (r.title[lang] || r.title.en || "") : (r.title || "")}\n` +
                           `📍 ${r.location}\n` +
                           `${typeof r.desc === "object" ? (r.desc[lang] || r.desc.en || "") : (r.desc || "")}\n\n` +
@@ -4434,7 +4505,7 @@ export default function App() {
                   <CallButton phone={detailAnimal.contactPhone} lang={lang}
                     variant={detailAnimal.canAdopt || detailAnimal.canFoster ? "outline" : "dark"} />
                 )}
-                <WhatsAppShareButton lang={lang} t={t} text={
+                <ShareButtons lang={lang} t={t} notify={say} photo={detailAnimal.photo_url} text={
                   `🐾 ${detailAnimal.name} — ${detailAnimal.breed[lang]} · ${detailAnimal.age[lang]} · ${detailAnimal.gender[lang]}\n` +
                   `📍 ${detailAnimal.city}, ${detailAnimal.province}\n` +
                   `${detailAnimal.desc?.[lang] || ""}\n\n` +
@@ -4482,7 +4553,7 @@ export default function App() {
                         ✉️ {lang==="tr" ? "E-posta gönder" : "Send email"}
                       </a>;
                 })()}
-                <WhatsAppShareButton lang={lang} t={t} text={
+                <ShareButtons lang={lang} t={t} notify={say} photo={detailLF.photo_url} text={
                   `${detailLF.type === "found"
                     ? (lang==="tr"?"🐾 Bulunan hayvan":"🐾 Found animal")
                     : (lang==="tr"?"🐾 Kayıp hayvan":"🐾 Lost animal")}: ${detailLF.name === "Unknown" ? detailLF.species[lang] : detailLF.name}\n` +
@@ -4540,7 +4611,7 @@ export default function App() {
                 {detailReport.status === "active" && detailReport.reporterPref === "phone" && (
                   <CallButton phone={detailReport.reporterPhone} lang={lang} variant="outline" />
                 )}
-                <WhatsAppShareButton lang={lang} t={t} text={
+                <ShareButtons lang={lang} t={t} notify={say} photo={detailReport.photo_url} text={
                   `🚨 ${lang==="tr"?"Yardıma ihtiyacı olan hayvan":"Animal in need of help"}: ${detailReport.title[lang]||detailReport.title}\n` +
                   `📍 ${detailReport.location}\n` +
                   `${detailReport.desc[lang]||detailReport.desc||""}\n\n` +
@@ -4894,7 +4965,7 @@ function ACard({ a, mode, lang, onClick }) {
         <div className="acard-foot">
           <span className="acard-loc">📍 {[a.city, a.province].filter(Boolean).join(", ")}</span>
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-            <WhatsAppShareButton lang={lang} text={
+            <ShareButtons lang={lang} compact photo={a.photo_url} text={
               `🐾 ${a.name}${metaParts.length ? " — " + metaParts.join(" · ") : ""}\n` +
               `📍 ${[a.city, a.province].filter(Boolean).join(", ")}\n` +
               `${a.desc?.[lang] || ""}\n\n` +
