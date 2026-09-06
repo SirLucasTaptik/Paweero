@@ -1871,6 +1871,12 @@ const CSS = `
   .sh-title { font-size:15px; font-weight:600; color:var(--dark); letter-spacing:-0.2px; }
   .sh-close { background:var(--light); border:none; border-radius:6px; width:28px; height:28px; font-size:13px; color:var(--muted); display:flex; align-items:center; justify-content:center; cursor:pointer; }
   .sh-body  { flex:1; overflow-y:auto; padding:20px; -webkit-overflow-scrolling:touch; }
+  /* İlan ekranlarında aksiyonlar kaydırılmaz: gövde kayar, bu şerit yerinde kalır. */
+  .sh-acts  { flex-shrink:0; border-top:1px solid var(--border); background:var(--white);
+              padding:12px 20px; padding-bottom:max(12px, env(safe-area-inset-bottom));
+              display:flex; flex-direction:column; gap:8px; }
+  .sh-acts-row { display:flex; gap:8px; align-items:center; }
+  .sh-acts-row > .btn, .sh-acts-row > a.btn { flex:1; min-width:0; }
   .sh-foot  { padding:14px 20px; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; flex-shrink:0; padding-bottom:max(14px,env(safe-area-inset-bottom)); background:var(--white); }
   .app-strip { display:flex; align-items:center; gap:10px; padding:12px 20px; border-bottom:1px solid var(--border); flex-shrink:0; flex-wrap:wrap; }
   .app-strip-emoji { font-size:26px; width:42px; height:42px; border-radius:8px; background:var(--off); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
@@ -4480,11 +4486,11 @@ export default function App() {
       {/* ANIMAL DETAIL SHEET */}
       {detailAnimal && (
         <div className="sheet-overlay" onClick={() => setDetailA(null)}>
-          <div className="sheet" style={{ maxHeight:`${detailAHeight}vh` }} onClick={e => e.stopPropagation()}>
+          <div className="sheet" onClick={e => e.stopPropagation()}>
             <div className="sh-handle" />
             <div className="sh-hd"><div className="sh-title">{t.animalProfile}</div><button className="sh-close" onClick={() => setDetailA(null)}>✕</button></div>
             <div className="sh-body">
-              <ImageCarousel photos={detailAnimal.photo_urls} emoji={detailAnimal.emoji} alt={[detailAnimal.name, detailAnimal.breed?.[lang], detailAnimal.city].filter(Boolean).join(", ")} height={detailAHeight >= 85 ? 360 : 220} fit={detailAHeight >= 85 ? "contain" : "cover"} />
+              <ImageCarousel photos={detailAnimal.photo_urls} emoji={detailAnimal.emoji} alt={[detailAnimal.name, detailAnimal.breed?.[lang], detailAnimal.city].filter(Boolean).join(", ")} height={detailAHeight >= 85 ? "42vh" : "30vh"} fit={detailAHeight >= 85 ? "contain" : "cover"} />
               <div className="d-name">{detailAnimal.name}</div>
               <div className="d-sub">{detailAnimal.breed[lang]} · {detailAnimal.species[lang]}</div>
               <div className="d-pills">
@@ -4494,18 +4500,23 @@ export default function App() {
               </div>
               <div className="tags">{detailAnimal.tags[lang].map(tg => <span key={tg} className="tag">{tg}</span>)}</div>
               <div className="d-desc">{detailAnimal.desc[lang]}</div>
-              <div className="d-acts">
+            </div>
+
+            {/* Aksiyonlar kaydırılan gövdede değil, sabit altta: dikey bir fotoğrafta
+                hepsi ekranın altında kalıyor, kullanıcı düğmeleri hiç görmüyordu. */}
+            <div className="sh-acts">
                 {detailAnimal.canAdopt && (
                   <button className="btn btn-dark btn-full" onClick={() => { setApplyFor(detailAnimal); setDetailA(null); }}>{t.applyAdopt}</button>
                 )}
                 {(detailAnimal.canFoster || detailAnimal.needsHelp || detailAnimal.isLost || detailAnimal.isFound) && (
                   <button className={`btn btn-full ${detailAnimal.canAdopt ? "btn-outline" : "btn-dark"}`} onClick={() => { setTakeActionFor(detailAnimal); setDetailA(null); }}>{getSingleActionLabel(detailAnimal, lang) || t.takeAction}</button>
                 )}
+              <div className="sh-acts-row">
                 {detailAnimal.contactPref === "phone" && (
                   <CallButton phone={detailAnimal.contactPhone} lang={lang}
                     variant={detailAnimal.canAdopt || detailAnimal.canFoster ? "outline" : "dark"} />
                 )}
-                <ShareButtons lang={lang} t={t} notify={say} photo={detailAnimal.photo_url} text={
+                <ShareButtons lang={lang} t={t} compact notify={say} photo={detailAnimal.photo_url} text={
                   `🐾 ${detailAnimal.name} — ${detailAnimal.breed[lang]} · ${detailAnimal.age[lang]} · ${detailAnimal.gender[lang]}\n` +
                   `📍 ${detailAnimal.city}, ${detailAnimal.province}\n` +
                   `${detailAnimal.desc?.[lang] || ""}\n\n` +
@@ -4520,14 +4531,14 @@ export default function App() {
       {/* LOST & FOUND DETAIL SHEET */}
       {detailLF && (
         <div className="sheet-overlay" onClick={() => setDetailLF(null)}>
-          <div className="sheet" style={{ maxHeight:`${detailLFHeight}vh` }} onClick={e => e.stopPropagation()}>
+          <div className="sheet" onClick={e => e.stopPropagation()}>
             <div className="sh-handle" />
             <div className="sh-hd">
               <div className="sh-title">{detailLF.type === "lost" ? t.lostPetSheet : t.foundAnimalSheet}</div>
               <button className="sh-close" onClick={() => setDetailLF(null)}>✕</button>
             </div>
             <div className="sh-body">
-              <ImageCarousel photos={detailLF.photo_urls} emoji={detailLF.emoji} alt={[detailLF.name, detailLF.breed?.[lang], detailLF.area].filter(Boolean).join(", ")} height={detailLFHeight >= 85 ? 360 : 220} fit={detailLFHeight >= 85 ? "contain" : "cover"} />
+              <ImageCarousel photos={detailLF.photo_urls} emoji={detailLF.emoji} alt={[detailLF.name, detailLF.breed?.[lang], detailLF.area].filter(Boolean).join(", ")} height={detailLFHeight >= 85 ? "42vh" : "30vh"} fit={detailLFHeight >= 85 ? "contain" : "cover"} />
               <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
                 <div className="d-name">{detailLF.name === "Unknown" ? (lang==="tr"?`Bulunan ${detailLF.species.tr}`:`Found ${detailLF.species.en}`) : detailLF.name}</div>
                 <span className={`lf-type ${detailLF.status === "reunited" ? "lf-reunited" : detailLF.type === "lost" ? "lf-lost" : "lf-found"}`} style={{ position:"static" }}>
@@ -4541,7 +4552,9 @@ export default function App() {
                 {detailLF.reward[lang] && <span className="d-pill" style={{ color:"var(--amber)", fontWeight:700 }}>{lang==="tr"?"Ödül":"Reward"}: {detailLF.reward[lang]}</span>}
               </div>
               <div className="d-desc">{detailLF.desc[lang]}</div>
-              <div className="d-acts">
+            </div>
+
+            <div className="sh-acts">
                 {detailLF.status !== "reunited" && (() => {
                   const c = lfContact(detailLF);
                   if (!c) return null;
@@ -4553,7 +4566,8 @@ export default function App() {
                         ✉️ {lang==="tr" ? "E-posta gönder" : "Send email"}
                       </a>;
                 })()}
-                <ShareButtons lang={lang} t={t} notify={say} photo={detailLF.photo_url} text={
+              <div className="sh-acts-row">
+                <ShareButtons lang={lang} t={t} compact notify={say} photo={detailLF.photo_url} text={
                   `${detailLF.type === "found"
                     ? (lang==="tr"?"🐾 Bulunan hayvan":"🐾 Found animal")
                     : (lang==="tr"?"🐾 Kayıp hayvan":"🐾 Lost animal")}: ${detailLF.name === "Unknown" ? detailLF.species[lang] : detailLF.name}\n` +
@@ -4561,7 +4575,7 @@ export default function App() {
                   `${detailLF.desc[lang] || ""}\n\n` +
                   `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?`${SITE_URL}${itemPath(lang, "lostfound", detailLF, detailLF.name)}`:""}`
                 } />
-                <button className="btn btn-outline btn-full" onClick={() => setDetailLF(null)}>{t.close}</button>
+                <button className="btn btn-outline" style={{ flex:1 }} onClick={() => setDetailLF(null)}>{t.close}</button>
               </div>
             </div>
           </div>
@@ -4571,14 +4585,14 @@ export default function App() {
       {/* REPORT DETAIL SHEET (gallery view) */}
       {detailReport && (
         <div className="sheet-overlay" onClick={() => setDetailReport(null)}>
-          <div className="sheet" style={{ maxHeight:`${detailReportHeight}vh` }} onClick={e => e.stopPropagation()}>
+          <div className="sheet" onClick={e => e.stopPropagation()}>
             <div className="sh-handle" />
             <div className="sh-hd">
               <div className="sh-title">{detailReport.title[lang] || detailReport.title}</div>
               <button className="sh-close" onClick={() => setDetailReport(null)}>✕</button>
             </div>
             <div className="sh-body">
-              <ImageCarousel photos={detailReport.photo_urls} emoji={detailReport.emoji} alt={detailReport.title?.[lang] || detailReport.title?.en || ""} height={detailReportHeight >= 85 ? 360 : 220} fit={detailReportHeight >= 85 ? "contain" : "cover"} />
+              <ImageCarousel photos={detailReport.photo_urls} emoji={detailReport.emoji} alt={detailReport.title?.[lang] || detailReport.title?.en || ""} height={detailReportHeight >= 85 ? "42vh" : "30vh"} fit={detailReportHeight >= 85 ? "contain" : "cover"} />
               <div className="d-pills">
                 <span className="d-pill">📍 {detailReport.location}</span>
                 <span className="d-pill">🕐 {detailReport.time[lang] || detailReport.time}</span>
@@ -4595,7 +4609,9 @@ export default function App() {
                 </div>
               )}
 
-              <div className="d-acts">
+            </div>
+
+            <div className="sh-acts">
                 {detailReport.status === "active" && (() => {
                   const isVolunteer = contactInfo.email && detailReport.volunteers?.some(v => v.name === contactInfo.email);
                   return !isVolunteer ? (
@@ -4608,16 +4624,17 @@ export default function App() {
                     </button>
                   );
                 })()}
+              <div className="sh-acts-row">
                 {detailReport.status === "active" && detailReport.reporterPref === "phone" && (
                   <CallButton phone={detailReport.reporterPhone} lang={lang} variant="outline" />
                 )}
-                <ShareButtons lang={lang} t={t} notify={say} photo={detailReport.photo_url} text={
+                <ShareButtons lang={lang} t={t} compact notify={say} photo={detailReport.photo_url} text={
                   `🚨 ${lang==="tr"?"Yardıma ihtiyacı olan hayvan":"Animal in need of help"}: ${detailReport.title[lang]||detailReport.title}\n` +
                   `📍 ${detailReport.location}\n` +
                   `${detailReport.desc[lang]||detailReport.desc||""}\n\n` +
                   `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?`${SITE_URL}${itemPath(lang, "help", detailReport, detailReport.title?.en || detailReport.title)}`:""}`
                 } />
-                <button className="btn btn-outline btn-full" onClick={() => setDetailReport(null)}>{t.close}</button>
+                <button className="btn btn-outline" style={{ flex:1 }} onClick={() => setDetailReport(null)}>{t.close}</button>
               </div>
             </div>
           </div>
