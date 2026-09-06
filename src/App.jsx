@@ -1682,6 +1682,12 @@ const CSS = `
   .opt-hint  { font-size:12px; color:var(--muted); margin-top:2px; font-weight:400; }
 
   /* ─ PURPOSE CHIPS — compact grid variant of opt-item, used for multi-select "what applies" rows ─ */
+  .seems-lost { display:flex; gap:10px; align-items:flex-start; background:var(--off); border:1.5px solid transparent;
+                border-radius:var(--r-sm); padding:12px 14px; cursor:pointer; transition:border-color 0.15s, background 0.15s; }
+  .seems-lost.on { border-color:var(--green); background:rgba(45,122,79,0.06); }
+  .seems-lost input { margin-top:2px; accent-color:var(--green); width:16px; height:16px; flex-shrink:0; }
+  .seems-lost .sl-t { font-size:13px; font-weight:600; color:var(--dark); }
+  .seems-lost .sl-d { font-size:12px; color:var(--muted); line-height:1.55; margin-top:4px; }
   .purpose-chip {
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
     background:var(--off); border:1.5px solid transparent; border-radius:var(--r-sm);
@@ -2172,7 +2178,7 @@ export default function App() {
   const [dbError, setDbError]     = useState(false);
   const [photos, setPhotos]   = useState([]);
   const [lfPhotos, setLFPhotos] = useState([]);
-  const [rf, setRf]           = useState({ title:"", location:"", desc:"", type:"Injured", animal:"", rCountry:FORM_COUNTRY, rProvince:FORM_PROVINCE, rCity:"", rAddress:"" });
+  const [rf, setRf]           = useState({ title:"", location:"", desc:"", type:"Injured", animal:"", rCountry:FORM_COUNTRY, rProvince:FORM_PROVINCE, rCity:"", rAddress:"", seemsLost:false });
   const [lfForm, setLFForm]   = useState({ type:"lost", name:"", species:"Dog", breed:"", color:"", area:"", city:"", contact:"", reward:"", desc:"", lfCountry:FORM_COUNTRY, lfProvince:FORM_PROVINCE, lfAddress:"" });
 
   // Yuvasına kavuşanlar: ana sayfadaki sayaç ve şerit için.
@@ -2242,6 +2248,7 @@ export default function App() {
             contact_email: item.contact_email || "",
             contact_phone: item.contact_phone || "",
             contact_pref: item.contact_pref || "email",
+            source_report_id: item.source_report_id || null,
             reward: { en: item.reward || "", tr: item.reward || "" },
             desc: { en: item.desc_en || "", tr: item.desc_tr || "" },
             status: item.status || "open",
@@ -2607,9 +2614,27 @@ export default function App() {
     { status: reason.status, removed_reason: reason.key }, removedMsg(reason));
   const markReunited = (i) => ownerPatch("lf_listings", i.id, "contact_email", { status:"reunited" },
     lang==="tr" ? "Bulundu olarak işaretlendi" : "Marked as found");
-  const removeReport = (r, reason) => ownerPatch("reports", r.id, "reporter_name",
-    { status: reason.status, removed_reason: reason.key },
-    lang==="tr" ? "Bildirim kaldırıldı" : "Report removed");
+  // "Sahipli görünüyor" işaretlenen bildirimler Kayıp & Bulundu'da da bir ilan
+  // açıyor. İkisi source_report_id ile bağlı: bildirim kalkınca ilan da kalkmalı,
+  // yoksa kaldırılan bildirimin kopyası listede kalmaya devam eder.
+  const syncLinkedLF = async (reportId, status) => {
+    const { error } = await (await getDb()).from("lf_listings").update({ status })
+      .eq("source_report_id", reportId).eq("contact_email", contactInfo.email);
+    if (error) console.warn("bağlı kayıp/bulundu ilanı güncellenemedi:", error.message);
+  };
+
+  const removeReport = async (r, reason) => {
+    await syncLinkedLF(r.id, "removed");
+    await ownerPatch("reports", r.id, "reporter_name",
+      { status: reason.status, removed_reason: reason.key },
+      lang==="tr" ? "Bildirim kaldırıldı" : "Report removed");
+  };
+
+  const restoreReport = async (r) => {
+    await syncLinkedLF(r.id, "open");
+    await ownerPatch("reports", r.id, "reporter_name", { status:"active" },
+      lang==="tr" ? "Bildirim tekrar yayında" : "Report is live again");
+  };
 
   // Kaldırma kaydı silmediği için geri alınabiliyor.
   const restore = (table, id, ownerField, status) => ownerPatch(table, id, ownerField, { status },
@@ -3565,11 +3590,32 @@ export default function App() {
                 <label className="flabel">{lang==="tr"?"Fotoğraflar * (1–5)":"Photos * (1–5)"}</label>
                 <MultiPhotoUpload photos={photos} setPhotos={setPhotos} folder="reports" lang={lang} t={t} maxPhotos={5} />
               </div>
+
+              {/* Sahibini arayan biri Kayıp & Bulundu sekmesine bakar, acil
+                  bildirimlere değil. Bildiren kişi hayvanın sahipli olduğunu
+                  düşünüyorsa aynı kayıt oraya da "bulundu" ilanı olarak düşsün. */}
+              <div className="fg">
+                <label className={`seems-lost ${rf.seemsLost ? "on" : ""}`}>
+                  <input type="checkbox" checked={rf.seemsLost}
+                    onChange={e => setRf(f => ({ ...f, seemsLost:e.target.checked }))} />
+                  <div>
+                    <div className="sl-t">
+                      🔍 {lang==="tr" ? "Sahipli görünüyor — kayıp olabilir" : "Looks like someone's pet — may be lost"}
+                    </div>
+                    <div className="sl-d">
+                      {lang==="tr"
+                        ? "Tasması var, bakımlı ya da insana alışkınsa işaretle. İlan Kayıp & Bulundu sekmesinde de \"bulundu\" olarak görünür, sahibi arıyorsa bulabilir."
+                        : "Tick this if it has a collar, looks groomed or is used to people. The report also appears under Lost & Found as a found animal, where its owner would be looking."}
+                    </div>
+                  </div>
+                </label>
+              </div>
+
               <button className="btn btn-red btn-full" onClick={() => requireContact(async (contact) => {
                 if(!rf.title || !rf.rProvince || !rf.rCity) { say(lang==="tr"?"Lütfen başlık, il ve semt seçin":"Please fill title, province and area"); return; }
                 if(photos.length === 0) { alert(lang==="tr"?"Lütfen hayvanın en az 1 fotoğrafını yükleyin":"Please upload at least 1 photo of the animal"); return; }
                 const fullLocation = [rf.rAddress, rf.rCity, rf.rProvince, rf.rCountry].filter(Boolean).join(", ");
-                const { error } = await (await getDb()).from("reports").insert([{
+                const { data: inserted, error } = await (await getDb()).from("reports").insert([{
                   emoji: rf.animal || "🐾",
                   title: rf.title,
                   description: rf.desc || "",
@@ -3581,35 +3627,49 @@ export default function App() {
                   status: "active",
                   photo_url: photos[0] || null,
                   photo_urls: photos,
-                }]);
+                }]).select();
                 if (error) { say(lang==="tr"?"Hata oluştu, tekrar dene":"Error occurred, please try again"); return; }
 
-                // Also publish this animal as a "found" listing in Lost & Found,
-                // so a posted animal automatically appears under the Found tab too.
-                const speciesFromEmoji = { "🐕":"Dog", "🐈":"Cat", "🐦":"Bird", "🐄":"Cattle", "🐎":"Horse" }[rf.animal] || "Other";
-                const lfArea = [rf.rAddress, rf.rCity].filter(Boolean).join(", ");
-                const lfDesc = [rf.title, rf.desc].filter(Boolean).join(" — ");
-                await (await getDb()).from("lf_listings").insert([{
-                  type: "found",
-                  name: null,
-                  species: speciesFromEmoji,
-                  breed: null,
-                  color: null,
-                  area: lfArea,
-                  city: rf.rProvince,
-                  contact: contact.contactPref === "phone" ? contact.phone : contact.email,
-                  contact_email: contact.email,
-                  contact_phone: contact.phone || null,
-                  contact_pref: contact.contactPref || "email",
-                  reward: null,
-                  desc_en: lfDesc,
-                  desc_tr: lfDesc,
-                  status: "open",
-                  photo_url: photos[0] || null,
-                  photo_urls: photos,
-                }]);
+                // Sahipli görünüyorsa aynı hayvan Kayıp & Bulundu'da da "bulunan"
+                // olarak yayınlanıyor: sahibi orayı tarar, acil bildirimleri değil.
+                // Bağlantı kolonu iki kaydı birbirine bağlıyor; bildirimi kaldıran
+                // kişi ikisini birden kaldırmış oluyor.
+                if (rf.seemsLost) {
+                  const speciesFromEmoji = { "🐕":"Dog", "🐈":"Cat", "🐦":"Bird", "🐄":"Cattle", "🐎":"Horse" }[rf.animal] || "Other";
+                  const lfArea = [rf.rAddress, rf.rCity].filter(Boolean).join(", ");
+                  const lfDesc = [rf.title, rf.desc].filter(Boolean).join(" — ");
+                  const lfRow = {
+                    type: "found",
+                    name: null,
+                    species: speciesFromEmoji,
+                    breed: null,
+                    color: null,
+                    area: lfArea,
+                    city: rf.rProvince,
+                    contact: contact.contactPref === "phone" ? contact.phone : contact.email,
+                    contact_email: contact.email,
+                    contact_phone: contact.phone || null,
+                    contact_pref: contact.contactPref || "email",
+                    reward: null,
+                    desc_en: lfDesc,
+                    desc_tr: lfDesc,
+                    status: "open",
+                    photo_url: photos[0] || null,
+                    photo_urls: photos,
+                    source_report_id: inserted?.[0]?.id || null,
+                  };
+                  const db = await getDb();
+                  const { error: lfErr } = await db.from("lf_listings").insert([lfRow]);
+                  if (lfErr) {
+                    // source_report_id kolonu henüz eklenmemiş olabilir
+                    // (supabase/seems-lost.sql). İlan bağlantısız da olsa yayınlansın.
+                    console.warn("source_report_id yazılamadı:", lfErr.message);
+                    const { source_report_id, ...rest } = lfRow;
+                    await db.from("lf_listings").insert([rest]);
+                  }
+                }
 
-                setRf({ title:"", location:"", desc:"", type:"Injured", animal:"", rCountry:FORM_COUNTRY, rProvince:FORM_PROVINCE, rCity:"", rAddress:"" });
+                setRf({ title:"", location:"", desc:"", type:"Injured", animal:"", rCountry:FORM_COUNTRY, rProvince:FORM_PROVINCE, rCity:"", rAddress:"", seemsLost:false });
                 setPhotos([]); setShowReportForm(false);
                 say(lang==="tr"?"Bildirim gönderildi — kurtarma ekibi bildirildi":"Report submitted — responders notified");
                 await loadFromDB();
@@ -3756,7 +3816,7 @@ export default function App() {
                         <div className="me-acts" onClick={e => e.stopPropagation()}>
                           {r.status === "removed" ? (
                             <button className="me-act" disabled={busyRow === r.id}
-                              onClick={() => restore("reports", r.id, "reporter_name", "active")}>
+                              onClick={() => restoreReport(r)}>
                               {lang==="tr"?"Tekrar yayınla":"Republish"}
                             </button>
                           ) : (
@@ -3785,6 +3845,11 @@ export default function App() {
                           {[i.type === "lost" ? (lang==="tr"?"Kayıp":"Lost") : (lang==="tr"?"Bulundu":"Found"), i.area].filter(Boolean).join(" · ")}
                           {i.status === "reunited" && ` · ${lang==="tr"?"Kavuştu ✓":"Reunited ✓"}`}
                         </div>
+                        {i.source_report_id && (
+                          <div className="me-row-s">
+                            {lang==="tr" ? "🚨 Bildiriminden oluşturuldu" : "🚨 Created from your report"}
+                          </div>
+                        )}
                         {isOffline(i.status) && (
                           <div className="me-row-s" style={{ color: i.status === "adopted" ? "var(--green)" : "var(--red)" }}>
                             {offlineNote(i.status)}
