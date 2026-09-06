@@ -1886,6 +1886,39 @@ const CSS = `
   .purpose-adopt  { background:rgba(212,134,43,0.14); color:var(--amber); }
 `;
 
+// Bildirim formundaki durum seçenekleri. Değer sabit, etiket dile göre değişiyor:
+// eskiden seçenekler doğrudan Türkçe/İngilizce metindi, bu yüzden Türkçe arayüzde
+// kutuda "Yaralı" görünürken saklanan değer "Injured" olarak kalabiliyordu.
+const SITUATIONS = [
+  { v:"injured",   tr:"Yaralı",           en:"Injured"        },
+  { v:"abandoned", tr:"Terk edilmiş",     en:"Abandoned"      },
+  { v:"sick",      tr:"Hasta",            en:"Sick"           },
+  { v:"stray",     tr:"Başıboş / Kayıp",  en:"Stray / Lost"   },
+  { v:"abuse",     tr:"İstismar / İhmal", en:"Abuse / Neglect"},
+  { v:"other",     tr:"Diğer",            en:"Other"          },
+];
+
+const SPECIES_WORD = {
+  "🐕": { tr:"köpek", en:"dog"    },
+  "🐈": { tr:"kedi",  en:"cat"    },
+  "🐦": { tr:"kuş",   en:"bird"   },
+  "🐄": { tr:"büyükbaş", en:"cattle" },
+  "🐎": { tr:"at",    en:"horse"  },
+  "🐾": { tr:"hayvan", en:"animal" },
+};
+
+// Başlığı seçimlerden kur: "Yaralı köpek — Kadıköy". Kullanıcı kendi başlığını
+// yazabilir ama yazmak zorunda değil — acil bir bildirimde bir alan eksiltmek,
+// o alanı doldurtmaktan değerli.
+function autoReportTitle(rf, lang) {
+  const sit  = SITUATIONS.find(x => x.v === rf.type);
+  const word = (SPECIES_WORD[rf.animal] || SPECIES_WORD["🐾"])[lang] || "animal";
+  const what = sit && sit.v !== "other" ? `${sit[lang] || sit.en} ${word}` : word;
+  const head = what.charAt(0).toLocaleUpperCase(lang === "tr" ? "tr-TR" : "en-US") + what.slice(1);
+  const where = rf.rCity || rf.rProvince;
+  return where ? `${head} — ${locLabel(where, lang)}` : head;
+}
+
 // İlanı kaldırma sebepleri. Sebep yalnızca kayıt için değil: "yuvalandı" ilanı
 // silmek yerine adopted durumuna alıyor, ana sayfadaki sayaç da onu sayıyor.
 // Acil bildirimde tek sebep var — bildiren kişi hayvanın sahibi değil, sadece
@@ -2172,7 +2205,7 @@ export default function App() {
   const [dbError, setDbError]     = useState(false);
   const [photos, setPhotos]   = useState([]);
   const [lfPhotos, setLFPhotos] = useState([]);
-  const [rf, setRf]           = useState({ title:"", location:"", desc:"", type:"Injured", animal:"", rCountry:FORM_COUNTRY, rProvince:FORM_PROVINCE, rCity:"", rAddress:"", owned:"" });
+  const [rf, setRf]           = useState({ title:"", location:"", desc:"", type:"injured", animal:"", rCountry:FORM_COUNTRY, rProvince:FORM_PROVINCE, rCity:"", rAddress:"", owned:"" });
   const [lfForm, setLFForm]   = useState({ type:"lost", name:"", species:"Dog", breed:"", color:"", area:"", city:"", contact:"", reward:"", desc:"", lfCountry:FORM_COUNTRY, lfProvince:FORM_PROVINCE, lfAddress:"" });
 
   // Yuvasına kavuşanlar: ana sayfadaki sayaç ve şerit için.
@@ -2459,6 +2492,38 @@ export default function App() {
   const [contactDrawerFor, setContactDrawerFor] = useState(null); // reporter contact info to show after ETA confirm
   // (myName removed — volunteer identity is now the verified contactInfo.email)
   const [showReportForm, setShowReportForm] = useState(false);
+  const [rfErr, setRfErr]         = useState({});    // alan başına hata metni
+  const [rfLocating, setRfLocating] = useState(false);
+
+  // Bildirimi yazan kişi hayvanın yanında duruyor: konumu üç açılır menüden
+  // seçtirmek yerine cihazdan alalım. Semt koordinattan çıkmıyor, onu seçmesi
+  // gerekiyor — ama liste il seçildikten sonra kısalıyor.
+  const useMyLocationForReport = () => {
+    if (!navigator.geolocation) {
+      say(lang==="tr" ? "Tarayıcınız konum desteklemiyor" : "Your browser doesn't support location");
+      return;
+    }
+    setRfLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const province = findNearestProvince(pos.coords.latitude, pos.coords.longitude);
+        const country  = province ? findCountryForProvince(province) : null;
+        if (country && province) {
+          setRf(f => ({ ...f, rCountry: country, rProvince: province, rCity: "" }));
+          setRfErr(e => ({ ...e, loc:"" }));
+          say(`📍 ${locLabel(province, lang)} — ${lang==="tr" ? "şimdi semti seç" : "now pick the area"}`);
+        } else {
+          say(lang==="tr" ? "Konum bulunamadı" : "Couldn't determine your location");
+        }
+        setRfLocating(false);
+      },
+      () => {
+        setRfLocating(false);
+        say(lang==="tr" ? "Konum izni verilmedi" : "Location permission denied");
+      },
+      { timeout: 8000 }
+    );
+  };
   const [showCreateReport, setShowCreateReport] = useState(false);
 
   // ── Email OTP verification ──
@@ -3556,9 +3621,7 @@ export default function App() {
               </div>
               <div className="fg"><label className="flabel">{t.situation}</label>
                 <select className="fs" value={rf.type} onChange={e => setRf(f => ({ ...f, type:e.target.value }))}>
-                  {lang==="tr"
-                    ? <><option>Yaralı</option><option>Terk edilmiş</option><option>Hasta</option><option>Başıboş / Kayıp</option><option>İstismar / İhmal</option><option>Diğer</option></>
-                    : <><option>Injured</option><option>Abandoned</option><option>Sick</option><option>Stray / Lost</option><option>Abuse / Neglect</option><option>Other</option></>}
+                  {SITUATIONS.map(o => <option key={o.v} value={o.v}>{o[lang] || o.en}</option>)}
                 </select>
               </div>
               {/* Sahibini arayan biri Kayıp & Bulundu sekmesine bakar, acil bildirimlere
@@ -3591,10 +3654,25 @@ export default function App() {
                   </div>
                 )}
               </div>
-              <div className="fg"><label className="flabel">{t.titleField}</label>
-                <input className="fi" placeholder={lang==="tr"?"örn. Bağdat Cad. yaralı köpek":"e.g. Injured dog on Bağdat Ave"} value={rf.title} onChange={e => setRf(f => ({ ...f, title:e.target.value }))} />
+              <div className="fg">
+                <label className="flabel">{lang==="tr"?"Başlık (isteğe bağlı)":"Title (optional)"}</label>
+                <input className="fi" placeholder={autoReportTitle(rf, lang)}
+                  value={rf.title} onChange={e => setRf(f => ({ ...f, title:e.target.value }))} />
+                {!rf.title.trim() && (
+                  <div style={{ fontSize:12, color:"var(--muted)", marginTop:6 }}>
+                    {lang==="tr" ? "Boş bırakırsan başlık şu olur: " : "Left empty, the title will be: "}
+                    <strong style={{ color:"var(--dark)" }}>{autoReportTitle(rf, lang)}</strong>
+                  </div>
+                )}
               </div>
-              <div className="fg"><label className="flabel">{t.locationField}</label>
+              <div className="fg" id="rf-loc">
+                <label className="flabel">{t.locationField}</label>
+                <button className="btn btn-outline btn-full" style={{ marginBottom:10, fontSize:13 }}
+                  disabled={rfLocating} onClick={useMyLocationForReport}>
+                  📍 {rfLocating
+                        ? (lang==="tr"?"Konum bulunuyor…":"Finding your location…")
+                        : (lang==="tr"?"Konumumu kullan":"Use my location")}
+                </button>
                 <div className="frow">
                   <select className="fs" value={rf.rCountry} onChange={e => setRf(f => ({ ...f, rCountry:e.target.value, rProvince:"", rCity:"" }))}>
                     {COUNTRIES.filter(c=>c!=="All Countries").map(c => <option key={c} value={c}>{locLabel(c, lang)}</option>)}
@@ -3605,28 +3683,45 @@ export default function App() {
                   </select>
                 </div>
                 <div className="frow" style={{ marginTop:10 }}>
-                  <select className="fs" value={rf.rCity} onChange={e => setRf(f => ({ ...f, rCity:e.target.value }))}>
+                  <select className="fs" value={rf.rCity}
+                    onChange={e => { setRf(f => ({ ...f, rCity:e.target.value })); setRfErr(x => ({ ...x, loc:"" })); }}>
                     <option value="">{lang==="tr"?"Semt / İlçe seç":"Select area"}</option>
                     {(CITIES[rf.rProvince] || []).filter(c=>c!=="All Cities").map(c => <option key={c} value={c}>{locLabel(c, lang)}</option>)}
                   </select>
                   <input className="fi" placeholder={lang==="tr"?"Açık adres (sokak, bina no...)":"Open address (street, building no...)"} value={rf.rAddress} onChange={e => setRf(f => ({ ...f, rAddress:e.target.value }))} />
                 </div>
+                {rfErr.loc && <div className="err">{rfErr.loc}</div>}
               </div>
               <div className="fg"><label className="flabel">{t.description}</label>
                 <textarea className="fta" placeholder={lang==="tr"?"Görünür yaralar? Hayvan ne zamandan beri orada?":"Visible injuries? How long has the animal been there?"} value={rf.desc} onChange={e => setRf(f => ({ ...f, desc:e.target.value }))} />
               </div>
-              <div className="fg">
+              <div className="fg" id="rf-photos">
                 <label className="flabel">{lang==="tr"?"Fotoğraflar * (1–5)":"Photos * (1–5)"}</label>
                 <MultiPhotoUpload photos={photos} setPhotos={setPhotos} folder="reports" lang={lang} t={t} maxPhotos={5} />
+                {rfErr.photos && <div className="err">{rfErr.photos}</div>}
               </div>
 
               <button className="btn btn-red btn-full" onClick={() => requireContact(async (contact) => {
-                if(!rf.title || !rf.rProvince || !rf.rCity) { say(lang==="tr"?"Lütfen başlık, il ve semt seçin":"Please fill title, province and area"); return; }
-                if(photos.length === 0) { alert(lang==="tr"?"Lütfen hayvanın en az 1 fotoğrafını yükleyin":"Please upload at least 1 photo of the animal"); return; }
+                // Hata, eksik alanın yanında görünüyor ve sayfa oraya kayıyor:
+                // toast "il ve semt seçin" dediğinde kullanıcı hangisinin boş
+                // olduğunu bulmak için formu baştan taramak zorunda kalıyordu.
+                const errs = {};
+                if (!rf.rProvince || !rf.rCity) {
+                  errs.loc = lang==="tr" ? "İl ve semt seçilmeli" : "Pick a province and an area";
+                }
+                if (photos.length === 0) {
+                  errs.photos = lang==="tr" ? "En az 1 fotoğraf gerekli" : "At least one photo is required";
+                }
+                setRfErr(errs);
+                if (Object.keys(errs).length) {
+                  document.getElementById(errs.loc ? "rf-loc" : "rf-photos")
+                    ?.scrollIntoView({ behavior:"smooth", block:"center" });
+                  return;
+                }
                 const fullLocation = [rf.rAddress, rf.rCity, rf.rProvince, rf.rCountry].filter(Boolean).join(", ");
                 const { data: inserted, error } = await (await getDb()).from("reports").insert([{
                   emoji: rf.animal || "🐾",
-                  title: rf.title,
+                  title: rf.title.trim() || autoReportTitle(rf, lang),
                   description: rf.desc || "",
                   location: fullLocation,
                   reporter_name: contact.email,          // notify-owner alıcı adresi olarak bunu kullanıyor
@@ -3646,7 +3741,7 @@ export default function App() {
                 if (rf.owned === "pet") {
                   const speciesFromEmoji = { "🐕":"Dog", "🐈":"Cat", "🐦":"Bird", "🐄":"Cattle", "🐎":"Horse" }[rf.animal] || "Other";
                   const lfArea = [rf.rAddress, rf.rCity].filter(Boolean).join(", ");
-                  const lfDesc = [rf.title, rf.desc].filter(Boolean).join(" — ");
+                  const lfDesc = [rf.title.trim() || autoReportTitle(rf, lang), rf.desc].filter(Boolean).join(" — ");
                   const lfRow = {
                     type: "found",
                     name: null,
@@ -3678,8 +3773,8 @@ export default function App() {
                   }
                 }
 
-                setRf({ title:"", location:"", desc:"", type:"Injured", animal:"", rCountry:FORM_COUNTRY, rProvince:FORM_PROVINCE, rCity:"", rAddress:"", owned:"" });
-                setPhotos([]); setShowReportForm(false);
+                setRf({ title:"", location:"", desc:"", type:"injured", animal:"", rCountry:FORM_COUNTRY, rProvince:FORM_PROVINCE, rCity:"", rAddress:"", owned:"" });
+                setPhotos([]); setRfErr({}); setShowReportForm(false);
                 say(lang==="tr"?"Bildirim gönderildi — kurtarma ekibi bildirildi":"Report submitted — responders notified");
                 await loadFromDB();
               })}>{t.submitReport}</button>
