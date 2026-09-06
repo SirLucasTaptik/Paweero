@@ -672,7 +672,7 @@ const SVC_TYPES = ["All Services","Dog sitting","Cat sitting","Dog walking","Boa
 // Report   = emergency rescue reports (adres ve tab kimliği "help" kalıyor)
 const TABS = [
   { id:"home",     icon:"⌂",  label:"Home"        },
-  { id:"animals",  icon:"🐾", label:"Animals"      },
+  { id:"animals",  icon:"🐾", label:"Adopt & Foster" },
   { id:"lostfound",icon:"🔍", label:"Lost & Found" },
   { id:"help",     icon:"🚨", label:"Report"       },
 ];
@@ -911,7 +911,7 @@ const T = {
   en: {
     // app shell
     appName:"Paweero", lang:"EN",
-    home:"Home", animals:"Animals", lostFound:"Lost & Found", owners:"Owners", help:"Report",
+    home:"Home", animals:"Adopt & Foster", lostFound:"Lost & Found", owners:"Owners", help:"Report",
     // post chooser (single entry point for all posting actions)
     postChooserTitle:"What would you like to do?",
     postChooserSub:"Choose the option that matches your situation — this makes sure your post reaches the right people.",
@@ -1128,7 +1128,7 @@ const T = {
   tr: {
     // uygulama kabuğu
     appName:"Paweero", lang:"TR",
-    home:"Ana Sayfa", animals:"Hayvanlar", lostFound:"Kayıp & Bulunan", owners:"Sahipler", help:"Bildir",
+    home:"Ana Sayfa", animals:"Sahiplen & Bakım", lostFound:"Kayıp & Bulunan", owners:"Sahipler", help:"Bildir",
     // gönderi seçici (tüm paylaşım aksiyonları için tek giriş noktası)
     postChooserTitle:"Ne yapmak istiyorsun?",
     postChooserSub:"Durumuna uygun seçeneği seç — bu sayede ilanın doğru kişilere ulaşır.",
@@ -5863,7 +5863,7 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact, defaultCountry = FO
           <label className={`purpose-chip chip-help ${f.needsHelp?"on":""}`}>
             <input type="checkbox" checked={f.needsHelp} onChange={e => setF(x=>({...x, needsHelp:e.target.checked}))} />
             <div className="pc-icon">🚨</div>
-            <div className="pc-label">{lang==="tr"?"Yardım":"Help"}</div>
+            <div className="pc-label">{lang==="tr"?"Bildir":"Report"}</div>
           </label>
           <label className={`purpose-chip chip-foster ${f.canFoster?"on":""}`}>
             <input type="checkbox" checked={f.canFoster} onChange={e => setF(x=>({...x, canFoster:e.target.checked}))} />
@@ -5913,7 +5913,7 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact, defaultCountry = FO
       )}
       {f.needsHelp && (
         <div className="fg" style={{ background:"rgba(192,57,43,0.05)", border:"1px solid rgba(192,57,43,0.2)", borderRadius:"var(--r)", padding:14 }}>
-          <label className="flabel" style={{ color:"var(--red)" }}>{lang==="tr"?"Yardım Detayları":"Help Details"}</label>
+          <label className="flabel" style={{ color:"var(--red)" }}>{lang==="tr"?"Bildirim Detayları":"Report Details"}</label>
           <div className="frow" style={{ marginTop:6 }}>
             <div className="fg" style={{ marginBottom:8 }}>
               <label className="flabel">{lang==="tr"?"Durum *":"Situation *"}</label>
