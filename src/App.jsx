@@ -669,12 +669,12 @@ const SVC_TYPES = ["All Services","Dog sitting","Cat sitting","Dog walking","Boa
 // Animals  = adopt + foster (user goal: find a pet)
 // Lost & Found = lost reports + found reports (user goal: reunite pets)
 // Owners   = rehome + sitting + find families + post profile
-// Help     = emergency rescue reports
+// Report   = emergency rescue reports (adres ve tab kimliği "help" kalıyor)
 const TABS = [
   { id:"home",     icon:"⌂",  label:"Home"        },
   { id:"animals",  icon:"🐾", label:"Animals"      },
   { id:"lostfound",icon:"🔍", label:"Lost & Found" },
-  { id:"help",     icon:"🚨", label:"Help"         },
+  { id:"help",     icon:"🚨", label:"Report"       },
 ];
 
 // ─── ÖRNEK VERİ ──────────────────────────────────────────────────────────────
@@ -911,7 +911,7 @@ const T = {
   en: {
     // app shell
     appName:"Paweero", lang:"EN",
-    home:"Home", animals:"Animals", lostFound:"Lost & Found", owners:"Owners", help:"Emergency",
+    home:"Home", animals:"Animals", lostFound:"Lost & Found", owners:"Owners", help:"Report",
     // post chooser (single entry point for all posting actions)
     postChooserTitle:"What would you like to do?",
     postChooserSub:"Choose the option that matches your situation — this makes sure your post reaches the right people.",
@@ -962,7 +962,7 @@ const T = {
     lostFoundTitle:"Lost & Found",         lostFoundDesc:"Report a lost pet or view found animals.",
     sittingTitle:"Pet Sitting & Boarding", sittingDesc:"Find trusted sitters near you, or register as one.",
     rehomeTitle:"Rehome Your Pet",         rehomeDesc:"List your pet so loving families can find them.",
-    helpTitle:"Help an Animal",            helpDesc:"Spotted an injured or abandoned animal? Report it fast.",
+    helpTitle:"Report an Animal",          helpDesc:"Spotted an injured or abandoned animal? Report it fast.",
     recentlyAdded:"Recently added",
     // animals tab
     adopt:"Adopt", foster:"Foster", postProfile:"📋 Post Adoption Profile",
@@ -1026,8 +1026,8 @@ const T = {
     aboutHome:"About your home", aboutHomePlaceholder:"Living situation, experience with animals, family setup…",
     postProfileBtn:"Post Profile",
     // help tab
-    emergencyBar:"Emergency: Turkey 156 (Jandarma) · KKTC 0392 444 0 156 · UAE 800 ADDA (2332)",
-    helpAnimals:"Help Animals in Need",
+    emergencyBar:"Report: Turkey 156 (Jandarma) · KKTC 0392 444 0 156 · UAE 800 ADDA (2332)",
+    helpAnimals:"Animal Reports",
     helpSub:"Spotted an injured or abandoned animal? Report it and rescuers will be notified immediately.",
     activeReports:"Active Reports", needingHelp:"needing help",
     helpedTab:"Helped", helpedAnimals:"animals helped",
@@ -1128,7 +1128,7 @@ const T = {
   tr: {
     // uygulama kabuğu
     appName:"Paweero", lang:"TR",
-    home:"Ana Sayfa", animals:"Hayvanlar", lostFound:"Kayıp & Bulunan", owners:"Sahipler", help:"Acil Durum",
+    home:"Ana Sayfa", animals:"Hayvanlar", lostFound:"Kayıp & Bulunan", owners:"Sahipler", help:"Bildir",
     // gönderi seçici (tüm paylaşım aksiyonları için tek giriş noktası)
     postChooserTitle:"Ne yapmak istiyorsun?",
     postChooserSub:"Durumuna uygun seçeneği seç — bu sayede ilanın doğru kişilere ulaşır.",
@@ -1179,7 +1179,7 @@ const T = {
     lostFoundTitle:"Kayıp & Bulunan",      lostFoundDesc:"Kayıp ilanı ver ya da bulunan hayvanları görüntüle.",
     sittingTitle:"Petsitter & Pansiyonat", sittingDesc:"Yakınındaki güvenilir bakıcıları bul ya da bakıcı olarak kayıt ol.",
     rehomeTitle:"Hayvanını Yeni Yuvaya",   rehomeDesc:"Hayvanını listele, ona sevgi dolu bir aile bulsun.",
-    helpTitle:"Hayvana Yardım Et",         helpDesc:"Yaralı ya da terk edilmiş bir hayvan mı gördün? Hemen bildir.",
+    helpTitle:"Hayvan Bildir",             helpDesc:"Yaralı ya da terk edilmiş bir hayvan mı gördün? Hemen bildir.",
     recentlyAdded:"Son eklenenler",
     // hayvanlar sekmesi
     adopt:"Sahiplen", foster:"Geçici Bakım", postProfile:"📋 Sahiplenme Profili Oluştur",
@@ -1194,10 +1194,10 @@ const T = {
     lostFoundSub:"Hayvanları sahipleriyle buluşturuyoruz.",
     browse:"İlanlar", postListing:"+ İlan Ver",
     openListings:"açık", allListings:"Tüm ilanlar", lostFilter:"🔴 Kayıp", foundFilter:"🟢 Bulunan",
-    lfEmptyLostTitle:"İyi haber! Bu bölgede kayıp hayvan ihbarı yok.",
+    lfEmptyLostTitle:"İyi haber! Bu bölgede kayıp hayvan bildirimi yok.",
     lfEmptyLostDesc:"Umuyoruz bu böyle kalır. Eğer hayvanınız kayıpsa, topluluğun onu bulmasına yardımcı olmak için bir kayıp ilanı oluşturabilirsiniz.",
     lfEmptyLostCta:"Kayıp İlanı Ver",
-    lfEmptyFoundTitle:"Henüz bulunan hayvan ihbarı yapılmamış.",
+    lfEmptyFoundTitle:"Henüz bulunan hayvan bildirimi yapılmamış.",
     lfEmptyFoundDesc:"Bu bölgede şu anda bildirilmiş bulunan hayvan yok. Bir hayvan bulduysanız, ailesine kavuşmasına yardımcı olmak için bir ilan oluşturabilirsiniz.",
     lfEmptyFoundCta:"Bulunan Hayvan İlanı Ver",
     lfEmptyAllTitle:"Bu bölgede henüz hiç ilan yok.",
@@ -1243,28 +1243,28 @@ const T = {
     aboutHome:"Eviniz hakkında", aboutHomePlaceholder:"Yaşam koşulları, hayvanlarla deneyim, aile yapısı…",
     postProfileBtn:"Profili Yayınla",
     // yardım sekmesi
-    emergencyBar:"Acil: Türkiye 156 (Jandarma) · KKTC 0392 444 0 156 · BAE 800 ADDA (2332)",
-    helpAnimals:"Tehlikedeki Hayvanlara Yardım",
+    emergencyBar:"Bildir: Türkiye 156 (Jandarma) · KKTC 0392 444 0 156 · BAE 800 ADDA (2332)",
+    helpAnimals:"Hayvan Bildirimleri",
     helpSub:"Yaralı ya da terk edilmiş bir hayvan gördün mü? Bildir, kurtarma ekibi hemen haberdar edilsin.",
-    activeReports:"Aktif İhbarlar", needingHelp:"yardım bekliyor",
+    activeReports:"Aktif Bildirimler", needingHelp:"yardım bekliyor",
     helpedTab:"Yardım Edildi", helpedAnimals:"hayvana yardım edildi",
     volunteersResponding:"gönüllü yanıt veriyor",
     iCanHelp:"Yardım edebilirim →", youAreResponding:"✓ Yanıt veriyorsun",
     markAsHelped:"Yardım Edildi Olarak İşaretle", animalHasBeenHelped:"✓ Hayvana yardım edildi",
     notListedAbove:"Yukarıda listelenmeyen tehlikedeki bir hayvan mı gördün?",
-    submitNewReport:"🚨 Yeni İhbar Gönder",
-    submitReportTitle:"İhbar Gönder", cancel:"İptal",
+    submitNewReport:"🚨 Yeni Bildirim Gönder",
+    submitReportTitle:"Bildirim Gönder", cancel:"İptal",
     animalType:"Hayvan Türü", situation:"Durum", titleField:"Başlık *", locationField:"Konum *",
     photo:"Fotoğraf", uploadPhoto:"Fotoğraf yüklemek için dokun", photoHint:"JPG veya PNG, en fazla 10 MB",
-    submitReport:"İhbarı Gönder",
+    submitReport:"Bildirimi Gönder",
     reportedBy:"Bildiren:",
     locationDetected:"📍 Konum algılandı",
     fillTitleLocation:"Lütfen başlık ve konum girin",
     photoUploaded2:"Fotoğraf yüklendi",
-    reportSubmitted:"İhbar gönderildi — kurtarma ekibi bildirildi",
+    reportSubmitted:"Bildirim gönderildi — kurtarma ekibi bildirildi",
     // ETA sayfası
     iCanHelpSheet:"Yardım edebilirim",
-    chooseEta:"Ne zaman ulaşabileceğini seç. Bu bilgi ihbar kartında görünecek, böylece diğerleri yardımın yolda olduğunu bilecek.",
+    chooseEta:"Ne zaman ulaşabileceğini seç. Bu bilgi bildirim kartında görünecek, böylece diğerleri yardımın yolda olduğunu bilecek.",
     // Yardım edildi kanıt sayfası
     proofRequired:"Kanıt gerekli.",
     proofNote:"Hayvanın yardım edildi olarak işaretlenebilmesi için güncel bir fotoğraf yükle.",
@@ -3329,7 +3329,7 @@ export default function App() {
 
             {/* Primary CTA — sized and elevated to stand out as THE action on this page */}
             <button className="btn btn-red btn-full-mobile" style={{ marginBottom:16, padding:"13px 28px" }} onClick={() => setShowReportForm(true)}>
-              🚨 {lang==="tr"?"Yardım İste":"Report an Animal in Need"}
+              🚨 {lang==="tr"?"Hayvan Bildir":"Report an Animal in Need"}
             </button>
 
             <div className="stabs">
@@ -3494,7 +3494,7 @@ export default function App() {
               {helpItems.filter(r => helpSub === "active" ? r.status === "active" : (r.status === "helped" || r.status === "resolved")).length === 0 && (
                 <div style={{ textAlign:"center", padding:"40px 0", color:"var(--muted)", fontSize:13 }}>
                   {helpSub === "active"
-                    ? (lang==="tr"?"Şu anda aktif ihbar yok.":"No active reports right now.")
+                    ? (lang==="tr"?"Şu anda aktif bildirim yok.":"No active reports right now.")
                     : (lang==="tr"?"Henüz yardım edilen hayvan yok.":"No animals helped yet.")}
                 </div>
               )}
@@ -3611,7 +3611,7 @@ export default function App() {
 
                 setRf({ title:"", location:"", desc:"", type:"Injured", animal:"", rCountry:FORM_COUNTRY, rProvince:FORM_PROVINCE, rCity:"", rAddress:"" });
                 setPhotos([]); setShowReportForm(false);
-                say(lang==="tr"?"İhbar gönderildi — kurtarma ekibi bildirildi":"Report submitted — responders notified");
+                say(lang==="tr"?"Bildirim gönderildi — kurtarma ekibi bildirildi":"Report submitted — responders notified");
                 await loadFromDB();
               })}>{t.submitReport}</button>
             </div>
@@ -3734,7 +3734,7 @@ export default function App() {
                   ))}
 
               {/* Acil bildirimler */}
-              <div className="me-sec">{lang==="tr"?`Acil bildirimlerim (${myReports.length})`:`My reports (${myReports.length})`}</div>
+              <div className="me-sec">{lang==="tr"?`Bildirimlerim (${myReports.length})`:`My reports (${myReports.length})`}</div>
               {myReports.length === 0
                 ? <div className="me-empty">{lang==="tr"?"Henüz bildirim oluşturmadın.":"You haven't reported anything yet."}</div>
                 : myReports.map(r => (
@@ -4335,7 +4335,7 @@ export default function App() {
           <div className="sheet" onClick={e => e.stopPropagation()}>
             <div className="sh-handle" />
             <div className="sh-hd">
-              <div className="sh-title">{lang==="tr"?"İhbar Sahibiyle İletişime Geç":"Contact the Reporter"}</div>
+              <div className="sh-title">{lang==="tr"?"Bildirim Sahibiyle İletişime Geç":"Contact the Reporter"}</div>
               <button className="sh-close" onClick={() => setContactDrawerFor(null)}>✕</button>
             </div>
             <div className="sh-body">
@@ -4344,7 +4344,7 @@ export default function App() {
               <div style={{ fontSize:12, color:"var(--muted)", marginBottom:20 }}>📍 {contactDrawerFor.location}</div>
               <div style={{ fontSize:13, color:"var(--muted)", marginBottom:16, lineHeight:1.6 }}>
                 {lang==="tr"
-                  ? "Yola çıkmadan önce ihbar sahibine haber vermek ister misin? Konum detayı veya hayvanın son durumu hakkında bilgi alabilirsin."
+                  ? "Yola çıkmadan önce bildirim sahibine haber vermek ister misin? Konum detayı veya hayvanın son durumu hakkında bilgi alabilirsin."
                   : "Want to give the reporter a heads-up before you head out? You can confirm the exact location or get the latest on the animal's condition."}
               </div>
               <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
@@ -4360,7 +4360,7 @@ export default function App() {
                 )}
                 {!contactDrawerFor.reporterPhone && !(contactDrawerFor.reporterEmail && contactDrawerFor.reporterEmail.includes("@")) && (
                   <div style={{ fontSize:12, color:"var(--muted)", textAlign:"center", padding:"12px 0" }}>
-                    {lang==="tr" ? "İhbar sahibi için iletişim bilgisi bulunamadı." : "No contact details available for this reporter."}
+                    {lang==="tr" ? "Bildirim sahibi için iletişim bilgisi bulunamadı." : "No contact details available for this reporter."}
                   </div>
                 )}
                 <button className="btn btn-outline btn-full" onClick={() => setContactDrawerFor(null)}>{t.close}</button>
