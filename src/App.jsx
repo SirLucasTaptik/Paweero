@@ -3562,6 +3562,25 @@ export default function App() {
                     : <><option>Injured</option><option>Abandoned</option><option>Sick</option><option>Stray / Lost</option><option>Abuse / Neglect</option><option>Other</option></>}
                 </select>
               </div>
+              {/* Sahibini arayan biri Kayıp & Bulundu sekmesine bakar, acil
+                  bildirimlere değil. Bildiren kişi hayvanın sahipli olduğunu
+                  düşünüyorsa aynı kayıt oraya da "bulundu" ilanı olarak düşsün. */}
+              <div className="fg">
+                <label className={`seems-lost ${rf.seemsLost ? "on" : ""}`}>
+                  <input type="checkbox" checked={rf.seemsLost}
+                    onChange={e => setRf(f => ({ ...f, seemsLost:e.target.checked }))} />
+                  <div>
+                    <div className="sl-t">
+                      🔍 {lang==="tr" ? "Sahipli görünüyor — kayıp olabilir" : "Looks like someone's pet — may be lost"}
+                    </div>
+                    <div className="sl-d">
+                      {lang==="tr"
+                        ? "Tasması var, bakımlı ya da insana alışkınsa işaretle. İlan Kayıp & Bulundu sekmesinde de \"bulundu\" olarak görünür, sahibi arıyorsa bulabilir."
+                        : "Tick this if it has a collar, looks groomed or is used to people. The report also appears under Lost & Found as a found animal, where its owner would be looking."}
+                    </div>
+                  </div>
+                </label>
+              </div>
               <div className="fg"><label className="flabel">{t.titleField}</label>
                 <input className="fi" placeholder={lang==="tr"?"örn. Bağdat Cad. yaralı köpek":"e.g. Injured dog on Bağdat Ave"} value={rf.title} onChange={e => setRf(f => ({ ...f, title:e.target.value }))} />
               </div>
@@ -3589,26 +3608,6 @@ export default function App() {
               <div className="fg">
                 <label className="flabel">{lang==="tr"?"Fotoğraflar * (1–5)":"Photos * (1–5)"}</label>
                 <MultiPhotoUpload photos={photos} setPhotos={setPhotos} folder="reports" lang={lang} t={t} maxPhotos={5} />
-              </div>
-
-              {/* Sahibini arayan biri Kayıp & Bulundu sekmesine bakar, acil
-                  bildirimlere değil. Bildiren kişi hayvanın sahipli olduğunu
-                  düşünüyorsa aynı kayıt oraya da "bulundu" ilanı olarak düşsün. */}
-              <div className="fg">
-                <label className={`seems-lost ${rf.seemsLost ? "on" : ""}`}>
-                  <input type="checkbox" checked={rf.seemsLost}
-                    onChange={e => setRf(f => ({ ...f, seemsLost:e.target.checked }))} />
-                  <div>
-                    <div className="sl-t">
-                      🔍 {lang==="tr" ? "Sahipli görünüyor — kayıp olabilir" : "Looks like someone's pet — may be lost"}
-                    </div>
-                    <div className="sl-d">
-                      {lang==="tr"
-                        ? "Tasması var, bakımlı ya da insana alışkınsa işaretle. İlan Kayıp & Bulundu sekmesinde de \"bulundu\" olarak görünür, sahibi arıyorsa bulabilir."
-                        : "Tick this if it has a collar, looks groomed or is used to people. The report also appears under Lost & Found as a found animal, where its owner would be looking."}
-                    </div>
-                  </div>
-                </label>
               </div>
 
               <button className="btn btn-red btn-full" onClick={() => requireContact(async (contact) => {
