@@ -1758,14 +1758,11 @@ const CSS = `
               display:flex; align-items:center; justify-content:center; font-size:22px; }
   .me-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
   .me-thumb.off { opacity:0.45; filter:grayscale(1); }
-  .install-card { display:flex; gap:12px; align-items:flex-start; background:var(--white); border-radius:var(--r);
-                  padding:14px; box-shadow:var(--shadow-sm); border:1px solid var(--border); }
-  .install-icon { width:46px; height:46px; border-radius:11px; flex-shrink:0; }
-  .install-t  { font-size:14px; font-weight:700; color:var(--dark); }
-  .install-d  { font-size:12.5px; color:var(--muted); line-height:1.55; margin-top:3px; }
-  .install-steps { margin:10px 0 0; padding-left:18px; font-size:12.5px; color:var(--dark); line-height:1.9; }
-  .ios-share { display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px;
-               border-radius:5px; background:var(--off); color:var(--blue); vertical-align:-5px; }
+  .install-card { display:flex; gap:12px; align-items:center; background:var(--white); border-radius:var(--r);
+                  padding:12px 14px; box-shadow:var(--shadow-sm); border:1px solid var(--border); }
+  .install-icon { width:42px; height:42px; border-radius:10px; flex-shrink:0; }
+  .install-t  { flex:1; min-width:0; font-size:15px; font-weight:700; color:var(--dark); letter-spacing:-0.2px; }
+  .install-x  { background:none; border:none; color:var(--muted); font-size:14px; cursor:pointer; padding:4px 2px; line-height:1; }
   .stale    { margin-top:8px; padding:10px; background:rgba(212,134,43,0.08); border-radius:var(--r-sm); }
   .stale-q  { font-size:12px; font-weight:600; color:var(--amber); margin-bottom:8px; }
   .me-why   { margin-top:8px; padding:10px; background:var(--off); border-radius:var(--r-sm); }
@@ -2511,11 +2508,9 @@ export default function App() {
   const isStandalone = () =>
     (typeof window !== "undefined" && window.matchMedia?.("(display-mode: standalone)").matches) ||
     (typeof navigator !== "undefined" && navigator.standalone === true);
-  const isIOS = typeof navigator !== "undefined" && /iphone|ipad|ipod/i.test(navigator.userAgent);
 
   const [installEvt, setInstallEvt]   = useState(null);
   const [installed, setInstalled]     = useState(isStandalone);
-  const [installHelp, setInstallHelp] = useState(false);
   const [installHidden, setInstallHidden] = useState(() => {
     try { return localStorage.getItem("paweero.install.hidden") === "1"; } catch (e) { return false; }
   });
@@ -2537,7 +2532,7 @@ export default function App() {
   };
 
   const runInstall = async () => {
-    if (!installEvt) { setInstallHelp(true); return; }
+    if (!installEvt) return;
     installEvt.prompt();
     const { outcome } = await installEvt.userChoice;
     setInstallEvt(null);
@@ -2547,7 +2542,10 @@ export default function App() {
     }
   };
 
-  const showInstallCard = !installed && !installHidden && (installEvt || isIOS);
+  // Yalnızca kurulumu gerçekten başlatabildiğimiz tarayıcılarda gösteriliyor.
+  // iOS Safari programla ana ekrana ekleme yolu vermiyor; orada düğme koymak
+  // kullanıcıyı tarif okumaya göndermek olurdu.
+  const showInstallCard = !installed && !installHidden && !!installEvt;
 
   const [showReportForm, setShowReportForm] = useState(false);
   const [dupSheet, setDupSheet] = useState(null);   // {items, contact} — olası mükerrer bildirim
@@ -3271,47 +3269,12 @@ export default function App() {
             <div className="wrap" style={{ paddingTop:16, paddingBottom:0 }}>
               <div className="install-card">
                 <img src="/icon-192.png" alt="" aria-hidden="true" className="install-icon" />
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div className="install-t">
-                    {lang==="tr" ? "Paweero'yu telefonuna ekle" : "Add Paweero to your phone"}
-                  </div>
-                  <div className="install-d">
-                    {lang==="tr"
-                      ? "Ana ekrandan tek dokunuşla aç — tam ekran, adres çubuğu yok."
-                      : "One tap from your home screen — full screen, no address bar."}
-                  </div>
-                  {installHelp && isIOS && (
-                    <ol className="install-steps">
-                      <li>
-                        {lang==="tr" ? "Alttaki " : "Tap "}
-                        <span className="ios-share" aria-hidden="true">
-                          <svg viewBox="0 0 20 20" width="13" height="13">
-                            <path d="M10 2.5l3 3M10 2.5l-3 3M10 2.5v10" fill="none" stroke="currentColor"
-                              strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
-                            <path d="M5.5 8.5h-1v9h11v-9h-1" fill="none" stroke="currentColor"
-                              strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        </span>
-                        {lang==="tr" ? " Paylaş düğmesine bas" : " Share at the bottom of Safari"}
-                      </li>
-                      <li>{lang==="tr" ? "\"Ana Ekrana Ekle\"yi seç" : "Choose \"Add to Home Screen\""}</li>
-                    </ol>
-                  )}
-                  <div style={{ display:"flex", gap:8, marginTop:10, flexWrap:"wrap" }}>
-                    <button className="btn btn-dark" style={{ fontSize:13, padding:"9px 18px", minHeight:0 }}
-                      onClick={runInstall}>
-                      {installEvt
-                        ? (lang==="tr" ? "Yükle" : "Install")
-                        : installHelp
-                          ? (lang==="tr" ? "Anladım" : "Got it")
-                          : (lang==="tr" ? "Nasıl?" : "How?")}
-                    </button>
-                    <button className="btn btn-outline" style={{ fontSize:13, padding:"9px 18px", minHeight:0 }}
-                      onClick={hideInstall}>
-                      {lang==="tr" ? "Şimdi değil" : "Not now"}
-                    </button>
-                  </div>
-                </div>
+                <div className="install-t">{lang==="tr" ? "Paweero" : "Paweero"}</div>
+                <button className="btn btn-dark" style={{ fontSize:13, padding:"9px 20px", minHeight:0 }}
+                  onClick={runInstall}>
+                  {lang==="tr" ? "İndir" : "Install"}
+                </button>
+                <button className="install-x" aria-label={lang==="tr"?"Kapat":"Dismiss"} onClick={hideInstall}>✕</button>
               </div>
             </div>
           )}
