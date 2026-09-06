@@ -158,7 +158,15 @@ create index if not exists lf_source_report_idx on public.lf_listings (source_re
 -- KONTROL — hepsi yerinde mi?
 -- ════════════════════════════════════════════════════════════════════════════
 
-select 'politika' as ne, tablename as nerede, policyname as ad
+-- rls satırlarının hepsinde "acik" yazmalı: politikalar var ama RLS kapalıysa
+-- hiçbiri işlemez, tablo herkese açık kalır.
+select 'rls' as ne, tablename as nerede,
+       case when rowsecurity then 'acik' else 'KAPALI — tehlike' end as ad
+  from pg_tables where schemaname = 'public'
+   and tablename in ('reports','animals','lf_listings','sitters','volunteers',
+                     'applications','adoption_profiles','rehome_listings')
+union all
+select 'politika', tablename, policyname
   from pg_policies where schemaname = 'public'
 union all
 select 'kolon', table_name, column_name
