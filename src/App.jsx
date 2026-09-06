@@ -1758,6 +1758,8 @@ const CSS = `
               display:flex; align-items:center; justify-content:center; font-size:22px; }
   .me-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
   .me-thumb.off { opacity:0.45; filter:grayscale(1); }
+  .stale    { margin-top:8px; padding:10px; background:rgba(212,134,43,0.08); border-radius:var(--r-sm); }
+  .stale-q  { font-size:12px; font-weight:600; color:var(--amber); margin-bottom:8px; }
   .me-why   { margin-top:8px; padding:10px; background:var(--off); border-radius:var(--r-sm); }
   .me-why-q { font-size:12px; font-weight:600; color:var(--dark); margin-bottom:8px; }
   .me-name-btn { display:flex; align-items:center; gap:6px; background:none; border:none; padding:0; cursor:pointer;
@@ -1933,6 +1935,7 @@ const REMOVE_REASONS = {
     { key:"unreachable", status:"removed", tr:"Artık iletişimde değilim",  en:"No longer in contact" },
   ],
   reports: [
+    { key:"resolved",    status:"helped",  tr:"Yardım ulaştı, çözüldü",    en:"Resolved — help arrived" },
     { key:"noaccess",    status:"removed", tr:"Artık erişimim yok",        en:"I no longer have access" },
   ],
 };
@@ -2237,6 +2240,7 @@ export default function App() {
             desc:  { en: r.description || "", tr: r.description || "" },
             location: r.location,
             time: { en: new Date(r.created_at).toLocaleDateString("en"), tr: new Date(r.created_at).toLocaleDateString("tr") },
+            created_at_raw: r.created_at,
             status: r.status,
             reporter: r.reporter_name || "Anonymous",
             reporterUsername: r.reporter_username || "",
@@ -2492,6 +2496,93 @@ export default function App() {
   const [contactDrawerFor, setContactDrawerFor] = useState(null); // reporter contact info to show after ETA confirm
   // (myName removed — volunteer identity is now the verified contactInfo.email)
   const [showReportForm, setShowReportForm] = useState(false);
+  const [dupSheet, setDupSheet] = useState(null);   // {items, contact} — olası mükerrer bildirim
+
+  // Aynı hayvanı gören beş kişi beş ayrı bildirim açıyordu: liste şişiyor,
+  // gönüllüler aynı hayvana koşuyor. Göndermeden önce aynı semtte, son 48 saatte,
+  // aynı türden açık bir bildirim var mı diye bakıyoruz.
+  const findDuplicateReports = async () => {
+    try {
+      const since = new Date(Date.now() - 48 * 3600 * 1000).toISOString();
+      const { data, error } = await (await getDb())
+        .from("reports").select("*")
+        .eq("status", "active")
+        .eq("emoji", rf.animal || "🐾")
+        .gte("created_at", since)
+        .ilike("location", `%${rf.rCity}%`)
+        .order("created_at", { ascending: false })
+        .limit(3);
+      if (error) throw error;
+      return data || [];
+    } catch (e) {
+      // Kontrol edilemiyorsa bildirimi engellemeyelim — asıl iş bildirimi almak.
+      console.warn("mükerrer kontrolü atlandı:", e.message);
+      return [];
+    }
+  };
+
+  const submitReport = async (contact) => {
+    const fullLocation = [rf.rAddress, rf.rCity, rf.rProvince, rf.rCountry].filter(Boolean).join(", ");
+    const { data: inserted, error } = await (await getDb()).from("reports").insert([{
+      emoji: rf.animal || "🐾",
+      title: rf.title.trim() || autoReportTitle(rf, lang),
+      description: rf.desc || "",
+      location: fullLocation,
+      reporter_name: contact.email,          // notify-owner alıcı adresi olarak bunu kullanıyor
+      reporter_username: contact.username || null,  // kartta gösterilen ad
+      reporter_phone: contact.phone || null,
+      reporter_pref: contact.contactPref || "email",
+      status: "active",
+      photo_url: photos[0] || null,
+      photo_urls: photos,
+    }]).select();
+    if (error) { say(lang==="tr"?"Hata oluştu, tekrar dene":"Error occurred, please try again"); return; }
+
+    // Sahipli görünüyorsa aynı hayvan Kayıp & Bulundu'da da "bulunan"
+    // olarak yayınlanıyor: sahibi orayı tarar, acil bildirimleri değil.
+    // Bağlantı kolonu iki kaydı birbirine bağlıyor; bildirimi kaldıran
+    // kişi ikisini birden kaldırmış oluyor.
+    if (rf.owned === "pet") {
+      const speciesFromEmoji = { "🐕":"Dog", "🐈":"Cat", "🐦":"Bird", "🐄":"Cattle", "🐎":"Horse" }[rf.animal] || "Other";
+      const lfArea = [rf.rAddress, rf.rCity].filter(Boolean).join(", ");
+      const lfDesc = [rf.title.trim() || autoReportTitle(rf, lang), rf.desc].filter(Boolean).join(" — ");
+      const lfRow = {
+        type: "found",
+        name: null,
+        species: speciesFromEmoji,
+        breed: null,
+        color: null,
+        area: lfArea,
+        city: rf.rProvince,
+        contact: contact.contactPref === "phone" ? contact.phone : contact.email,
+        contact_email: contact.email,
+        contact_phone: contact.phone || null,
+        contact_pref: contact.contactPref || "email",
+        reward: null,
+        desc_en: lfDesc,
+        desc_tr: lfDesc,
+        status: "open",
+        photo_url: photos[0] || null,
+        photo_urls: photos,
+        source_report_id: inserted?.[0]?.id || null,
+      };
+      const db = await getDb();
+      const { error: lfErr } = await db.from("lf_listings").insert([lfRow]);
+      if (lfErr) {
+        // source_report_id kolonu henüz eklenmemiş olabilir
+        // (supabase/seems-lost.sql). İlan bağlantısız da olsa yayınlansın.
+        console.warn("source_report_id yazılamadı:", lfErr.message);
+        const { source_report_id, ...rest } = lfRow;
+        await db.from("lf_listings").insert([rest]);
+      }
+    }
+
+    setRf({ title:"", location:"", desc:"", type:"injured", animal:"", rCountry:FORM_COUNTRY, rProvince:FORM_PROVINCE, rCity:"", rAddress:"", owned:"" });
+    setPhotos([]); setRfErr({}); setDupSheet(null); setShowReportForm(false);
+    say(lang==="tr"?"Bildirim gönderildi — kurtarma ekibi bildirildi":"Report submitted — responders notified");
+    await loadFromDB();
+  };
+
   const [rfErr, setRfErr]         = useState({});    // alan başına hata metni
   const [rfLocating, setRfLocating] = useState(false);
 
@@ -2678,6 +2769,32 @@ export default function App() {
     { status: reason.status, removed_reason: reason.key }, removedMsg(reason));
   const markReunited = (i) => ownerPatch("lf_listings", i.id, "contact_email", { status:"reunited" },
     lang==="tr" ? "Bulundu olarak işaretlendi" : "Marked as found");
+  // Haftalarca açık kalan bildirimler listeyi kirletiyor: hayvan çoktan
+  // kurtarılmış olabilir ama kimse kapatmıyor. 14 günden eski kendi
+  // bildirimlerinde tek soru soruyoruz. "Hâlâ duruyor" cevabı yalnızca bu
+  // tarayıcıda 7 gün susturuyor — sunucuda tutulacak bir bilgi değil, kişinin
+  // kendi hatırlatıcısı.
+  const STALE_DAYS = 14;
+  const snoozeKey = (id) => `paweero.stale.${id}`;
+  const [snoozed, setSnoozed] = useState({});
+  const isStale = (r) => {
+    if (r.status !== "active" || !r.created_at_raw) return false;
+    const age = Date.now() - new Date(r.created_at_raw).getTime();
+    if (age < STALE_DAYS * 864e5) return false;
+    if (snoozed[r.id]) return false;
+    try {
+      const until = Number(localStorage.getItem(snoozeKey(r.id)) || 0);
+      if (until > Date.now()) return false;
+    } catch (e) {}
+    return true;
+  };
+  const staleDays = (r) => Math.floor((Date.now() - new Date(r.created_at_raw).getTime()) / 864e5);
+  const snoozeStale = (r) => {
+    try { localStorage.setItem(snoozeKey(r.id), String(Date.now() + 7 * 864e5)); } catch (e) {}
+    setSnoozed(x => ({ ...x, [r.id]: true }));
+    say(lang==="tr" ? "Tamam, bir hafta sonra tekrar soracağız" : "Fine — we'll ask again in a week");
+  };
+
   // "Sahipli görünüyor" işaretlenen bildirimler Kayıp & Bulundu'da da bir ilan
   // açıyor. İkisi source_report_id ile bağlı: bildirim kalkınca ilan da kalkmalı,
   // yoksa kaldırılan bildirimin kopyası listede kalmaya devam eder.
@@ -2688,10 +2805,15 @@ export default function App() {
   };
 
   const removeReport = async (r, reason) => {
-    await syncLinkedLF(r.id, "removed");
+    // Bildirim gerçekten kaldırılıyorsa ondan doğan kayıp/bulundu ilanı da kalksın.
+    // "Çözüldü" farklı bir şey: hayvana yardım ulaşmış olabilir ama sahibi hâlâ
+    // arıyor olabilir — o ilan yayında kalmalı.
+    if (reason.status === "removed") await syncLinkedLF(r.id, "removed");
     await ownerPatch("reports", r.id, "reporter_name",
       { status: reason.status, removed_reason: reason.key },
-      lang==="tr" ? "Bildirim kaldırıldı" : "Report removed");
+      reason.status === "helped"
+        ? (lang==="tr" ? "Bildirim kapatıldı — teşekkürler 🙏" : "Report closed — thank you 🙏")
+        : (lang==="tr" ? "Bildirim kaldırıldı" : "Report removed"));
   };
 
   const restoreReport = async (r) => {
@@ -3718,71 +3840,60 @@ export default function App() {
                     ?.scrollIntoView({ behavior:"smooth", block:"center" });
                   return;
                 }
-                const fullLocation = [rf.rAddress, rf.rCity, rf.rProvince, rf.rCountry].filter(Boolean).join(", ");
-                const { data: inserted, error } = await (await getDb()).from("reports").insert([{
-                  emoji: rf.animal || "🐾",
-                  title: rf.title.trim() || autoReportTitle(rf, lang),
-                  description: rf.desc || "",
-                  location: fullLocation,
-                  reporter_name: contact.email,          // notify-owner alıcı adresi olarak bunu kullanıyor
-                  reporter_username: contact.username || null,  // kartta gösterilen ad
-                  reporter_phone: contact.phone || null,
-                  reporter_pref: contact.contactPref || "email",
-                  status: "active",
-                  photo_url: photos[0] || null,
-                  photo_urls: photos,
-                }]).select();
-                if (error) { say(lang==="tr"?"Hata oluştu, tekrar dene":"Error occurred, please try again"); return; }
-
-                // Sahipli görünüyorsa aynı hayvan Kayıp & Bulundu'da da "bulunan"
-                // olarak yayınlanıyor: sahibi orayı tarar, acil bildirimleri değil.
-                // Bağlantı kolonu iki kaydı birbirine bağlıyor; bildirimi kaldıran
-                // kişi ikisini birden kaldırmış oluyor.
-                if (rf.owned === "pet") {
-                  const speciesFromEmoji = { "🐕":"Dog", "🐈":"Cat", "🐦":"Bird", "🐄":"Cattle", "🐎":"Horse" }[rf.animal] || "Other";
-                  const lfArea = [rf.rAddress, rf.rCity].filter(Boolean).join(", ");
-                  const lfDesc = [rf.title.trim() || autoReportTitle(rf, lang), rf.desc].filter(Boolean).join(" — ");
-                  const lfRow = {
-                    type: "found",
-                    name: null,
-                    species: speciesFromEmoji,
-                    breed: null,
-                    color: null,
-                    area: lfArea,
-                    city: rf.rProvince,
-                    contact: contact.contactPref === "phone" ? contact.phone : contact.email,
-                    contact_email: contact.email,
-                    contact_phone: contact.phone || null,
-                    contact_pref: contact.contactPref || "email",
-                    reward: null,
-                    desc_en: lfDesc,
-                    desc_tr: lfDesc,
-                    status: "open",
-                    photo_url: photos[0] || null,
-                    photo_urls: photos,
-                    source_report_id: inserted?.[0]?.id || null,
-                  };
-                  const db = await getDb();
-                  const { error: lfErr } = await db.from("lf_listings").insert([lfRow]);
-                  if (lfErr) {
-                    // source_report_id kolonu henüz eklenmemiş olabilir
-                    // (supabase/seems-lost.sql). İlan bağlantısız da olsa yayınlansın.
-                    console.warn("source_report_id yazılamadı:", lfErr.message);
-                    const { source_report_id, ...rest } = lfRow;
-                    await db.from("lf_listings").insert([rest]);
-                  }
-                }
-
-                setRf({ title:"", location:"", desc:"", type:"injured", animal:"", rCountry:FORM_COUNTRY, rProvince:FORM_PROVINCE, rCity:"", rAddress:"", owned:"" });
-                setPhotos([]); setRfErr({}); setShowReportForm(false);
-                say(lang==="tr"?"Bildirim gönderildi — kurtarma ekibi bildirildi":"Report submitted — responders notified");
-                await loadFromDB();
+                const dups = await findDuplicateReports();
+                if (dups.length) { setDupSheet({ items: dups, contact }); return; }
+                await submitReport(contact);
               })}>{t.submitReport}</button>
             </div>
           </div>
         </div>
       )}
               </div>
+
+      {/* OLASI MÜKERRER BİLDİRİM — aynı hayvan zaten bildirilmiş olabilir. */}
+      {dupSheet && (
+        <div className="sheet-overlay" style={{ zIndex:260 }} onClick={() => setDupSheet(null)}>
+          <div className="sheet" onClick={e => e.stopPropagation()}>
+            <div className="sh-handle" />
+            <div className="sh-hd">
+              <div className="sh-title">{lang==="tr"?"Bu hayvan zaten bildirilmiş olabilir":"This animal may already be reported"}</div>
+              <button className="sh-close" onClick={() => setDupSheet(null)}>✕</button>
+            </div>
+            <div className="sh-body">
+              <div className="inote">
+                {lang==="tr"
+                  ? "Aynı semtte, son 48 saat içinde aynı türden açık bir bildirim var. Aynı hayvansa yeni bildirim açmaya gerek yok — mevcut bildirimden yardım teklif edebilirsin."
+                  : "There is an open report for the same kind of animal in this area from the last 48 hours. If it is the same animal there is no need for a second report — you can offer help on the existing one."}
+              </div>
+              {dupSheet.items.map(r => (
+                <div key={r.id} className="me-row" style={{ alignItems:"flex-start", cursor:"pointer" }}
+                  onClick={() => {
+                    const existing = reports.find(x => String(x.id) === String(r.id));
+                    setDupSheet(null); setShowReportForm(false); setTab("help");
+                    if (existing) setDetailReport(existing);
+                  }}>
+                  <MeThumb src={(r.photo_urls && r.photo_urls[0]) || r.photo_url} emoji={r.emoji} alt={r.title || ""} />
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div className="me-row-t">{r.title}</div>
+                    <div className="me-row-s">📍 {r.location}</div>
+                    <div className="me-row-s">🕐 {new Date(r.created_at).toLocaleString(lang)}</div>
+                    <div className="me-row-s" style={{ color:"var(--amber)", fontWeight:600 }}>
+                      {lang==="tr"?"Bu o — bildirimi aç →":"That's the one — open it →"}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <button className="btn btn-red btn-full" style={{ marginTop:16 }}
+                onClick={() => submitReport(dupSheet.contact)}>
+                {lang==="tr"?"Hayır, farklı bir hayvan — bildirimi gönder":"No, a different animal — submit my report"}
+              </button>
+              <button className="btn btn-outline btn-full" style={{ marginTop:8 }} onClick={() => setDupSheet(null)}>
+                {lang==="tr"?"Geri dön":"Back"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── HESABIM ── Kim olduğun ve bu hesapla yaptığın her şey tek yerde. */}
       {showMe && (
@@ -3914,6 +4025,23 @@ export default function App() {
                           {r.location}
                         </div>
                         {r.status === "removed" && <div className="me-row-s" style={{ color:"var(--red)" }}>{offlineNote(r.status)}</div>}
+                        {isStale(r) && confirmRow !== r.id && (
+                          <div className="stale" onClick={e => e.stopPropagation()}>
+                            <div className="stale-q">
+                              {lang==="tr"
+                                ? `${staleDays(r)} gündür açık — hayvan hâlâ orada mı?`
+                                : `Open for ${staleDays(r)} days — is the animal still there?`}
+                            </div>
+                            <div className="me-acts">
+                              <button className="me-act" onClick={() => snoozeStale(r)}>
+                                {lang==="tr"?"Evet, hâlâ duruyor":"Yes, still there"}
+                              </button>
+                              <button className="me-act warn" onClick={() => setConfirm(r.id)}>
+                                {lang==="tr"?"Hayır, kapat":"No, close it"}
+                              </button>
+                            </div>
+                          </div>
+                        )}
                         {confirmRow === r.id && r.status !== "removed" ? (
                           <ReasonPicker kind="reports" onPick={x => removeReport(r, x)} />
                         ) : (

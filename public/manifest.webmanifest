@@ -1,0 +1,21 @@
+{
+  "name": "Paweero — Free Animal Welfare Platform",
+  "short_name": "Paweero",
+  "description": "Adopt, foster, post a lost & found, or report an animal in distress. Always free.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fdf3e5",
+  "theme_color": "#d4862b",
+  "categories": ["lifestyle", "social"],
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Report an animal", "short_name": "Report", "url": "/en/help" },
+    { "name": "Adopt & Foster", "short_name": "Adopt", "url": "/en/animals" }
+  ]
+}
