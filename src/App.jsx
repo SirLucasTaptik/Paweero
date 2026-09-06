@@ -2575,16 +2575,21 @@ export default function App() {
     setBusyRow(id);
     try {
       const client = await getDb();
-      const send = (body) => client.from(table).update(body).eq("id", id).eq(ownerField, contactInfo.email);
-      let { error } = await send(patch);
+      const send = (body) => client.from(table).update(body)
+        .eq("id", id).eq(ownerField, contactInfo.email).select("id");
+      let { data, error } = await send(patch);
       if (error && patch.removed_reason) {
         // removed_reason kolonu henüz eklenmemiş olabilir (supabase/removal-reason.sql).
         // Sebep kaydedilemese bile kaldırma işleminin çalışması gerekiyor.
         console.warn("removed_reason yazılamadı, sebepsiz deneniyor:", error.message);
         const { removed_reason, ...rest } = patch;
-        ({ error } = await send(rest));
+        ({ data, error } = await send(rest));
       }
       if (error) throw error;
+      // RLS politikası engellediğinde hata dönmez, hiçbir satır güncellenmez.
+      if (!data || data.length === 0) {
+        throw new Error(`${table} güncellenemedi: kayıt bulunamadı ya da yetki yok`);
+      }
       say(okMsg);
       await Promise.all([loadFromDB(), loadMyRemoved(contactInfo.email)]);
     } catch (e) {
@@ -3983,7 +3988,7 @@ export default function App() {
                   <label className="flabel">{lang==="tr"?"E-posta *":"Email *"}</label>
                   <input className="fi" type="email" placeholder="ornek@email.com"
                     value={contactInfo.email}
-                    onChange={e => setContactInfo(f => ({ ...f, email:e.target.value }))} />
+                    onChange={e => setContactInfo(f => ({ ...f, email:e.target.value.trim().toLowerCase() }))} />
                   {contactErr.email && <div className="err">{contactErr.email}</div>}
                 </div>
 
