@@ -1682,12 +1682,6 @@ const CSS = `
   .opt-hint  { font-size:12px; color:var(--muted); margin-top:2px; font-weight:400; }
 
   /* ─ PURPOSE CHIPS — compact grid variant of opt-item, used for multi-select "what applies" rows ─ */
-  .seems-lost { display:flex; gap:10px; align-items:flex-start; background:var(--off); border:1.5px solid transparent;
-                border-radius:var(--r-sm); padding:12px 14px; cursor:pointer; transition:border-color 0.15s, background 0.15s; }
-  .seems-lost.on { border-color:var(--green); background:rgba(45,122,79,0.06); }
-  .seems-lost input { margin-top:2px; accent-color:var(--green); width:16px; height:16px; flex-shrink:0; }
-  .seems-lost .sl-t { font-size:13px; font-weight:600; color:var(--dark); }
-  .seems-lost .sl-d { font-size:12px; color:var(--muted); line-height:1.55; margin-top:4px; }
   .purpose-chip {
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
     background:var(--off); border:1.5px solid transparent; border-radius:var(--r-sm);
@@ -2178,7 +2172,7 @@ export default function App() {
   const [dbError, setDbError]     = useState(false);
   const [photos, setPhotos]   = useState([]);
   const [lfPhotos, setLFPhotos] = useState([]);
-  const [rf, setRf]           = useState({ title:"", location:"", desc:"", type:"Injured", animal:"", rCountry:FORM_COUNTRY, rProvince:FORM_PROVINCE, rCity:"", rAddress:"", seemsLost:false });
+  const [rf, setRf]           = useState({ title:"", location:"", desc:"", type:"Injured", animal:"", rCountry:FORM_COUNTRY, rProvince:FORM_PROVINCE, rCity:"", rAddress:"", owned:"" });
   const [lfForm, setLFForm]   = useState({ type:"lost", name:"", species:"Dog", breed:"", color:"", area:"", city:"", contact:"", reward:"", desc:"", lfCountry:FORM_COUNTRY, lfProvince:FORM_PROVINCE, lfAddress:"" });
 
   // Yuvasına kavuşanlar: ana sayfadaki sayaç ve şerit için.
@@ -3562,24 +3556,35 @@ export default function App() {
                     : <><option>Injured</option><option>Abandoned</option><option>Sick</option><option>Stray / Lost</option><option>Abuse / Neglect</option><option>Other</option></>}
                 </select>
               </div>
-              {/* Sahibini arayan biri Kayıp & Bulundu sekmesine bakar, acil
-                  bildirimlere değil. Bildiren kişi hayvanın sahipli olduğunu
-                  düşünüyorsa aynı kayıt oraya da "bulundu" ilanı olarak düşsün. */}
+              {/* Sahibini arayan biri Kayıp & Bulundu sekmesine bakar, acil bildirimlere
+                  değil. "Sahipli görünüyor" seçilirse aynı kayıt oraya da "bulundu"
+                  ilanı olarak düşüyor.
+
+                  Onay kutusu yerine iki seçenek: kutu, işaretlenmediğinde soru
+                  sorulmamış gibi görünüyordu. Sokak hayvanı da bir cevap — kullanıcı
+                  bir şey atlamadığını görüyor. Cevap yine zorunlu değil. */}
               <div className="fg">
-                <label className={`seems-lost ${rf.seemsLost ? "on" : ""}`}>
-                  <input type="checkbox" checked={rf.seemsLost}
-                    onChange={e => setRf(f => ({ ...f, seemsLost:e.target.checked }))} />
-                  <div>
-                    <div className="sl-t">
-                      🔍 {lang==="tr" ? "Sahipli görünüyor — kayıp olabilir" : "Looks like someone's pet — may be lost"}
-                    </div>
-                    <div className="sl-d">
-                      {lang==="tr"
-                        ? "Tasması var, bakımlı ya da insana alışkınsa işaretle. İlan Kayıp & Bulundu sekmesinde de \"bulundu\" olarak görünür, sahibi arıyorsa bulabilir."
-                        : "Tick this if it has a collar, looks groomed or is used to people. The report also appears under Lost & Found as a found animal, where its owner would be looking."}
-                    </div>
+                <label className="flabel">{lang==="tr"?"Sahibi var gibi mi?":"Does it look like someone's pet?"}</label>
+                <div style={{ display:"flex", gap:8 }}>
+                  {[
+                    { v:"pet",   icon:"🏠", tr:"Sahipli görünüyor", en:"Looks owned",  cls:"chip-found" },
+                    { v:"stray", icon:"🐾", tr:"Sokak hayvanı",     en:"Street animal", cls:"chip-lost" },
+                  ].map(o => (
+                    <label key={o.v} className={`purpose-chip ${o.cls} ${rf.owned === o.v ? "on" : ""}`}>
+                      <input type="checkbox" checked={rf.owned === o.v}
+                        onChange={() => setRf(f => ({ ...f, owned: f.owned === o.v ? "" : o.v }))} />
+                      <div className="pc-icon">{o.icon}</div>
+                      <div className="pc-label">{o[lang] || o.en}</div>
+                    </label>
+                  ))}
+                </div>
+                {rf.owned === "pet" && (
+                  <div className="inote" style={{ marginTop:10, borderColor:"rgba(45,122,79,0.3)", background:"rgba(45,122,79,0.06)" }}>
+                    🔍 {lang==="tr"
+                      ? "İlan Kayıp & Bulundu'da da \"bulundu\" olarak görünecek — sahibi orada arıyor olabilir."
+                      : "The report will also appear under Lost & Found as a found animal — its owner would be looking there."}
                   </div>
-                </label>
+                )}
               </div>
               <div className="fg"><label className="flabel">{t.titleField}</label>
                 <input className="fi" placeholder={lang==="tr"?"örn. Bağdat Cad. yaralı köpek":"e.g. Injured dog on Bağdat Ave"} value={rf.title} onChange={e => setRf(f => ({ ...f, title:e.target.value }))} />
@@ -3633,7 +3638,7 @@ export default function App() {
                 // olarak yayınlanıyor: sahibi orayı tarar, acil bildirimleri değil.
                 // Bağlantı kolonu iki kaydı birbirine bağlıyor; bildirimi kaldıran
                 // kişi ikisini birden kaldırmış oluyor.
-                if (rf.seemsLost) {
+                if (rf.owned === "pet") {
                   const speciesFromEmoji = { "🐕":"Dog", "🐈":"Cat", "🐦":"Bird", "🐄":"Cattle", "🐎":"Horse" }[rf.animal] || "Other";
                   const lfArea = [rf.rAddress, rf.rCity].filter(Boolean).join(", ");
                   const lfDesc = [rf.title, rf.desc].filter(Boolean).join(" — ");
@@ -3668,7 +3673,7 @@ export default function App() {
                   }
                 }
 
-                setRf({ title:"", location:"", desc:"", type:"Injured", animal:"", rCountry:FORM_COUNTRY, rProvince:FORM_PROVINCE, rCity:"", rAddress:"", seemsLost:false });
+                setRf({ title:"", location:"", desc:"", type:"Injured", animal:"", rCountry:FORM_COUNTRY, rProvince:FORM_PROVINCE, rCity:"", rAddress:"", owned:"" });
                 setPhotos([]); setShowReportForm(false);
                 say(lang==="tr"?"Bildirim gönderildi — kurtarma ekibi bildirildi":"Report submitted — responders notified");
                 await loadFromDB();
