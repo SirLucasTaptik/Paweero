@@ -1758,6 +1758,14 @@ const CSS = `
               display:flex; align-items:center; justify-content:center; font-size:22px; }
   .me-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
   .me-thumb.off { opacity:0.45; filter:grayscale(1); }
+  .install-card { display:flex; gap:12px; align-items:flex-start; background:var(--white); border-radius:var(--r);
+                  padding:14px; box-shadow:var(--shadow-sm); border:1px solid var(--border); }
+  .install-icon { width:46px; height:46px; border-radius:11px; flex-shrink:0; }
+  .install-t  { font-size:14px; font-weight:700; color:var(--dark); }
+  .install-d  { font-size:12.5px; color:var(--muted); line-height:1.55; margin-top:3px; }
+  .install-steps { margin:10px 0 0; padding-left:18px; font-size:12.5px; color:var(--dark); line-height:1.9; }
+  .ios-share { display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px;
+               border-radius:5px; background:var(--off); color:var(--blue); vertical-align:-5px; }
   .stale    { margin-top:8px; padding:10px; background:rgba(212,134,43,0.08); border-radius:var(--r-sm); }
   .stale-q  { font-size:12px; font-weight:600; color:var(--amber); margin-bottom:8px; }
   .me-why   { margin-top:8px; padding:10px; background:var(--off); border-radius:var(--r-sm); }
@@ -2495,6 +2503,52 @@ export default function App() {
   const [etaFor, setEtaFor]       = useState(null);   // report to volunteer for
   const [contactDrawerFor, setContactDrawerFor] = useState(null); // reporter contact info to show after ETA confirm
   // (myName removed — volunteer identity is now the verified contactInfo.email)
+  // ── Ana ekrana ekleme ────────────────────────────────────────────────────
+  // Tarayıcı menüsünden "Ana Ekrana Ekle" bulmak çoğu kullanıcı için gizli bir
+  // yol. Chrome kurulabilir olduğunda bize haber veriyor (beforeinstallprompt),
+  // o an bir düğme gösterip kurulum penceresini kendimiz açıyoruz. iOS böyle bir
+  // olay vermiyor; orada tek yol Paylaş menüsü, o yüzden tarif gösteriyoruz.
+  const isStandalone = () =>
+    (typeof window !== "undefined" && window.matchMedia?.("(display-mode: standalone)").matches) ||
+    (typeof navigator !== "undefined" && navigator.standalone === true);
+  const isIOS = typeof navigator !== "undefined" && /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+  const [installEvt, setInstallEvt]   = useState(null);
+  const [installed, setInstalled]     = useState(isStandalone);
+  const [installHelp, setInstallHelp] = useState(false);
+  const [installHidden, setInstallHidden] = useState(() => {
+    try { return localStorage.getItem("paweero.install.hidden") === "1"; } catch (e) { return false; }
+  });
+
+  useEffect(() => {
+    const onPrompt = (e) => { e.preventDefault(); setInstallEvt(e); };
+    const onInstalled = () => { setInstalled(true); setInstallEvt(null); };
+    window.addEventListener("beforeinstallprompt", onPrompt);
+    window.addEventListener("appinstalled", onInstalled);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", onPrompt);
+      window.removeEventListener("appinstalled", onInstalled);
+    };
+  }, []);
+
+  const hideInstall = () => {
+    try { localStorage.setItem("paweero.install.hidden", "1"); } catch (e) {}
+    setInstallHidden(true);
+  };
+
+  const runInstall = async () => {
+    if (!installEvt) { setInstallHelp(true); return; }
+    installEvt.prompt();
+    const { outcome } = await installEvt.userChoice;
+    setInstallEvt(null);
+    if (outcome === "accepted") {
+      setInstalled(true);
+      say(lang==="tr" ? "Paweero ana ekranına eklendi 🎉" : "Paweero added to your home screen 🎉");
+    }
+  };
+
+  const showInstallCard = !installed && !installHidden && (installEvt || isIOS);
+
   const [showReportForm, setShowReportForm] = useState(false);
   const [dupSheet, setDupSheet] = useState(null);   // {items, contact} — olası mükerrer bildirim
 
@@ -3212,6 +3266,55 @@ export default function App() {
               ));
             })()}
           </div>
+
+          {showInstallCard && (
+            <div className="wrap" style={{ paddingTop:16, paddingBottom:0 }}>
+              <div className="install-card">
+                <img src="/icon-192.png" alt="" aria-hidden="true" className="install-icon" />
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div className="install-t">
+                    {lang==="tr" ? "Paweero'yu telefonuna ekle" : "Add Paweero to your phone"}
+                  </div>
+                  <div className="install-d">
+                    {lang==="tr"
+                      ? "Ana ekrandan tek dokunuşla aç — tam ekran, adres çubuğu yok."
+                      : "One tap from your home screen — full screen, no address bar."}
+                  </div>
+                  {installHelp && isIOS && (
+                    <ol className="install-steps">
+                      <li>
+                        {lang==="tr" ? "Alttaki " : "Tap "}
+                        <span className="ios-share" aria-hidden="true">
+                          <svg viewBox="0 0 20 20" width="13" height="13">
+                            <path d="M10 2.5l3 3M10 2.5l-3 3M10 2.5v10" fill="none" stroke="currentColor"
+                              strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M5.5 8.5h-1v9h11v-9h-1" fill="none" stroke="currentColor"
+                              strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </span>
+                        {lang==="tr" ? " Paylaş düğmesine bas" : " Share at the bottom of Safari"}
+                      </li>
+                      <li>{lang==="tr" ? "\"Ana Ekrana Ekle\"yi seç" : "Choose \"Add to Home Screen\""}</li>
+                    </ol>
+                  )}
+                  <div style={{ display:"flex", gap:8, marginTop:10, flexWrap:"wrap" }}>
+                    <button className="btn btn-dark" style={{ fontSize:13, padding:"9px 18px", minHeight:0 }}
+                      onClick={runInstall}>
+                      {installEvt
+                        ? (lang==="tr" ? "Yükle" : "Install")
+                        : installHelp
+                          ? (lang==="tr" ? "Anladım" : "Got it")
+                          : (lang==="tr" ? "Nasıl?" : "How?")}
+                    </button>
+                    <button className="btn btn-outline" style={{ fontSize:13, padding:"9px 18px", minHeight:0 }}
+                      onClick={hideInstall}>
+                      {lang==="tr" ? "Şimdi değil" : "Not now"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="wrap">
             <div className="sec-label">{t.recentlyAdded}</div>
