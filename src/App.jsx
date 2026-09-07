@@ -152,30 +152,33 @@ const shareOnWhatsApp = (text) => {
 // ve fotoğrafı da beraberinde alabiliyor. Pencere yoksa (masaüstü tarayıcıların
 // çoğu) metni panoya kopyalayıp Instagram'ı açıyoruz.
 const shareOnInstagram = async (text, photoUrl, lang, notify) => {
-  try {
-    if (navigator.share) {
-      if (photoUrl && navigator.canShare) {
-        try {
-          const res  = await fetch(photoUrl);
-          const blob = await res.blob();
-          const file = new File([blob], "paweero.jpg", { type: blob.type || "image/jpeg" });
-          if (navigator.canShare({ files: [file] })) {
-            await navigator.share({ files: [file], text });
-            return;
-          }
-        } catch (e) { /* fotoğraf alınamadı — metinle devam */ }
-      }
-      await navigator.share({ text });
-      return;
-    }
-  } catch (e) {
-    if (e && e.name === "AbortError") return;   // kullanıcı vazgeçti, hata değil
+  // Instagram, web'den hazır içerikli bir gönderi ya da story açmıyor: ne wa.me
+  // gibi bir bağlantı biçimi ne de bir API'si var, açıklama metnini dışarıdan
+  // dolduramıyoruz. Yapılabilecek en iyi şey ilan bilgilerini ve Paweero adresini
+  // panoya koyup uygulamayı açmak — kullanıcı tek dokunuşla yapıştırıyor.
+  // Pano yazımı ilk iş yapılıyor: iOS bunu yalnızca dokunmanın hemen ardından
+  // kabul ediyor, araya bir await girerse izni düşürüyor.
+  let copied = false;
+  try { await navigator.clipboard.writeText(text); copied = true; } catch (e) {}
+
+  notify?.(copied
+    ? (lang === "tr" ? "İlan bilgileri kopyalandı — Instagram'da yapıştır" : "Listing details copied — paste them in Instagram")
+    : (lang === "tr" ? "Instagram açılıyor" : "Opening Instagram"));
+
+  const onPhone = /android|iphone|ipad|ipod/i.test(navigator.userAgent);
+  if (!onPhone) {
+    window.open("https://www.instagram.com/", "_blank", "noopener,noreferrer");
+    return;
   }
-  try { await navigator.clipboard.writeText(text); } catch (e) {}
-  notify?.(lang === "tr"
-    ? "Metin kopyalandı — Instagram'a yapıştırabilirsin"
-    : "Text copied — paste it into Instagram");
-  window.open("https://www.instagram.com/", "_blank", "noopener,noreferrer");
+  // Uygulama kuruluysa doğrudan açılsın. Kurulu değilse hiçbir şey olmaz;
+  // sayfa hâlâ önümüzdeyse kısa bir süre sonra web sürümüne düşüyoruz.
+  const startedAt = Date.now();
+  window.location.href = "instagram://app";
+  setTimeout(() => {
+    if (!document.hidden && Date.now() - startedAt < 2500) {
+      window.location.href = "https://www.instagram.com/";
+    }
+  }, 1200);
 };
 
 // Reusable small WhatsApp share button used across every listing type.
@@ -1875,7 +1878,7 @@ const CSS = `
   .sh-acts  { flex-shrink:0; border-top:1px solid var(--border); background:var(--white);
               padding:12px 20px; padding-bottom:max(12px, env(safe-area-inset-bottom));
               display:flex; flex-direction:column; gap:8px; }
-  .sh-acts-row { display:flex; gap:8px; align-items:center; }
+  .sh-acts-row { display:flex; flex-direction:column; gap:8px; align-items:stretch; }
   .sh-acts-row > .btn, .sh-acts-row > a.btn { flex:1; min-width:0; }
   .sh-foot  { padding:14px 20px; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; flex-shrink:0; padding-bottom:max(14px,env(safe-area-inset-bottom)); background:var(--white); }
   .app-strip { display:flex; align-items:center; gap:10px; padding:12px 20px; border-bottom:1px solid var(--border); flex-shrink:0; flex-wrap:wrap; }
@@ -4516,7 +4519,7 @@ export default function App() {
                   <CallButton phone={detailAnimal.contactPhone} lang={lang}
                     variant={detailAnimal.canAdopt || detailAnimal.canFoster ? "outline" : "dark"} />
                 )}
-                <ShareButtons lang={lang} t={t} compact notify={say} photo={detailAnimal.photo_url} text={
+                <ShareButtons lang={lang} t={t} notify={say} photo={detailAnimal.photo_url} text={
                   `🐾 ${detailAnimal.name} — ${detailAnimal.breed[lang]} · ${detailAnimal.age[lang]} · ${detailAnimal.gender[lang]}\n` +
                   `📍 ${detailAnimal.city}, ${detailAnimal.province}\n` +
                   `${detailAnimal.desc?.[lang] || ""}\n\n` +
@@ -4567,7 +4570,7 @@ export default function App() {
                       </a>;
                 })()}
               <div className="sh-acts-row">
-                <ShareButtons lang={lang} t={t} compact notify={say} photo={detailLF.photo_url} text={
+                <ShareButtons lang={lang} t={t} notify={say} photo={detailLF.photo_url} text={
                   `${detailLF.type === "found"
                     ? (lang==="tr"?"🐾 Bulunan hayvan":"🐾 Found animal")
                     : (lang==="tr"?"🐾 Kayıp hayvan":"🐾 Lost animal")}: ${detailLF.name === "Unknown" ? detailLF.species[lang] : detailLF.name}\n` +
@@ -4575,7 +4578,6 @@ export default function App() {
                   `${detailLF.desc[lang] || ""}\n\n` +
                   `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?`${SITE_URL}${itemPath(lang, "lostfound", detailLF, detailLF.name)}`:""}`
                 } />
-                <button className="btn btn-outline" style={{ flex:1 }} onClick={() => setDetailLF(null)}>{t.close}</button>
               </div>
             </div>
           </div>
@@ -4628,13 +4630,12 @@ export default function App() {
                 {detailReport.status === "active" && detailReport.reporterPref === "phone" && (
                   <CallButton phone={detailReport.reporterPhone} lang={lang} variant="outline" />
                 )}
-                <ShareButtons lang={lang} t={t} compact notify={say} photo={detailReport.photo_url} text={
+                <ShareButtons lang={lang} t={t} notify={say} photo={detailReport.photo_url} text={
                   `🚨 ${lang==="tr"?"Yardıma ihtiyacı olan hayvan":"Animal in need of help"}: ${detailReport.title[lang]||detailReport.title}\n` +
                   `📍 ${detailReport.location}\n` +
                   `${detailReport.desc[lang]||detailReport.desc||""}\n\n` +
                   `${lang==="tr"?"Paweero'da görüntüle":"View on Paweero"}: ${typeof window!=="undefined"?`${SITE_URL}${itemPath(lang, "help", detailReport, detailReport.title?.en || detailReport.title)}`:""}`
                 } />
-                <button className="btn btn-outline" style={{ flex:1 }} onClick={() => setDetailReport(null)}>{t.close}</button>
               </div>
             </div>
           </div>
