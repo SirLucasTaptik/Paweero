@@ -1,6 +1,17 @@
 {
   "rewrites": [
     {
+      "source": "/:lang(tr|en)/:type(animals|lost-found|help)/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|WhatsApp|Twitterbot|LinkedInBot|Slackbot|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|SkypeUriPreview|vkShare).*"
+        }
+      ],
+      "destination": "/api/og?lang=:lang&type=:type&slug=:slug"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

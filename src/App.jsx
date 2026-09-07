@@ -151,7 +151,66 @@ const shareOnWhatsApp = (text) => {
 // cihazın kendi paylaşım penceresi: Instagram orada bir seçenek olarak çıkıyor
 // ve fotoğrafı da beraberinde alabiliyor. Pencere yoksa (masaüstü tarayıcıların
 // çoğu) metni panoya kopyalayıp Instagram'ı açıyoruz.
-const shareOnInstagram = async (text, photoUrl, lang, notify) => {
+// ─── MARKALI PAYLAŞIM GÖRSELİ ────────────────────────────────────────────────
+// Instagram açıklamalardaki bağlantıları tıklanabilir yapmıyor, yani oradan
+// paylaşılan bir ilanın adresi kaybolup gidiyor. Taşınan tek şey görselin
+// kendisi: fotoğrafın altına adresi ve ilan bilgisini yazıyoruz, böylece her
+// paylaşım tıklanır bir link olmasa da Paweero'yu gösteren bir afişe dönüşüyor.
+async function brandedShareImage(photoUrl, caption) {
+  if (!photoUrl || typeof document === "undefined") return null;
+  const img = await new Promise((resolve, reject) => {
+    const el = new Image();
+    el.crossOrigin = "anonymous";           // canvas'ı kirletmeden okuyabilmek için
+    el.onload = () => resolve(el);
+    el.onerror = reject;
+    el.src = photoUrl;
+  }).catch(() => null);
+  if (!img || !img.width) return null;
+
+  const W = Math.min(1080, img.width || 1080);
+  const scale = W / img.width;
+  const H = Math.round(img.height * scale);
+  const bar = Math.max(96, Math.round(H * 0.13));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H + bar;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(img, 0, 0, W, H);
+
+  ctx.fillStyle = "#1a1a1a";
+  ctx.fillRect(0, H, W, bar);
+
+  const pad = Math.round(bar * 0.28);
+  const dot = Math.round(bar * 0.14);
+  ctx.fillStyle = "#d4862b";
+  ctx.beginPath();
+  ctx.arc(pad + dot, H + bar / 2, dot, 0, Math.PI * 2);
+  ctx.fill();
+
+  const x = pad + dot * 2 + Math.round(bar * 0.18);
+  ctx.fillStyle = "#ffffff";
+  ctx.font = `700 ${Math.round(bar * 0.34)}px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
+  ctx.textBaseline = "alphabetic";
+  ctx.fillText("paweero.com", x, H + bar / 2 - Math.round(bar * 0.02));
+
+  if (caption) {
+    ctx.fillStyle = "rgba(255,255,255,0.62)";
+    ctx.font = `500 ${Math.round(bar * 0.22)}px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
+    const max = W - x - pad;
+    let line = caption;
+    while (line.length > 4 && ctx.measureText(line).width > max) line = line.slice(0, -2);
+    if (line !== caption) line = line.slice(0, -1) + "…";
+    ctx.fillText(line, x, H + bar / 2 + Math.round(bar * 0.28));
+  }
+
+  return new Promise((resolve) => {
+    try { canvas.toBlob((b) => resolve(b), "image/jpeg", 0.9); }
+    catch (e) { resolve(null); }   // fotoğraf başka kaynaktan geldiyse canvas kilitlenir
+  });
+}
+
+const shareOnInstagram = async (text, photoUrl, lang, notify, caption) => {
   // Instagram, web'den hazır içerikli bir gönderi ya da story açmıyor: ne wa.me
   // gibi bir bağlantı biçimi ne de bir API'si var, açıklama metnini dışarıdan
   // dolduramıyoruz. Yapılabilecek en iyi şey ilan bilgilerini ve Paweero adresini
@@ -160,6 +219,23 @@ const shareOnInstagram = async (text, photoUrl, lang, notify) => {
   // kabul ediyor, araya bir await girerse izni düşürüyor.
   let copied = false;
   try { await navigator.clipboard.writeText(text); copied = true; } catch (e) {}
+
+  // Görseli taşıyabiliyorsak onu tercih ediyoruz: Instagram'a giden tek şey
+  // fotoğraf, adresi de fotoğrafın üzerinde götürüyoruz.
+  if (photoUrl && navigator.share && navigator.canShare) {
+    try {
+      const blob = await brandedShareImage(photoUrl, caption);
+      if (blob) {
+        const file = new File([blob], "paweero.jpg", { type: "image/jpeg" });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], text });
+          return;
+        }
+      }
+    } catch (e) {
+      if (e && e.name === "AbortError") return;   // kullanıcı vazgeçti
+    }
+  }
 
   notify?.(copied
     ? (lang === "tr" ? "İlan bilgileri kopyalandı — Instagram'da yapıştır" : "Listing details copied — paste them in Instagram")
@@ -201,7 +277,7 @@ function WhatsAppShareButton({ text, lang, t, compact }) {
   );
 }
 
-function InstagramShareButton({ text, photo, lang, t, compact, notify }) {
+function InstagramShareButton({ text, photo, lang, t, compact, notify, caption }) {
   return (
     <button
       className="btn btn-sm"
@@ -211,7 +287,7 @@ function InstagramShareButton({ text, photo, lang, t, compact, notify }) {
                width: compact ? undefined : "100%", justifyContent:"center" }}
       title={lang === "tr" ? "Instagram'da paylaş" : "Share on Instagram"}
       aria-label={lang === "tr" ? "Instagram'da paylaş" : "Share on Instagram"}
-      onClick={e => { e.stopPropagation(); shareOnInstagram(text, photo, lang, notify); }}
+      onClick={e => { e.stopPropagation(); shareOnInstagram(text, photo, lang, notify, caption); }}
     >
       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" strokeWidth="2"
            strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}>
@@ -226,12 +302,12 @@ function InstagramShareButton({ text, photo, lang, t, compact, notify }) {
 
 // İki paylaşım düğmesi yan yana. Kartlarda yalnızca ikon (yer dar), ilan
 // ekranlarında etiketli ve eşit genişlikte.
-function ShareButtons({ text, photo, lang, t, compact, notify }) {
+function ShareButtons({ text, photo, lang, t, compact, notify, caption }) {
   return (
     <div style={{ display:"flex", gap:8, alignItems:"center",
                   flexDirection: compact ? "row" : "column" }}>
       <WhatsAppShareButton text={text} lang={lang} t={t} compact={compact} />
-      <InstagramShareButton text={text} photo={photo} lang={lang} t={t} compact={compact} notify={notify} />
+      <InstagramShareButton text={text} photo={photo} lang={lang} t={t} compact={compact} notify={notify} caption={caption} />
     </div>
   );
 }
@@ -3837,7 +3913,8 @@ export default function App() {
 
                       {/* WhatsApp share — available on every report */}
                       <div style={{ marginTop:10, display:"flex", justifyContent:"flex-end" }}>
-                        <ShareButtons lang={lang} t={t} compact notify={say} photo={r.photo_url} text={
+                        <ShareButtons lang={lang} t={t} compact notify={say} photo={r.photo_url}
+                          caption={[typeof r.title === "object" ? (r.title[lang] || r.title.en) : r.title, r.location].filter(Boolean).join(" · ")} text={
                           `🚨 ${lang==="tr"?"Yardıma ihtiyacı olan hayvan":"Animal in need of help"}: ${typeof r.title === "object" ? (r.title[lang] || r.title.en || "") : (r.title || "")}\n` +
                           `📍 ${r.location}\n` +
                           `${typeof r.desc === "object" ? (r.desc[lang] || r.desc.en || "") : (r.desc || "")}\n\n` +
@@ -4519,7 +4596,8 @@ export default function App() {
                   <CallButton phone={detailAnimal.contactPhone} lang={lang}
                     variant={detailAnimal.canAdopt || detailAnimal.canFoster ? "outline" : "dark"} />
                 )}
-                <ShareButtons lang={lang} t={t} notify={say} photo={detailAnimal.photo_url} text={
+                <ShareButtons lang={lang} t={t} notify={say} photo={detailAnimal.photo_url}
+                  caption={[detailAnimal.name, detailAnimal.city, detailAnimal.province].filter(Boolean).join(" · ")} text={
                   `🐾 ${detailAnimal.name} — ${detailAnimal.breed[lang]} · ${detailAnimal.age[lang]} · ${detailAnimal.gender[lang]}\n` +
                   `📍 ${detailAnimal.city}, ${detailAnimal.province}\n` +
                   `${detailAnimal.desc?.[lang] || ""}\n\n` +
@@ -4570,7 +4648,8 @@ export default function App() {
                       </a>;
                 })()}
               <div className="sh-acts-row">
-                <ShareButtons lang={lang} t={t} notify={say} photo={detailLF.photo_url} text={
+                <ShareButtons lang={lang} t={t} notify={say} photo={detailLF.photo_url}
+                  caption={[detailLF.name === "Unknown" ? detailLF.species[lang] : detailLF.name, detailLF.area, detailLF.city].filter(Boolean).join(" · ")} text={
                   `${detailLF.type === "found"
                     ? (lang==="tr"?"🐾 Bulunan hayvan":"🐾 Found animal")
                     : (lang==="tr"?"🐾 Kayıp hayvan":"🐾 Lost animal")}: ${detailLF.name === "Unknown" ? detailLF.species[lang] : detailLF.name}\n` +
@@ -4630,7 +4709,8 @@ export default function App() {
                 {detailReport.status === "active" && detailReport.reporterPref === "phone" && (
                   <CallButton phone={detailReport.reporterPhone} lang={lang} variant="outline" />
                 )}
-                <ShareButtons lang={lang} t={t} notify={say} photo={detailReport.photo_url} text={
+                <ShareButtons lang={lang} t={t} notify={say} photo={detailReport.photo_url}
+                  caption={[detailReport.title?.[lang] || detailReport.title?.en, detailReport.location].filter(Boolean).join(" · ")} text={
                   `🚨 ${lang==="tr"?"Yardıma ihtiyacı olan hayvan":"Animal in need of help"}: ${detailReport.title[lang]||detailReport.title}\n` +
                   `📍 ${detailReport.location}\n` +
                   `${detailReport.desc[lang]||detailReport.desc||""}\n\n` +
@@ -4983,7 +5063,8 @@ function ACard({ a, mode, lang, onClick }) {
         <div className="acard-foot">
           <span className="acard-loc">📍 {[a.city, a.province].filter(Boolean).join(", ")}</span>
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-            <ShareButtons lang={lang} compact photo={a.photo_url} text={
+            <ShareButtons lang={lang} compact photo={a.photo_url}
+              caption={[a.name, a.city, a.province].filter(Boolean).join(" · ")} text={
               `🐾 ${a.name}${metaParts.length ? " — " + metaParts.join(" · ") : ""}\n` +
               `📍 ${[a.city, a.province].filter(Boolean).join(", ")}\n` +
               `${a.desc?.[lang] || ""}\n\n` +
