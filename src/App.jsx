@@ -2093,6 +2093,15 @@ function autoReportTitle(rf, lang) {
   return where ? `${head} — ${locLabel(where, lang)}` : head;
 }
 
+// Yardım edilen bir bildirimde kanıt fotoğrafı photo_url'de saklanıyor (ayrı bir
+// kolon yok). Özgün fotoğraflar photo_urls dizisinde; ikisi ayrıysa photo_url
+// sonradan eklenen "sonrası" karesidir.
+function proofPhoto(r) {
+  if (r.status !== "helped" && r.status !== "resolved") return null;
+  if (!r.photo_url) return null;
+  return (r.photo_urls || []).includes(r.photo_url) ? null : r.photo_url;
+}
+
 // İlanı kaldırma sebepleri. Sebep yalnızca kayıt için değil: "yuvalandı" ilanı
 // silmek yerine adopted durumuna alıyor, ana sayfadaki sayaç da onu sayıyor.
 // Acil bildirimde tek sebep var — bildiren kişi hayvanın sahibi değil, sadece
@@ -2418,8 +2427,15 @@ export default function App() {
             reporterUsername: r.reporter_username || "",
             reporterPhone: r.reporter_phone || "",
             reporterPref: r.reporter_pref || "email",
-            photo_url: (r.photo_urls && r.photo_urls[0]) || r.photo_url || null,
-            photo_urls: r.photo_urls || (r.photo_url ? [r.photo_url] : []),
+            // "Yardım edildi" işaretlenirken yüklenen kanıt fotoğrafı photo_url'e
+            // yazılıyor, ama eşleme photo_urls[0]'ı tercih ettiği için hiç
+            // görünmüyordu. Kapak artık kanıt fotoğrafı — listede hayvanın
+            // kurtarılmış hâli görünüyor — ilk hâlleri de arkasında duruyor.
+            photo_url: proofPhoto(r) || (r.photo_urls && r.photo_urls[0]) || r.photo_url || null,
+            photo_urls: proofPhoto(r)
+              ? [proofPhoto(r), ...(r.photo_urls || [])]
+              : (r.photo_urls || (r.photo_url ? [r.photo_url] : [])),
+            proof: proofPhoto(r),
             volunteers: (r.volunteers || []).map(v => ({ name: v.name, eta: v.eta, etaOrder: v.eta_order })),
           })));
         } else {
@@ -4684,7 +4700,15 @@ export default function App() {
               <button className="sh-close" onClick={() => setDetailReport(null)}>✕</button>
             </div>
             <div className="sh-body">
-              <ImageCarousel photos={detailReport.photo_urls} emoji={detailReport.emoji} alt={detailReport.title?.[lang] || detailReport.title?.en || ""} height={detailReportHeight >= 85 ? "42vh" : "30vh"} fit={detailReportHeight >= 85 ? "contain" : "cover"} />
+              <ImageCarousel photos={detailReport.photo_urls} emoji={detailReport.emoji}
+                alt={detailReport.title?.[lang] || detailReport.title?.en || ""}
+                height={detailReportHeight >= 85 ? "42vh" : "30vh"}
+                fit={detailReportHeight >= 85 ? "contain" : "cover"}
+                labels={detailReport.proof
+                  ? (detailReport.photo_urls || []).map((_, i) => i === 0
+                      ? (lang==="tr" ? "Yardım sonrası" : "After help")
+                      : (lang==="tr" ? "İlk bildirim" : "When reported"))
+                  : null} />
               <div className="d-pills">
                 <span className="d-pill">📍 {detailReport.location}</span>
                 <span className="d-pill">🕐 {detailReport.time[lang] || detailReport.time}</span>
@@ -5996,7 +6020,7 @@ function RehomeForm({ lang, t, onSubmit, requireContact }) {
 }
 
 // ─── IMAGE CAROUSEL (swipeable gallery with dot pagination) ────────────────
-function ImageCarousel({ photos, emoji, height = 220, fit = "cover", alt = "" }) {
+function ImageCarousel({ photos, emoji, height = 220, fit = "cover", alt = "", labels = null }) {
   const [idx, setIdx] = useState(0);
   const [lightbox, setLightbox] = useState(false);
   const touchStartX = useRef(null);
@@ -6036,6 +6060,15 @@ function ImageCarousel({ photos, emoji, height = 220, fit = "cover", alt = "" })
           onClick={() => setLightbox(true)}
           style={{ width:"100%", height:"100%", objectFit:fit, display:"block" }}
         />
+
+        {/* Hangi karenin "sonrası", hangisinin ilk hâli olduğu yazmadan
+            yan yana iki fotoğraf anlamsız kalıyor. */}
+        {labels && labels[idx] && (
+          <span style={{ position:"absolute", left:8, top:8, background:"rgba(0,0,0,0.62)", color:"#fff",
+                         fontSize:11, fontWeight:700, letterSpacing:0.2, padding:"4px 9px", borderRadius:999 }}>
+            {labels[idx]}
+          </span>
+        )}
 
         {list.length > 1 && (
           <>
