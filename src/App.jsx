@@ -220,22 +220,6 @@ const shareOnInstagram = async (text, photoUrl, lang, notify, caption) => {
   let copied = false;
   try { await navigator.clipboard.writeText(text); copied = true; } catch (e) {}
 
-  // Görseli taşıyabiliyorsak onu tercih ediyoruz: Instagram'a giden tek şey
-  // fotoğraf, adresi de fotoğrafın üzerinde götürüyoruz.
-  if (photoUrl && navigator.share && navigator.canShare) {
-    try {
-      const blob = await brandedShareImage(photoUrl, caption);
-      if (blob) {
-        const file = new File([blob], "paweero.jpg", { type: "image/jpeg" });
-        if (navigator.canShare({ files: [file] })) {
-          await navigator.share({ files: [file], text });
-          return;
-        }
-      }
-    } catch (e) {
-      if (e && e.name === "AbortError") return;   // kullanıcı vazgeçti
-    }
-  }
 
   notify?.(copied
     ? (lang === "tr" ? "İlan bilgileri kopyalandı — Instagram'da yapıştır" : "Listing details copied — paste them in Instagram")
@@ -278,6 +262,33 @@ function WhatsAppShareButton({ text, lang, t, compact }) {
 }
 
 function InstagramShareButton({ text, photo, lang, t, compact, notify, caption }) {
+  // Görsel dokunmadan ÖNCE hazırlanıyor. iOS paylaşım penceresini yalnızca
+  // dokunmanın hemen ardından açıyor; araya bir fotoğraf indirme + canvas işi
+  // girince "kullanıcı isteği" sayılmaktan çıkıyor ve paylaşım sessizce
+  // reddediliyor — markalı görsel de bu yüzden hiç görünmüyordu.
+  // Kartlarda hazırlamıyoruz: her kart için bir görsel çizmek gereksiz yük.
+  const fileRef = useRef(null);
+  useEffect(() => {
+    fileRef.current = null;
+    if (compact || !photo) return;
+    let dead = false;
+    brandedShareImage(photo, caption)
+      .then(blob => { if (!dead && blob) fileRef.current = new File([blob], "paweero.jpg", { type: "image/jpeg" }); })
+      .catch(() => {});
+    return () => { dead = true; };
+  }, [photo, caption, compact]);
+
+  const onShare = (e) => {
+    e.stopPropagation();
+    const file = fileRef.current;
+    if (file && navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      // await yok: doğrudan burada açılmalı.
+      navigator.share({ files: [file], text }).catch(() => {});
+      return;
+    }
+    shareOnInstagram(text, photo, lang, notify, caption);
+  };
+
   return (
     <button
       className="btn btn-sm"
@@ -287,7 +298,7 @@ function InstagramShareButton({ text, photo, lang, t, compact, notify, caption }
                width: compact ? undefined : "100%", justifyContent:"center" }}
       title={lang === "tr" ? "Instagram'da paylaş" : "Share on Instagram"}
       aria-label={lang === "tr" ? "Instagram'da paylaş" : "Share on Instagram"}
-      onClick={e => { e.stopPropagation(); shareOnInstagram(text, photo, lang, notify, caption); }}
+      onClick={onShare}
     >
       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" strokeWidth="2"
            strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}>
