@@ -1822,6 +1822,8 @@ const CSS = `
     position:relative;
   }
   .opt-item:active { transform:scale(0.99); }
+  /* Birden fazlası seçilebiliyorsa yuvarlak işaret yanıltıcı: kare kutu. */
+  .opt-item.opt-multi::before { border-radius:6px; }
   .opt-item.on { border-color:var(--dark); background:var(--white); box-shadow:var(--shadow-sm); }
   /* Hide the native input entirely — it still handles state/click via the wrapping <label> */
   .opt-item input { position:absolute; opacity:0; width:0; height:0; pointer-events:none; }
@@ -5198,7 +5200,23 @@ function TakeActionSheet({ animal, lang, t, onClose }) {
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [notified, setNotified] = useState(null);   // null = denenmedi, false = e-posta gitmedi
   const [refCode] = useState(genRef);
+
+  const ownerEmail = /\S+@\S+\.\S+/.test(animal.submitter_email || "") ? animal.submitter_email : null;
+
+  // Her amaç için tek satırlık bir özet: şablon hangi alanı okursa okusun,
+  // e-postada ne istendiği yazılı olsun.
+  const purposeMessage = (type) => ({
+    adopt:      lang==="tr" ? "Sahiplenmek istiyor."          : "Wants to adopt.",
+    foster:     lang==="tr" ? "Geçici bakım teklif ediyor."   : "Offers to foster.",
+    help_offer: lang==="tr" ? `Yardım teklif ediyor: ${form.helpType || "-"}${form.helpMessage ? " — " + form.helpMessage : ""}`
+                            : `Offering help: ${form.helpType || "-"}${form.helpMessage ? " — " + form.helpMessage : ""}`,
+    sighting:   lang==="tr" ? `Hayvanı gördü: ${form.sightingLocation}${form.sightingWhen ? " · " + form.sightingWhen : ""}`
+                            : `Spotted the animal: ${form.sightingLocation}${form.sightingWhen ? " · " + form.sightingWhen : ""}`,
+    claim:      lang==="tr" ? `Hayvanın sahibi olabilir. ${form.claimMessage || ""}`
+                            : `May be the owner. ${form.claimMessage || ""}`,
+  }[type] || "");
 
   const req = lang==="tr" ? "Zorunlu" : "Required";
   const sel = lang==="tr" ? "Lütfen seçin" : "Please select";
@@ -5286,26 +5304,46 @@ function TakeActionSheet({ animal, lang, t, onClose }) {
         await (await getDb()).from("applications").insert([{ ...base, ...extra }]);
       }
 
-      // Single combined notification to the poster listing everything that was selected.
-      await (await getDb()).functions.invoke("notify-owner", {
-        body: {
-          mode: "multi_action",
-          purposes: selectedTypes,
-          ownerEmail: animal.submitter_email,
-          lang, animalName: animal.name, refCode,
-          applicantName: `${form.firstName} ${form.lastName}`,
-          applicantEmail: form.email, applicantPhone: form.phone,
-          homeType: form.homeType, ownRent: form.ownRent, hasYard: form.hasYard,
-          hasChildren: form.hasChildren, whyAdopt: form.whyAdopt,
-          availableFrom: form.availableFrom, fosterDuration: form.fosterDuration,
-          canProvideCare: form.canProvideCare, fosterNotes: form.fosterNotes,
-          helpType: form.helpType, helpAvailability: form.helpAvailability, helpMessage: form.helpMessage,
-          sightingLocation: form.sightingLocation, sightingWhen: form.sightingWhen, sightingMessage: form.sightingMessage,
-          claimMessage: form.claimMessage,
-        },
-      });
+      // İlan sahibine bildirim. Buradan tek bir "multi_action" isteği gidiyordu;
+      // sahiplenme formundaki çalışan çağrı ise her seferinde tek bir mod
+      // ("adopt"/"foster") gönderiyor. Seçilen amaç başına bir bildirim
+      // gönderiyoruz: aynı biçim, bilinen alan adları.
+      if (!ownerEmail) {
+        // İlan sahibinin e-postası yoksa gidecek adres de yok (eski kayıtlar).
+        setNotified(false);
+        console.warn("[notify-owner] İlan sahibinin e-postası yok, bildirim atlanıyor.");
+      } else {
+        let sent = 0;
+        for (const type of selectedTypes) {
+          const { error: mailErr } = await (await getDb()).functions.invoke("notify-owner", {
+            body: {
+              ownerEmail,
+              lang,
+              mode: type,
+              animalName: animal.name || "",
+              refCode,
+              applicantName: `${form.firstName} ${form.lastName}`,
+              applicantEmail: form.email,
+              applicantPhone: form.phone,
+              homeType: form.homeType, ownRent: form.ownRent, hasYard: form.hasYard,
+              hasChildren: form.hasChildren, whyAdopt: form.whyAdopt || purposeMessage(type),
+              availableFrom: form.availableFrom, fosterDuration: form.fosterDuration,
+              canProvideCare: form.canProvideCare, fosterNotes: form.fosterNotes,
+              helpType: form.helpType, helpAvailability: form.helpAvailability, helpMessage: form.helpMessage,
+              sightingLocation: form.sightingLocation, sightingWhen: form.sightingWhen, sightingMessage: form.sightingMessage,
+              claimMessage: form.claimMessage,
+              message: purposeMessage(type),
+            },
+          });
+          // supabase-js HTTP hatasında exception atmıyor; {error} dönüyor.
+          if (mailErr) console.error(`[notify-owner] "${type}" bildirimi gönderilemedi:`, mailErr);
+          else sent++;
+        }
+        setNotified(sent > 0);
+      }
     } catch (err) {
       console.error("Take Action gönderilemedi:", err);
+      setNotified(false);
     }
 
     setSubmitting(false);
@@ -5339,15 +5377,20 @@ function TakeActionSheet({ animal, lang, t, onClose }) {
             <div style={{ fontSize:11.5, color:"var(--muted)", marginBottom:14 }}>{t.takeActionSelectPurpose}</div>
 
             {/* Purpose multi-select — only purposes this listing actually supports are shown */}
-            <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:8 }}>
+            {/* Yan yana iki seçenek 165px'e sığmıyor: ikon, iki satır metin ve
+                işaret bir satıra dizildiğinde kelimeler tek tek alt alta
+                kırılıyordu. Tam genişlikte, alt alta. */}
+            <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:8 }}>
               {["sighting","claim","adopt","foster","help"].filter(k => availablePurposes[k]).map(k => {
                 const icon = { sighting:"🔍", claim:"📍", adopt:"🏡", foster:"🤝", help:"🚨" }[k];
                 return (
-                  <label key={k} className={`opt-item ${purposes[k]?"on":""}`} style={{ flex:"1 1 140px" }}>
+                  <label key={k} className={`opt-item opt-multi ${purposes[k]?"on":""}`}>
                     <input type="checkbox" checked={purposes[k]} onChange={() => togglePurpose(k)} />
                     <div className="pc-icon" style={{ width:38, height:38, fontSize:18, marginRight:2 }}>{icon}</div>
                     <div>
-                      <div className="opt-label">{purposeLabel[k]}</div>
+                      {/* Solda zaten ikon var; etiketin başındaki emoji ikinci
+                          bir ikon gibi duruyordu. */}
+                      <div className="opt-label">{String(purposeLabel[k] || "").replace(/^[^\p{L}\p{N}]+/u, "")}</div>
                       <div className="opt-hint">{k==="adopt"?t.purposeAdoptDesc:k==="foster"?t.purposeFosterDesc:k==="help"?t.purposeHelpDesc:k==="sighting"?(lang==="tr"?"Bu hayvanı bir yerde gördün":"You spotted this animal somewhere"):(lang==="tr"?"Bu hayvanın sahibi olabilirsin":"You might be the owner")}</div>
                     </div>
                   </label>
@@ -5506,11 +5549,12 @@ function TakeActionSheet({ animal, lang, t, onClose }) {
             </>}
           </div>
 
-          <div className="sh-foot">
-            <span className="step-count">
-              {[purposes.sighting&&purposeLabel.sighting, purposes.claim&&purposeLabel.claim, purposes.adopt&&t.purposeAdopt, purposes.foster&&t.purposeFoster, purposes.help&&t.purposeHelp].filter(Boolean).join(" + ") || "—"}
+          <div className="sh-foot" style={{ flexDirection:"column", alignItems:"stretch", gap:10 }}>
+            <span className="step-count" style={{ textAlign:"center" }}>
+              {[purposes.sighting&&purposeLabel.sighting, purposes.claim&&purposeLabel.claim, purposes.adopt&&t.purposeAdopt, purposes.foster&&t.purposeFoster, purposes.help&&t.purposeHelp].filter(Boolean).join(" + ")
+                || (lang==="tr" ? "Yukarıdan bir seçenek seç" : "Pick an option above")}
             </span>
-            <button className="btn btn-dark btn-sm" onClick={submit} disabled={submitting}>
+            <button className="btn btn-dark btn-full" onClick={submit} disabled={submitting}>
               {submitting ? t.taSubmitting : t.taSubmit}
             </button>
           </div>
@@ -5519,7 +5563,30 @@ function TakeActionSheet({ animal, lang, t, onClose }) {
             <div className="success">
               <div className="suc-i">✓</div>
               <div className="suc-t">{t.taSuccessTitle}</div>
-              <div className="suc-d">{t.taSuccessDesc}</div>
+              <div className="suc-d">
+                {notified === false
+                  ? (lang==="tr" ? "Başvurun kaydedildi." : "Your request has been saved.")
+                  : t.taSuccessDesc}
+              </div>
+
+              {/* Başvuru kaydedildi ama e-posta gitmediyse bunu söylemek gerekiyor:
+                  aksi hâlde kişi cevap bekler, ilan sahibinin haberi bile olmaz. */}
+              {notified === false && (
+                <div style={{ background:"rgba(212,134,43,0.1)", border:"1px solid rgba(212,134,43,0.35)",
+                              borderRadius:"var(--r-sm)", padding:"12px 14px", margin:"0 0 16px",
+                              fontSize:12.5, color:"var(--dark)", lineHeight:1.6, textAlign:"left" }}>
+                  {lang==="tr"
+                    ? "Başvurun kaydedildi, ancak ilan sahibine e-posta gönderilemedi. İlandaki telefon varsa doğrudan aramanı öneririz."
+                    : "Your request was saved, but we could not email the poster. If the listing has a phone number, calling directly is the surest way."}
+                  {animal.contactPref === "phone" && animal.contactPhone && (
+                    <a className="btn btn-dark btn-full" style={{ marginTop:10, textDecoration:"none", fontSize:13 }}
+                       href={`tel:${String(animal.contactPhone).replace(/[^\d+]/g, "")}`}>
+                      📞 {lang==="tr" ? "Ara" : "Call"} · {animal.contactPhone}
+                    </a>
+                  )}
+                </div>
+              )}
+
               <div className="suc-ref"><div className="suc-ref-l">{t.refLabel}</div><div className="suc-ref-c">{refCode}</div></div>
               <div style={{ fontSize:12, color:"var(--muted)", marginBottom:18 }}>
                 {t.taSuccessFor}{" "}
