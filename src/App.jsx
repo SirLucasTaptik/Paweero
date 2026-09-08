@@ -99,7 +99,6 @@ const uploadPhoto = async (rawFile, folder) => {
   return { url: publicUrl, error: null };
 };
 
-
 // ─── DYNAMIC DRAWER HEIGHT UTILITY ────────────────────────────────────────
 // Calculates drawer height based on image aspect ratio
 // Portrait images (ratio < 0.8) → 85vh; Landscape/Square → 70vh
@@ -2389,8 +2388,8 @@ export default function App() {
   const [dbError, setDbError]     = useState(false);
   const [photos, setPhotos]   = useState([]);
   const [lfPhotos, setLFPhotos] = useState([]);
-  const [rf, setRf]           = useState({ title:"", location:"", desc:"", type:"injured", animal:"", rCountry:FORM_COUNTRY, rProvince:FORM_PROVINCE, rCity:"", rAddress:"", owned:"" });
-  const [lfForm, setLFForm]   = useState({ type:"lost", name:"", species:"Dog", breed:"", color:"", area:"", city:"", contact:"", reward:"", desc:"", lfCountry:FORM_COUNTRY, lfProvince:FORM_PROVINCE, lfAddress:"" });
+  const [rf, setRf]           = useState({ title:"", location:"", desc:"", type:"injured", animal:"", rCountry:FORM_COUNTRY, rProvince:FORM_PROVINCE, rCity:"", rAddress:"", owned:"", phone:"" });
+  const [lfForm, setLFForm]   = useState({ type:"lost", name:"", species:"Dog", breed:"", color:"", area:"", city:"", contact:"", phone:"", reward:"", desc:"", lfCountry:FORM_COUNTRY, lfProvince:FORM_PROVINCE, lfAddress:"" });
 
   // Yuvasına kavuşanlar: ana sayfadaki sayaç ve şerit için.
   const [adoptedAnimals, setAdoptedAnimals] = useState([]);
@@ -2733,6 +2732,8 @@ export default function App() {
   const [showReportForm, setShowReportForm] = useState(false);
   const [dupSheet, setDupSheet] = useState(null);   // {items, contact} — olası mükerrer bildirim
 
+
+
   // Aynı hayvanı gören beş kişi beş ayrı bildirim açıyordu: liste şişiyor,
   // gönüllüler aynı hayvana koşuyor. Göndermeden önce aynı semtte, son 48 saatte,
   // aynı türden açık bir bildirim var mı diye bakıyoruz.
@@ -2765,8 +2766,8 @@ export default function App() {
       location: fullLocation,
       reporter_name: contact.email,          // notify-owner alıcı adresi olarak bunu kullanıyor
       reporter_username: contact.username || null,  // kartta gösterilen ad
-      reporter_phone: contact.phone || null,
-      reporter_pref: contact.contactPref || "email",
+      reporter_phone: rf.phone.trim() || null,
+      reporter_pref: rf.phone.trim() ? "phone" : "email",
       status: "active",
       photo_url: photos[0] || null,
       photo_urls: photos,
@@ -2789,10 +2790,10 @@ export default function App() {
         color: null,
         area: lfArea,
         city: rf.rProvince,
-        contact: contact.contactPref === "phone" ? contact.phone : contact.email,
+        contact: rf.phone.trim() || contact.email,
         contact_email: contact.email,
-        contact_phone: contact.phone || null,
-        contact_pref: contact.contactPref || "email",
+        contact_phone: rf.phone.trim() || null,
+        contact_pref: rf.phone.trim() ? "phone" : "email",
         reward: null,
         desc_en: lfDesc,
         desc_tr: lfDesc,
@@ -2812,7 +2813,7 @@ export default function App() {
       }
     }
 
-    setRf({ title:"", location:"", desc:"", type:"injured", animal:"", rCountry:FORM_COUNTRY, rProvince:FORM_PROVINCE, rCity:"", rAddress:"", owned:"" });
+    setRf({ title:"", location:"", desc:"", type:"injured", animal:"", rCountry:FORM_COUNTRY, rProvince:FORM_PROVINCE, rCity:"", rAddress:"", owned:"", phone:"" });
     setPhotos([]); setRfErr({}); setDupSheet(null); setShowReportForm(false);
     say(lang==="tr"?"Bildirim gönderildi — kurtarma ekibi bildirildi":"Report submitted — responders notified");
     await loadFromDB();
@@ -3080,6 +3081,19 @@ export default function App() {
       </div>
     </div>
   );
+
+  // Formlar açılırken, hesabında telefonu tercih etmiş kullanıcının numarasını
+  // hazır getiriyoruz — yazmadan geçebilsin diye. Silmek serbest.
+  useEffect(() => {
+    if (!showReportForm || rf.phone || contactInfo.contactPref !== "phone" || !contactInfo.phone) return;
+    setRf(f => ({ ...f, phone: contactInfo.phone }));
+  }, [showReportForm, contactInfo.contactPref, contactInfo.phone]);
+
+  useEffect(() => {
+    if (tab !== "lostfound" || lfSub !== "post") return;
+    if (lfForm.phone || contactInfo.contactPref !== "phone" || !contactInfo.phone) return;
+    setLFForm(f => ({ ...f, phone: contactInfo.phone }));
+  }, [tab, lfSub, contactInfo.contactPref, contactInfo.phone]);
 
   const signOut = async () => {
     try { await (await getDb()).auth.signOut(); } catch (e) {}
@@ -3555,7 +3569,8 @@ export default function App() {
 
           <div className="wrap" style={{ paddingTop:14 }}>
             {animalSub === "post" && (
-              <PostAnimalForm lang={lang} t={t} defaultCountry={formCountry} defaultProvince={formProvince} onSubmit={async (name, newAnimal) => {
+              <PostAnimalForm lang={lang} t={t} defaultCountry={formCountry} defaultProvince={formProvince}
+                defaultPhone={contactInfo.contactPref === "phone" ? contactInfo.phone : ""} onSubmit={async (name, newAnimal) => {
                 // Redirect to the most relevant tab based on which purposes were selected.
                 // A listing can serve multiple purposes at once — this just decides where
                 // to land the user right after posting, not which tabs the listing appears in.
@@ -3733,6 +3748,9 @@ export default function App() {
 
               <div className="fg"><label className="flabel">{t.yourContact}</label><input className="fi" placeholder={t.contactPlaceholder} value={lfForm.contact} onChange={e => setLFForm(f => ({ ...f, contact:e.target.value }))} /></div>
 
+              <ListingPhoneField value={lfForm.phone} lang={lang}
+                onChange={v => setLFForm(f => ({ ...f, phone:v }))} />
+
               {lfForm.type === "lost" && (
                 <div className="fg"><label className="flabel">{t.reward}</label><input className="fi" placeholder={rewardHint(formCountry, lfForm.lfProvince || formProvince, lang)} value={lfForm.reward} onChange={e => setLFForm(f => ({ ...f, reward:e.target.value }))} /></div>
               )}
@@ -3758,10 +3776,10 @@ export default function App() {
                   color: lfForm.color || null,
                   area: fullArea,
                   city: lfForm.lfProvince,
-                  contact: contact.contactPref === "phone" ? contact.phone : contact.email,
+                  contact: lfForm.phone.trim() || lfForm.contact || contact.email,
                   contact_email: contact.email,
-                  contact_phone: contact.phone || null,
-                  contact_pref: contact.contactPref || "email",
+                  contact_phone: lfForm.phone.trim() || null,
+                  contact_pref: lfForm.phone.trim() ? "phone" : "email",
                   reward: lfForm.reward || null,
                   desc_en: lfForm.desc,
                   desc_tr: lfForm.desc,
@@ -4067,6 +4085,9 @@ export default function App() {
               <div className="fg"><label className="flabel">{t.description}</label>
                 <textarea className="fta" placeholder={lang==="tr"?"Görünür yaralar? Hayvan ne zamandan beri orada?":"Visible injuries? How long has the animal been there?"} value={rf.desc} onChange={e => setRf(f => ({ ...f, desc:e.target.value }))} />
               </div>
+              <ListingPhoneField value={rf.phone} lang={lang}
+                onChange={v => setRf(f => ({ ...f, phone:v }))} />
+
               <div className="fg" id="rf-photos">
                 <label className="flabel">{lang==="tr"?"Fotoğraflar * (1–5)":"Photos * (1–5)"}</label>
                 <MultiPhotoUpload photos={photos} setPhotos={setPhotos} folder="reports" lang={lang} t={t} maxPhotos={5} />
@@ -4553,7 +4574,8 @@ export default function App() {
               <button className="sh-close" onClick={() => setShowCreateReport(false)}>✕</button>
             </div>
             <div className="sh-body">
-              <PostAnimalForm lang={lang} t={t} defaultCountry={formCountry} defaultProvince={formProvince} requireContact={requireContact} onSubmit={async (name, newAnimal) => {
+              <PostAnimalForm lang={lang} t={t} defaultCountry={formCountry} defaultProvince={formProvince} requireContact={requireContact}
+                defaultPhone={contactInfo.contactPref === "phone" ? contactInfo.phone : ""} onSubmit={async (name, newAnimal) => {
                 setShowCreateReport(false);
                 // Land the user on whichever browse tab best matches what they selected.
                 if (newAnimal?.isLost || newAnimal?.isFound) { setTab("lostfound"); }
@@ -5044,6 +5066,29 @@ function lfContact(i) {
   if (c && c.replace(/\D/g, "").length >= 6) return { kind:"phone", value:c };
   if (i.contact_email) return { kind:"email", value:i.contact_email };
   return null;
+}
+
+// İlana yazılacak telefon her seferinde ayrıca soruluyor. İki sebeple: ilanı
+// veren kişi hayvanın sahibi olmayabilir — barınak gönüllüsü başkasının
+// numarasını yazmak isteyebilir — ve hesaptaki numaranın ilanda yayınlanması
+// ancak o alana yazılarak istenmiş sayılır. Boş bırakılırsa ilanda telefon
+// görünmez, iletişim e-postadan yürür.
+function ListingPhoneField({ value, onChange, lang }) {
+  return (
+    <div className="fg">
+      <label className="flabel">
+        {lang === "tr" ? "İlanda gösterilecek telefon (opsiyonel)" : "Phone to show on the listing (optional)"}
+      </label>
+      <input className="fi" type="tel" inputMode="tel" autoComplete="tel"
+        placeholder={lang === "tr" ? "örn. 0532 123 45 67" : "e.g. +90 532 123 45 67"}
+        value={value || ""} onChange={e => onChange(e.target.value)} />
+      <div style={{ fontSize:12, color:"var(--muted)", marginTop:6, lineHeight:1.55 }}>
+        {lang === "tr"
+          ? "Başkası adına ilan veriyorsan onun numarasını yazabilirsin. Boş bırakırsan ilanda telefon görünmez."
+          : "Posting on someone else's behalf? Use their number. Leave it empty and no phone is shown."}
+      </div>
+    </div>
+  );
 }
 
 function MeThumb({ src, emoji, alt, dim = false }) {
@@ -6312,7 +6357,7 @@ function MultiPhotoUpload({ photos, setPhotos, folder, lang, t, maxPhotos = 5 })
 }
 
 
-function PostAnimalForm({ lang, t, onSubmit, requireContact, defaultCountry = FORM_COUNTRY, defaultProvince = FORM_PROVINCE }) {
+function PostAnimalForm({ lang, t, onSubmit, requireContact, defaultCountry = FORM_COUNTRY, defaultProvince = FORM_PROVINCE, defaultPhone = "" }) {
   const [f, setF] = useState({
     name:"", species:"Dog", breed:"", age:"", gender:"Female", colour:"",
     country:defaultCountry, province:defaultProvince, city:"",
@@ -6320,7 +6365,7 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact, defaultCountry = FO
     helpSituation:"", helpUrgency:"", desc:"",
     lostLastSeenLocation:"", lostLastSeenAt:"", lostCollarAccessories:"", lostIdentifyingCharacteristics:"",
     foundLocation:"", foundHow:"", foundIdentifyingCharacteristics:"",
-    isNeutered:"", vaccinatedParasite:"", vaccinatedRabies:"",
+    isNeutered:"", vaccinatedParasite:"", vaccinatedRabies:"", phone:defaultPhone,
   });
   const [photos, setPhotos] = useState([]);
   const [formError, setFormError] = useState("");
@@ -6567,6 +6612,8 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact, defaultCountry = FO
         <textarea className="fta" placeholder={lang==="tr"?"Hayvanın karakteri, sağlık durumu, geçmişi…":"Animal's personality, health, history…"} value={f.desc} onChange={e=>setF(x=>({...x,desc:e.target.value}))} />
       </div>
 
+      <ListingPhoneField value={f.phone} lang={lang} onChange={v => setF(x => ({ ...x, phone:v }))} />
+
       {/* Photos — 1 to 5, mandatory */}
       <div className="fg">
         <label className="flabel">{lang==="tr"?"Fotoğraflar * (1–5)":"Photos * (1–5)"}</label>
@@ -6622,8 +6669,8 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact, defaultCountry = FO
             photo_url: photos[0],
             photo_urls: photos,
             submitter_email: contact.email,
-            contact_phone: contact.phone || null,
-            contact_pref: contact.contactPref || "email",
+            contact_phone: (f.phone || "").trim() || null,
+            contact_pref: (f.phone || "").trim() ? "phone" : "email",
             status: "active",
             urgent: f.needsHelp && f.helpUrgency === "critical",
             is_new: true,
