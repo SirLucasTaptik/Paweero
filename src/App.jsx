@@ -5200,7 +5200,9 @@ function TakeActionSheet({ animal, lang, t, onClose }) {
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [notified, setNotified] = useState(null);   // null = denenmedi, false = e-posta gitmedi
+  const [notified, setNotifiedState] = useState(null);  // null = denenmedi, false = gönderilemedi
+  const notifiedRef = useRef(false);
+  const setNotified = (v) => { notifiedRef.current = !!v; setNotifiedState(v); };
   const [refCode] = useState(genRef);
 
   const ownerEmail = /\S+@\S+\.\S+/.test(animal.submitter_email || "") ? animal.submitter_email : null;
@@ -5346,43 +5348,30 @@ function TakeActionSheet({ animal, lang, t, onClose }) {
         await (await getDb()).from("applications").insert([{ ...base, ...extra }]);
       }
 
-      // İlan sahibine bildirim. Buradan tek bir "multi_action" isteği gidiyordu;
-      // sahiplenme formundaki çalışan çağrı ise her seferinde tek bir mod
-      // ("adopt"/"foster") gönderiyor. Seçilen amaç başına bir bildirim
-      // gönderiyoruz: aynı biçim, bilinen alan adları.
-      if (!ownerEmail) {
-        // İlan sahibinin e-postası yoksa gidecek adres de yok (eski kayıtlar).
-        setNotified(false);
-        console.warn("[notify-owner] İlan sahibinin e-postası yok, bildirim atlanıyor.");
-      } else {
-        let sent = 0;
-        for (const type of selectedTypes) {
-          const { error: mailErr } = await (await getDb()).functions.invoke("notify-owner", {
-            body: {
-              ownerEmail,
-              lang,
-              mode: type,
-              animalName: animal.name || "",
-              refCode,
-              applicantName: `${form.firstName} ${form.lastName}`,
-              applicantEmail: form.email,
-              applicantPhone: form.phone,
-              homeType: form.homeType, ownRent: form.ownRent, hasYard: form.hasYard,
-              hasChildren: form.hasChildren, whyAdopt: form.whyAdopt || purposeMessage(type),
-              availableFrom: form.availableFrom, fosterDuration: form.fosterDuration,
-              canProvideCare: form.canProvideCare, fosterNotes: form.fosterNotes,
-              helpType: form.helpType, helpAvailability: form.helpAvailability, helpMessage: form.helpMessage,
-              sightingLocation: form.sightingLocation, sightingWhen: form.sightingWhen, sightingMessage: form.sightingMessage,
-              claimMessage: form.claimMessage,
-              message: purposeMessage(type),
-            },
-          });
-          // supabase-js HTTP hatasında exception atmıyor; {error} dönüyor.
-          if (mailErr) console.error(`[notify-owner] "${type}" bildirimi gönderilemedi:`, mailErr);
-          else sent++;
-        }
-        setNotified(sent > 0);
+      // İlan sahibine e-posta: paweero.com adına, kendi sunucumuzdan.
+      // Alıcıyı istemci söylemiyor — uç, ilan kimliğinden veritabanına bakıp
+      // buluyor; böylece sahibin adresi tarayıcıya hiç geçmiyor.
+      const r = await fetch("/api/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind: "animal",
+          id: animal.id,
+          lang, refCode,
+          name: `${form.firstName} ${form.lastName}`,
+          email: form.email,
+          phone: form.phone,
+          lines: [
+            ...selectedTypes.map(purposeMessage),
+            form.whyAdopt, form.fosterNotes, form.helpMessage, form.sightingMessage, form.claimMessage,
+          ].filter(Boolean),
+        }),
+      });
+      if (!r.ok) {
+        const detail = await r.json().catch(() => ({}));
+        console.error("[notify] e-posta gönderilemedi:", r.status, detail);
       }
+      setNotified(r.ok);
     } catch (err) {
       console.error("Take Action gönderilemedi:", err);
       setNotified(false);
@@ -5391,9 +5380,9 @@ function TakeActionSheet({ animal, lang, t, onClose }) {
     setSubmitting(false);
     setSubmitted(true);
 
-    // Taslağı hemen açmayı deniyoruz; tarayıcı engellerse başarı ekranındaki
-    // düğme aynı taslağı tek dokunuşla açıyor.
-    if (ownerEmail) {
+    // Sunucudan gönderilemediyse mesaj kaybolmasın: kişinin kendi mail
+    // uygulamasında hazır taslağı açıyoruz.
+    if (!notifiedRef.current && ownerEmail) {
       try { window.location.href = mailDraft(); } catch (e) {}
     }
   };
@@ -5612,14 +5601,16 @@ function TakeActionSheet({ animal, lang, t, onClose }) {
               <div className="suc-i">✓</div>
               <div className="suc-t">{t.taSuccessTitle}</div>
               <div className="suc-d">
-                {ownerEmail
-                  ? (lang==="tr"
-                      ? "Mesajın hazır — mail uygulamanda Gönder'e basman yeterli."
-                      : "Your message is ready — just hit Send in your mail app.")
-                  : (lang==="tr" ? "Başvurun kaydedildi." : "Your request has been saved.")}
+                {notified
+                  ? t.taSuccessDesc
+                  : ownerEmail
+                    ? (lang==="tr"
+                        ? "Mesajın hazır — mail uygulamanda Gönder'e basman yeterli."
+                        : "Your message is ready — just hit Send in your mail app.")
+                    : (lang==="tr" ? "Başvurun kaydedildi." : "Your request has been saved.")}
               </div>
 
-              {ownerEmail && (
+              {!notified && ownerEmail && (
                 <a className="btn btn-dark btn-full" href={mailDraft()}
                    style={{ textDecoration:"none", marginBottom:12 }}>
                   ✉️ {lang==="tr" ? "İlan sahibine e-posta gönder" : "Email the poster"}
