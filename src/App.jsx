@@ -5205,6 +5205,48 @@ function TakeActionSheet({ animal, lang, t, onClose }) {
 
   const ownerEmail = /\S+@\S+\.\S+/.test(animal.submitter_email || "") ? animal.submitter_email : null;
 
+  // Sunucudaki e-posta fonksiyonuna güvenmek yerine mesajı kişinin kendi mail
+  // uygulamasından yolluyoruz: alıcı, konu ve gövde hazır geliyor, tek yapması
+  // gereken Gönder'e basmak. Fonksiyon çalışsa da çalışmasa da mesaj gidiyor.
+  const mailDraft = () => {
+    const tr = lang === "tr";
+    const chosen = selectedPurposeKeys().map(k => purposeMessage(k)).filter(Boolean);
+    const subject = (tr ? "Paweero — " : "Paweero — ") +
+      (animal.name || (tr ? "ilanın" : "your listing")) +
+      (refCode ? ` (${refCode})` : "");
+    const body = [
+      tr ? `Merhaba,` : `Hello,`,
+      "",
+      tr ? `Paweero'daki "${animal.name}" ilanın için yazıyorum.`
+         : `I'm writing about your Paweero listing "${animal.name}".`,
+      "",
+      ...chosen.map(c => `• ${c}`),
+      "",
+      tr ? "İletişim bilgilerim:" : "My contact details:",
+      `${form.firstName} ${form.lastName}`,
+      form.email,
+      form.phone,
+      "",
+      form.whyAdopt || form.fosterNotes || form.helpMessage || form.sightingMessage || form.claimMessage || "",
+      "",
+      `${tr ? "Referans" : "Reference"}: ${refCode}`,
+      typeof window !== "undefined" ? `${SITE_URL}${itemPath(lang, "animals", animal, animal.name)}` : "",
+    ].filter(l => l !== undefined).join("\n")
+      .replace(/\n{3,}/g, "\n\n")   // boş bırakılan alanlardan üst üste boş satır kalmasın
+      .trim();
+    return `mailto:${ownerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  };
+
+  const selectedPurposeKeys = () => {
+    const out = [];
+    if (purposes.adopt)    out.push("adopt");
+    if (purposes.foster)   out.push("foster");
+    if (purposes.help)     out.push("help_offer");
+    if (purposes.sighting) out.push("sighting");
+    if (purposes.claim)    out.push("claim");
+    return out;
+  };
+
   // Her amaç için tek satırlık bir özet: şablon hangi alanı okursa okusun,
   // e-postada ne istendiği yazılı olsun.
   const purposeMessage = (type) => ({
@@ -5348,6 +5390,12 @@ function TakeActionSheet({ animal, lang, t, onClose }) {
 
     setSubmitting(false);
     setSubmitted(true);
+
+    // Taslağı hemen açmayı deniyoruz; tarayıcı engellerse başarı ekranındaki
+    // düğme aynı taslağı tek dokunuşla açıyor.
+    if (ownerEmail) {
+      try { window.location.href = mailDraft(); } catch (e) {}
+    }
   };
 
   const purposeLabel = { adopt: t.purposeAdopt, foster: t.purposeFoster, help: t.purposeHelp, sighting: (lang==="tr"?"Gördüm":"I Saw This Animal"), claim: (lang==="tr"?"Benim Hayvanım Olabilir":"This Might Be My Pet") };
@@ -5564,20 +5612,29 @@ function TakeActionSheet({ animal, lang, t, onClose }) {
               <div className="suc-i">✓</div>
               <div className="suc-t">{t.taSuccessTitle}</div>
               <div className="suc-d">
-                {notified === false
-                  ? (lang==="tr" ? "Başvurun kaydedildi." : "Your request has been saved.")
-                  : t.taSuccessDesc}
+                {ownerEmail
+                  ? (lang==="tr"
+                      ? "Mesajın hazır — mail uygulamanda Gönder'e basman yeterli."
+                      : "Your message is ready — just hit Send in your mail app.")
+                  : (lang==="tr" ? "Başvurun kaydedildi." : "Your request has been saved.")}
               </div>
 
-              {/* Başvuru kaydedildi ama e-posta gitmediyse bunu söylemek gerekiyor:
-                  aksi hâlde kişi cevap bekler, ilan sahibinin haberi bile olmaz. */}
-              {notified === false && (
+              {ownerEmail && (
+                <a className="btn btn-dark btn-full" href={mailDraft()}
+                   style={{ textDecoration:"none", marginBottom:12 }}>
+                  ✉️ {lang==="tr" ? "İlan sahibine e-posta gönder" : "Email the poster"}
+                </a>
+              )}
+
+              {/* İlan sahibinin adresi yoksa yazışacak bir yer de yok; o zaman
+                  ilandaki telefon tek yol. */}
+              {!ownerEmail && (
                 <div style={{ background:"rgba(212,134,43,0.1)", border:"1px solid rgba(212,134,43,0.35)",
                               borderRadius:"var(--r-sm)", padding:"12px 14px", margin:"0 0 16px",
                               fontSize:12.5, color:"var(--dark)", lineHeight:1.6, textAlign:"left" }}>
                   {lang==="tr"
-                    ? "Başvurun kaydedildi, ancak ilan sahibine e-posta gönderilemedi. İlandaki telefon varsa doğrudan aramanı öneririz."
-                    : "Your request was saved, but we could not email the poster. If the listing has a phone number, calling directly is the surest way."}
+                    ? "Bu ilanda e-posta adresi yok. İlandaki telefon varsa doğrudan aramanı öneririz."
+                    : "This listing has no email address. If it has a phone number, calling directly is the surest way."}
                   {animal.contactPref === "phone" && animal.contactPhone && (
                     <a className="btn btn-dark btn-full" style={{ marginTop:10, textDecoration:"none", fontSize:13 }}
                        href={`tel:${String(animal.contactPhone).replace(/[^\d+]/g, "")}`}>
