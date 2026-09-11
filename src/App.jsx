@@ -137,6 +137,28 @@ const photoErrorMsg = (errorCode, lang) => {
     : "This photo may contain inappropriate or harmful content. Please upload a suitable photo of the animal.";
 };
 
+// İlan sahibine e-posta: alıcıyı sunucu buluyor (api/notify.js), istemci yalnızca
+// hangi ilan olduğunu ve kimin yazdığını söylüyor. Başarısızsa false dönüyor;
+// çağıran taraf yedek yola (mail taslağı) geçebilir.
+async function notifyOwner({ kind, id, lang, refCode = "", name, email, phone = "", lines = [] }) {
+  try {
+    const res = await fetch("/api/notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kind, id, lang, refCode, name, email, phone, lines: lines.filter(Boolean) }),
+    });
+    if (!res.ok) {
+      const detail = await res.json().catch(() => ({}));
+      console.error("[notify] gönderilemedi:", res.status, detail);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.error("[notify] istek hatası:", e);
+    return false;
+  }
+}
+
 // ─── WHATSAPP SHARE ──────────────────────────────────────────────────────────
 // Opens WhatsApp with a pre-filled message so users can share a listing.
 const shareOnWhatsApp = (text) => {
@@ -4856,38 +4878,23 @@ export default function App() {
                       eta_order: opt.order,
                     }]);
                     if (!error) {
-                      // ── Rapor sahibine gönüllü bildirimi gönder (notify-owner Edge Function) ──
-                      // Bir gönüllü yardıma geldiğinde ihbarı açan kişiye e-posta gider.
-                      try {
-                        const reporterEmail = (etaFor.reporter && /\S+@\S+\.\S+/.test(etaFor.reporter))
-                          ? etaFor.reporter
-                          : null;
-                        const notifyPayload = {
-                          ownerEmail:     reporterEmail,   // notify-owner bu alanı alıcı olarak kullanır
-                          reporterEmail:  reporterEmail,
-                          lang:           lang,
-                          mode:           "volunteer",
-                          animalName:     etaFor.title?.[lang] || etaFor.title || "",
-                          reportTitle:    etaFor.title?.[lang] || etaFor.title || "",
-                          reportLocation: etaFor.location || "",
-                          volunteerEmail: contact.email,
-                          volunteerPhone: contact.phone || "",
-                          eta:            lang==="tr" ? (opt.labelTR || opt.label) : opt.label,
-                        };
-                        console.log("[notify-owner][volunteer] Gönderilen bildirim yükü:", notifyPayload);
-                        if (reporterEmail) {
-                          const { data: vData, error: vErr } = await (await getDb()).functions.invoke("notify-owner", { body: notifyPayload });
-                          if (vErr) {
-                            console.error("[notify-owner][volunteer] Bildirim HATASI:", vErr);
-                          } else {
-                            console.log("[notify-owner][volunteer] Bildirim başarıyla gönderildi:", vData);
-                          }
-                        } else {
-                          console.warn("[notify-owner][volunteer] Rapor sahibinin geçerli e-postası yok, bildirim atlandı.");
-                        }
-                      } catch (err) {
-                        console.error("[notify-owner][volunteer] Bildirim gönderilemedi (exception):", err);
-                      }
+                      // Bildirimi açan kişiye "biri yola çıktı" e-postası.
+                      const eta = lang==="tr" ? (opt.labelTR || opt.label) : opt.label;
+                      const ok = await notifyOwner({
+                        kind: "report",
+                        id: etaFor.id,
+                        lang,
+                        name: contact.username || contact.email,
+                        email: contact.email,
+                        phone: contact.phone || "",
+                        lines: [
+                          lang==="tr" ? `Biri yardıma geliyor — tahmini varış: ${eta}`
+                                      : `Someone is on their way — ETA: ${eta}`,
+                          etaFor.location ? `${lang==="tr" ? "Konum" : "Location"}: ${etaFor.location}` : "",
+                        ],
+                      });
+                      if (!ok) console.warn("[notify][volunteer] e-posta gönderilemedi");
+
                       setEtaFor(null);
                       say("✓ " + (lang==="tr" ? opt.labelTR : opt.label));
                       // Straight into the contact drawer — a volunteer who just committed
@@ -5728,50 +5735,33 @@ function AdoptAppSheet({ animal, mode, lang, t, onClose }) {
 
     // ── E-posta gönder (notify-owner Edge Function) ──
     try {
-      // DEBUG LOG: gönderilecek e-posta yükünü konsola yaz
-      const emailPayload = {
-        ownerEmail:       animal.submitter_email,
-        lang:             lang,
-        mode:             mode,
-        animalName:       animal.name || "",
-        refCode:          refCode,
-        applicantName:    `${app.firstName} ${app.lastName}`,
-        applicantEmail:   app.email,
-        applicantPhone:   app.phone,
-        age:              app.age,
-        occupation:       app.occupation,
-        homeType:         app.homeType,
-        ownRent:          app.ownRent,
-        hasYard:          app.hasYard,
-        hasChildren:      app.hasChildren,
-        childrenAges:     app.childrenAges,
-        householdSize:    app.householdSize,
-        hoursHome:        app.hoursHome,
-        activityLevel:    app.activityLevel,
-        travelFreq:       app.travelFreq,
-        petCare:          app.petCare,
-        allergies:        app.allergies,
-        hadPetsBefore:    app.hadPetsBefore,
-        currentPets:      app.currentPets,
-        currentPetDetails:app.currentPetDetails,
-        vetReference:     app.vetReference,
-        whyAdopt:         app.whyAdopt,
-        longTermPlan:     app.longTermPlan,
-      };
-      console.log("[notify-owner] Gönderilen e-posta yükü:", emailPayload);
-
-      const { data: emailData, error: emailError } = await (await getDb()).functions.invoke("notify-owner", {
-        body: emailPayload,
+      // Başvuru özeti ilan sahibine e-postayla gidiyor. Uzun formun tamamı değil,
+      // sahibin karar verirken ilk bakacağı satırlar — gerisi Hesabım'da duruyor.
+      const yn = (v) => v || "—";
+      const sent = await notifyOwner({
+        kind: "animal",
+        id: animal.id,
+        lang,
+        refCode,
+        name: `${app.firstName} ${app.lastName}`,
+        email: app.email,
+        phone: app.phone,
+        lines: [
+          mode === "foster"
+            ? (lang==="tr" ? "Geçici bakım başvurusu" : "Foster application")
+            : (lang==="tr" ? "Sahiplenme başvurusu" : "Adoption application"),
+          `${lang==="tr" ? "Ev" : "Home"}: ${yn(app.homeType)} · ${yn(app.ownRent)} · ${lang==="tr" ? "bahçe" : "yard"}: ${yn(app.hasYard)}`,
+          `${lang==="tr" ? "Hane" : "Household"}: ${yn(app.householdSize)} · ${lang==="tr" ? "çocuk" : "children"}: ${yn(app.hasChildren)}${app.childrenAges ? ` (${app.childrenAges})` : ""}`,
+          `${lang==="tr" ? "Evde geçen süre" : "Hours at home"}: ${yn(app.hoursHome)} · ${lang==="tr" ? "hareketlilik" : "activity"}: ${yn(app.activityLevel)}`,
+          `${lang==="tr" ? "Önceki hayvan deneyimi" : "Previous pets"}: ${yn(app.hadPetsBefore)}${app.currentPets ? ` · ${lang==="tr" ? "şu an" : "now"}: ${app.currentPets}` : ""}`,
+          app.vetReference ? `${lang==="tr" ? "Veteriner referansı" : "Vet reference"}: ${app.vetReference}` : "",
+          app.whyAdopt ? `${lang==="tr" ? "Neden" : "Why"}: ${app.whyAdopt}` : "",
+          app.longTermPlan ? `${lang==="tr" ? "Uzun vadeli plan" : "Long-term plan"}: ${app.longTermPlan}` : "",
+        ],
       });
-
-      if (emailError) {
-        console.error("[notify-owner] E-posta gönderim HATASI:", emailError);
-        console.log("[notify-owner] Başarısız olan yük:", emailPayload);
-      } else {
-        console.log("[notify-owner] E-posta bildirimi başarıyla gönderildi:", emailData);
-      }
-    } catch(err) {
-      console.error("[notify-owner] E-posta gönderilemedi (exception):", err);
+      if (!sent) console.warn("[notify][application] e-posta gönderilemedi");
+    } catch (err) {
+      console.error("[notify][application] istek hatası:", err);
     }
 
     setSub(true);
@@ -5946,26 +5936,25 @@ function FosterAppSheet({ animal, lang, t, onClose }) {
       console.error("Foster başvurusu kaydedilemedi:", err);
     }
 
-    // ── E-posta gönder (notify-owner Edge Function) ──
+    // ── İlan sahibine e-posta ──
     try {
-      await (await getDb()).functions.invoke("notify-owner", {
-        body: {
-          ownerEmail:        animal.submitter_email,
-          lang:              lang,
-          mode:              "foster",
-          animalName:        animal.name || "",
-          refCode:           refCode,
-          applicantName:     `${app.firstName} ${app.lastName}`,
-          applicantEmail:    app.email,
-          applicantPhone:    app.phone,
-          hasPetExperience:  app.hasPetExperience,
-          experienceNote:    app.experienceNote,
-          availableFrom:     app.availableFrom,
-          fosterDuration:    app.fosterDuration,
-          canProvideCare:    app.canProvideCare,
-          notes:             app.notes,
-        },
+      const sent = await notifyOwner({
+        kind: "animal",
+        id: animal.id,
+        lang,
+        refCode,
+        name: `${app.firstName} ${app.lastName}`,
+        email: app.email,
+        phone: app.phone,
+        lines: [
+          lang==="tr" ? "Geçici bakım başvurusu" : "Foster application",
+          app.availableFrom ? `${lang==="tr" ? "Ne zamandan itibaren" : "Available from"}: ${app.availableFrom}${app.fosterDuration ? ` (${app.fosterDuration})` : ""}` : "",
+          app.hasPetExperience ? `${lang==="tr" ? "Hayvan deneyimi" : "Pet experience"}: ${app.hasPetExperience}${app.experienceNote ? ` — ${app.experienceNote}` : ""}` : "",
+          app.canProvideCare ? `${lang==="tr" ? "Bakımı üstlenebilir" : "Can provide care"}: ${app.canProvideCare}` : "",
+          app.notes || "",
+        ],
       });
+      if (!sent) console.warn("[notify][foster] e-posta gönderilemedi");
     } catch (err) {
       console.error("E-posta gönderilemedi:", err);
     }
