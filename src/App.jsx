@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { AboutPage, ABOUT_STYLES, aboutNavLabel } from "./About.jsx";
 
 // ─── SUPABASE ─────────────────────────────────────────────────────────────────
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://uyuqcpttdbejaakbwzyl.supabase.co";
@@ -884,8 +885,8 @@ const publicReporterLabel = (username, name, lang) => {
 // indeksleyecek tek bir sayfa vermek demek. Artık her görünümün gerçek bir
 // adresi var ve ilanlar tekil olarak paylaşılabiliyor.
 const SITE_URL = "https://paweero.com";
-const TAB_SEGMENT = { home:"", animals:"animals", lostfound:"lost-found", help:"help" };
-const SEGMENT_TAB = { "":"home", "animals":"animals", "lost-found":"lostfound", "help":"help" };
+const TAB_SEGMENT = { home:"", animals:"animals", lostfound:"lost-found", help:"help", about:"about" };
+const SEGMENT_TAB = { "":"home", "animals":"animals", "lost-found":"lostfound", "help":"help", "about":"about" };
 // Alt görünümler ayrı adres alır — /animals ve /animals/foster farklı listeler.
 // Varsayılan alt görünüm adrese yazılmaz: /animals ile /animals/adopt aynı sayfa
 // olurdu ve Google bunu kopya içerik sayardı. /animals/adopt yazılırsa çalışır,
@@ -980,6 +981,12 @@ const PAGE_META = {
           desc:`Report a lost pet or an animal you have found. Free lost and found listings across ${COUNTRY_COUNT} countries.` },
     tr: { title:"Kayıp ve Bulunan Hayvanlar | Paweero",
           desc:`Kaybolan hayvanını bildir ya da bulduğun bir hayvanı paylaş. ${COUNTRY_COUNT} ülkede ücretsiz kayıp ilanları.` },
+  },
+  about: {
+    en: { title:"About Paweero | Animal Rescue & Welfare Platform",
+          desc:"Paweero connects people, volunteers, foster families, adopters, veterinarians and organizations to make animal rescue and welfare more connected, transparent and effective." },
+    tr: { title:"Paweero Hakkında | Hayvan Kurtarma ve Refah Platformu",
+          desc:"Paweero; insanları, gönüllüleri, geçici bakım ailelerini, sahiplenenleri, veteriner hekimleri ve kurumları buluşturarak hayvan kurtarmayı daha bağlantılı, şeffaf ve etkili kılıyor." },
   },
   help: {
     en: { title:"Report an Animal in Distress | Paweero",
@@ -1866,6 +1873,11 @@ const CSS = `
   .opt-hint  { font-size:12px; color:var(--muted); margin-top:2px; font-weight:400; }
 
   /* ─ PURPOSE CHIPS — compact grid variant of opt-item, used for multi-select "what applies" rows ─ */
+  .site-foot { text-align:center; padding:26px 0 4px; border-top:1px solid var(--border); margin-top:28px; }
+  .site-foot-l { background:none; border:none; font-family:var(--font); font-size:13px; font-weight:600;
+                 color:var(--muted); cursor:pointer; padding:6px 10px; }
+  .site-foot-l:hover { color:var(--dark); }
+  ${ABOUT_STYLES}
   .purpose-chip {
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
     background:var(--off); border:1.5px solid transparent; border-radius:var(--r-sm);
@@ -3385,6 +3397,10 @@ export default function App() {
       <header className="topbar">
         <div className="logo" style={{ cursor:"pointer" }} onClick={() => goTab("home")}><div className="logo-dot" />{t.appName}</div>
         <nav className="desk-nav">
+          <button className={`dnav ${tab === "about" ? "on" : ""}`} onClick={() => goTab("about")}
+            style={{ order:9 }}>
+            {aboutNavLabel(lang)}
+          </button>
           {TABS.map(tb => (
             <button key={tb.id} className={`dnav ${tab === tb.id ? "on" : ""} ${tb.id === "help" ? "red" : ""}`} onClick={() => goTab(tb.id)}>
               {t[tb.id === "lostfound" ? "lostFound" : tb.id] || tb.label}
@@ -3553,6 +3569,31 @@ export default function App() {
             )}
           </div>
         </>}
+
+        {/* ══════════════════════════════ ABOUT ════════════════════════════ */}
+        {tab === "about" && (
+          <AboutPage
+            lang={lang}
+            stats={{
+              waiting:    animals.filter(a => a.canAdopt !== false || a.canFoster === true).length,
+              adopted:    adoptedCount,
+              active:     reports.filter(r => r.status === "active").length,
+              helped:     reports.filter(r => r.status === "helped" || r.status === "resolved").length,
+              volunteers: new Set(reports.flatMap(r => (r.volunteers || []).map(v => v.name))).size,
+            }}
+            stories={reports
+              .filter(r => (r.status === "helped" || r.status === "resolved") && r.photo_url)
+              .slice(0, 6)}
+            onExplore={() => goTab("animals")}
+            onStory={(r) => { setTab("help"); setHelpSub("helped"); setDetailReport(r); }}
+            onTab={(key) => {
+              if (key === "foster")  { setASub("foster");  goTab("animals"); return; }
+              if (key === "helped")  { setHelpSub("helped"); goTab("help");  return; }
+              if (key === "help")    { setHelpSub("active"); goTab("help");  return; }
+              goTab(key);
+            }}
+          />
+        )}
 
         {/* ══════════════════════════════ ANIMALS ═══════════════════════════ */}
         {tab === "animals" && <>
@@ -4617,6 +4658,14 @@ export default function App() {
               }} />
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Kurumsal sayfaya mobilden de bir giriş: masaüstü gezinme küçük ekranda
+          gizli, alt çubuk dolu. Her sayfanın dibinde tek satırlık bağlantı. */}
+      {tab !== "about" && (
+        <div className="site-foot">
+          <button className="site-foot-l" onClick={() => goTab("about")}>{aboutNavLabel(lang)}</button>
         </div>
       )}
 

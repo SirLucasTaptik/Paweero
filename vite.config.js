@@ -37,6 +37,7 @@ const STATIC_ROUTES = [
   { path: '/lost-found',       priority: '0.9', changefreq: 'hourly' },
   { path: '/help',             priority: '0.9', changefreq: 'hourly' },
   { path: '/help/helped',      priority: '0.6', changefreq: 'weekly' },
+  { path: '/about',            priority: '0.7', changefreq: 'monthly' },
 ]
 
 // Filtreler uygulamanın loadFromDB() sorgularıyla birebir aynı olmalı. Aksi hâlde
