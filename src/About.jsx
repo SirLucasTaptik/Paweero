@@ -19,7 +19,10 @@ export const ABOUT_CONFIG = {
   email: "",            // örn. "hello@paweero.com"
   location: "",         // örn. "Dubai, BAE"
   social: {
-    instagram: "",      // örn. "https://instagram.com/paweero"
+    // Paylaşım bağlantısındaki ?stkn=... parametresi profilin parçası değil;
+    // Instagram uygulamasının ürettiği, kişiye bağlı bir oturum jetonu. Siteye
+    // koymanın faydası yok, jetonu yaymanın anlamı da yok — kanonik adres bu.
+    instagram: "https://www.instagram.com/paweero",
     facebook: "",
     linkedin: "",
   },
@@ -243,6 +246,28 @@ export default C;
 // ─────────────────────────────────────────────────────────────────────────────
 import React from "react";
 
+const SOCIAL_LABEL = { instagram: "Instagram", facebook: "Facebook", linkedin: "LinkedIn" };
+
+const SOCIAL_ICON = {
+  instagram: (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"
+         strokeLinecap="round" strokeLinejoin="round" focusable="false">
+      <rect x="2" y="2" width="20" height="20" rx="5" /><circle cx="12" cy="12" r="4" />
+      <circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none" />
+    </svg>
+  ),
+  facebook: (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" focusable="false">
+      <path d="M14 8.5V7c0-.8.2-1.2 1.4-1.2H17V3h-2.4C11.7 3 10.7 4.4 10.7 6.8v1.7H9V11h1.7v10H14V11h2.3l.3-2.5H14z"/>
+    </svg>
+  ),
+  linkedin: (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" focusable="false">
+      <path d="M4.98 3.5a2.5 2.5 0 11-.02 5 2.5 2.5 0 01.02-5zM3 9h4v12H3zM9 9h3.8v1.7h.05c.53-.95 1.83-1.95 3.75-1.95 4 0 4.4 2.35 4.4 5.4V21h-4v-5.4c0-1.3-.03-3-1.9-3s-2.15 1.42-2.15 2.9V21H9z"/>
+    </svg>
+  ),
+};
+
 const Section = ({ id, children, tone = "" }) => (
   <section id={id} className={`ab-sec ${tone}`}>
     <div className="ab-wrap">{children}</div>
@@ -319,6 +344,17 @@ export function AboutPage({ lang = "en", stats = {}, stories = [], onExplore, on
   };
 
   const socials = Object.entries(cfg.social).filter(([, url]) => url);
+  const SocialLinks = ({ className = "ab-social" }) => (
+    <span className={className}>
+      {socials.map(([k, url]) => (
+        <a key={k} href={url} target="_blank" rel="noopener noreferrer"
+           className="ab-social-l" aria-label={SOCIAL_LABEL[k] || k}>
+          <span aria-hidden="true">{SOCIAL_ICON[k]}</span>
+          <span>{SOCIAL_LABEL[k] || k}</span>
+        </a>
+      ))}
+    </span>
+  );
   const legal = c.footer.legal.filter(([, key]) => cfg.legal[key]);
 
   return (
@@ -488,13 +524,7 @@ export function AboutPage({ lang = "en", stats = {}, stories = [], onExplore, on
               <a className="btn btn-dark" href={cfg.phoneHref}>📞 {c.contact.call} · {cfg.phone}</a>
               {cfg.email && <a className="btn btn-outline" href={`mailto:${cfg.email}`}>✉️ {cfg.email}</a>}
             </div>
-            {socials.length > 0 && (
-              <div className="ab-social">
-                {socials.map(([k, url]) => (
-                  <a key={k} href={url} target="_blank" rel="noopener noreferrer" className="ab-social-l">{k}</a>
-                ))}
-              </div>
-            )}
+            {socials.length > 0 && <SocialLinks />}
           </article>
           <article className="ab-corp">
             <h3 className="ab-corp-n">{c.corp.title}</h3>
@@ -538,13 +568,7 @@ export function AboutPage({ lang = "en", stats = {}, stories = [], onExplore, on
           </div>
           <div className="ab-fbottom">
             <span>{c.footer.rights}</span>
-            {socials.length > 0 && (
-              <span className="ab-social">
-                {socials.map(([k, url]) => (
-                  <a key={k} href={url} target="_blank" rel="noopener noreferrer" className="ab-social-l">{k}</a>
-                ))}
-              </span>
-            )}
+            {socials.length > 0 && <SocialLinks />}
           </div>
         </div>
       </footer>
@@ -651,7 +675,11 @@ export const ABOUT_STYLES = `
   .ab-contact-btns { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
   .ab-contact-btns .btn { text-decoration:none; }
   .ab-social { display:flex; gap:14px; flex-wrap:wrap; }
-  .ab-social-l { font-size:13px; font-weight:600; color:var(--amber); text-transform:capitalize; }
+  .ab-social-l { display:inline-flex; align-items:center; gap:7px; font-size:13px; font-weight:600;
+                 color:var(--amber); text-decoration:none; }
+  .ab-social-l:hover { text-decoration:underline; }
+  .ab-footer .ab-social-l { color:rgba(255,255,255,0.92); }
+  .ab-footer .ab-social-l:hover { color:var(--amber); }
   .ab-corp { background:var(--off); border-radius:var(--r); padding:24px; align-self:start; }
   .ab-corp-n { font-size:20px; font-weight:800; color:var(--dark); margin:0 0 4px; letter-spacing:-0.4px; }
   .ab-corp-s { font-size:13px; color:var(--muted); margin:0 0 18px; }
