@@ -2052,6 +2052,15 @@ const CSS = `
               padding:2px 9px; border-radius:999px; margin-top:3px; }
   .app-pending  { background:var(--off); color:var(--muted); }
   .app-contact { font-size:12px; color:var(--muted); margin-top:4px; word-break:break-word; }
+  /* Başvuru kartı: karar düğmeleri metnin yanında değil, kartın altında tek
+     sıra. İki karar yan yana ve eşit genişlikte — hangisinin seçileceği
+     düğmenin boyuna değil kişinin kararına kalıyor. */
+  .app-row   { display:block; }
+  .app-main  { display:flex; align-items:flex-start; gap:10px; }
+  .app-acts  { display:flex; gap:8px; margin-top:10px; }
+  .app-acts .me-act { flex:1 1 0; min-width:0; display:inline-flex; align-items:center;
+                      justify-content:center; gap:5px; font-size:13px; padding:9px 10px;
+                      white-space:nowrap; }
   .app-contact a { color:var(--muted); text-decoration:underline; text-underline-offset:2px; }
   .app-reviewing{ background:rgba(37,99,235,0.10); color:var(--blue); }
   .d-review { background:rgba(37,99,235,0.08); border:1px solid rgba(37,99,235,0.25); border-radius:var(--r-sm);
@@ -4588,7 +4597,8 @@ export default function App() {
                     const pending = (a.status || "pending") === "pending";
                     const name = [a.first_name, a.last_name].filter(Boolean).join(" ") || a.applicant_email || "—";
                     return (
-                      <div key={a.id || a.ref_code} className="me-row" style={{ alignItems:"flex-start", cursor:"default" }}>
+                      <div key={a.id || a.ref_code} className="me-row app-row" style={{ cursor:"default" }}>
+                        <div className="app-main">
                         <MeThumb emoji="📨" alt={name} src={appAnimals[String(a.animal_id)]?.photo_url} />
                         <div style={{ flex:1, minWidth:0 }}>
                           <div className="me-row-t">{name}</div>
@@ -4614,33 +4624,35 @@ export default function App() {
                             </div>
                           )}
 
-                          {/* İki karar yeter: değerlendirmeye al ya da reddet.
-                              Her ikisi de başvurana e-postayla gidiyor. */}
-                          {(pending || a.status === "reviewing") && (
-                            <div className="me-acts" onClick={e => e.stopPropagation()}>
-                              {pending && (
-                                <button className="me-act on" disabled={busyRow === a.id}
-                                  onClick={() => answerApplication(a, "reviewing")}>
-                                  {lang==="tr"?"Değerlendirmeye al":"Start review"}
-                                </button>
-                              )}
-                              {/* Değerlendirme yuvayla bitebilir: ilanı kapatmanın
-                                  doğal yeri bu satır. */}
-                              {a.status === "reviewing" && a.animal_id && a.mode === "adopt"
-                                && (appAnimals[String(a.animal_id)]?.status || "active") === "active" && (
-                                <button className="me-act on" disabled={busyRow === a.id}
-                                  onClick={() => markAdoptedFromApp(a)}>
-                                  🏡 {lang==="tr"?"Yuvalandı":"Adopted"}
-                                </button>
-                              )}
-                              <button className="me-act warn" disabled={busyRow === a.id}
-                                onClick={() => answerApplication(a, "declined")}>
-                                {lang==="tr"?"Reddet":"Decline"}
-                              </button>
-                            </div>
-                          )}
-
                         </div>
+                        </div>
+
+                        {/* İki karar yeter: değerlendirmeye al ya da reddet.
+                            Kartın altında, yan yana, eşit genişlikte. Her
+                            ikisi de başvurana e-postayla gidiyor. */}
+                        {(pending || a.status === "reviewing") && (
+                          <div className="app-acts" onClick={e => e.stopPropagation()}>
+                            {pending && (
+                              <button className="me-act on" disabled={busyRow === a.id}
+                                onClick={() => answerApplication(a, "reviewing")}>
+                                {lang==="tr"?"Değerlendirmeye al":"Start review"}
+                              </button>
+                            )}
+                            {/* Değerlendirme yuvayla bitebilir: ilanı kapatmanın
+                                doğal yeri bu satır. */}
+                            {a.status === "reviewing" && a.animal_id && a.mode === "adopt"
+                              && (appAnimals[String(a.animal_id)]?.status || "active") === "active" && (
+                              <button className="me-act on" disabled={busyRow === a.id}
+                                onClick={() => markAdoptedFromApp(a)}>
+                                🏡 {lang==="tr"?"Yuvalandı":"Adopted"}
+                              </button>
+                            )}
+                            <button className="me-act warn" disabled={busyRow === a.id}
+                              onClick={() => answerApplication(a, "declined")}>
+                              {lang==="tr"?"Reddet":"Decline"}
+                            </button>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
