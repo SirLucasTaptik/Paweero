@@ -160,6 +160,29 @@ async function notifyOwner({ kind, id, lang, refCode = "", name, email, phone = 
   }
 }
 
+// Başvurana ilan sahibinin kararını ileten e-posta. Alıcıyı sunucu, başvuru
+// kaydından buluyor (api/reply.js); istemci yalnızca hangi başvuru ve hangi
+// karar olduğunu söylüyor. Oturum anahtarı gidiyor çünkü sunucu "bu ilan
+// gerçekten senin mi" sorusunu onunla yanıtlıyor.
+async function replyToApplicant({ applicationId, status, lang, token }) {
+  try {
+    const res = await fetch("/api/reply", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ applicationId, status, lang, token }),
+    });
+    if (!res.ok) {
+      const detail = await res.json().catch(() => ({}));
+      console.error("[reply] gönderilemedi:", res.status, detail);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.error("[reply] istek hatası:", e);
+    return false;
+  }
+}
+
 // ─── WHATSAPP SHARE ──────────────────────────────────────────────────────────
 // Opens WhatsApp with a pre-filled message so users can share a listing.
 const shareOnWhatsApp = (text) => {
@@ -1999,6 +2022,8 @@ const CSS = `
   .app-st   { display:inline-block; font-size:11px; font-weight:700; letter-spacing:0.2px;
               padding:2px 9px; border-radius:999px; margin-top:3px; }
   .app-pending  { background:var(--off); color:var(--muted); }
+  .app-contact { font-size:12px; color:var(--muted); margin-top:4px; word-break:break-word; }
+  .app-contact a { color:var(--muted); text-decoration:underline; text-underline-offset:2px; }
   .app-reviewing{ background:rgba(37,99,235,0.10); color:var(--blue); }
   .d-review { background:rgba(37,99,235,0.08); border:1px solid rgba(37,99,235,0.25); border-radius:var(--r-sm);
               padding:10px 12px; font-size:13px; font-weight:600; color:var(--blue); margin:4px 0 12px; }
@@ -3008,7 +3033,7 @@ export default function App() {
   const [appAnimals, setAppAnimals] = useState({});   // id → ilan
   const [inbox, setInbox] = useState([]);            // ilanıma gelen başvurular
 
-  // Başvuruyu yanıtlamak: kabul ya da ret. Sorguya ilan sahibinin e-postası da
+  // Başvuruyu yanıtlamak: değerlendirmeye alma ya da ret. Sorguya ilan sahibinin e-postası da
   // ekleniyor — RLS'in yanında ikinci bariyer. RLS reddettiğinde hata dönmez,
   // hiçbir satır güncellenmez; o yüzden dönen satırı sayıyoruz.
   // İlandaki "değerlendiriliyor" işareti. Kolon henüz eklenmemişse (SQL
@@ -3024,7 +3049,8 @@ export default function App() {
   const answerApplication = async (app, status) => {
     setBusyRow(app.id);
     try {
-      const { data, error } = await (await getDb())
+      const client = await getDb();
+      const { data, error } = await client
         .from("applications").update({ status })
         .eq("id", app.id).eq("listing_owner_email", contactInfo.email).select("id");
       if (error) throw error;
@@ -3042,25 +3068,26 @@ export default function App() {
         await setAnimalReview(app.animal_id, stillReviewing);
       }
 
-      say({
-        reviewing: lang==="tr" ? "İlan 'başvuru değerlendiriliyor' olarak işaretlendi" : "Listing marked as under review",
-        accepted:  lang==="tr" ? "Başvuru kabul edildi" : "Application accepted",
-        declined:  lang==="tr" ? "Başvuru reddedildi"   : "Application declined",
-      }[status] || "");
+      // Karar başvurana da ulaşsın: ekranda değişen bir rozet, formu doldurup
+      // bekleyen insana hiçbir şey anlatmıyor.
+      const { data: sess } = await client.auth.getSession();
+      const mailed = await replyToApplicant({
+        applicationId: app.id, status, lang,
+        token: sess?.session?.access_token || "",
+      });
+
+      say(status === "reviewing"
+        ? (mailed
+            ? (lang==="tr" ? "Değerlendirmeye alındı, başvurana haber verildi" : "Under review — the applicant has been notified")
+            : (lang==="tr" ? "Değerlendirmeye alındı (e-posta gönderilemedi)" : "Marked under review (email could not be sent)"))
+        : (mailed
+            ? (lang==="tr" ? "Reddedildi, başvurana haber verildi" : "Declined — the applicant has been notified")
+            : (lang==="tr" ? "Reddedildi (e-posta gönderilemedi)"  : "Declined (email could not be sent)")));
     } catch (e) {
       console.error("answerApplication:", e);
       say(lang==="tr" ? "İşlem başarısız, tekrar dene" : "Action failed, please try again");
     }
     setBusyRow(null);
-  };
-
-  // Kabul edilen bir sahiplenme başvurusundan sonra ilanı yuvalandı yapmak tek
-  // dokunuş olsun: "Yuvalandı" sayacını dolduran asıl an burası.
-  const markAdoptedFromApp = async (app) => {
-    const animal = appAnimals[String(app.animal_id)] || { id: app.animal_id };
-    await ownerPatch("animals", animal.id, "submitter_email",
-      { status:"adopted", removed_reason:"adopted" },
-      lang==="tr" ? "Yuvalandı olarak işaretlendi 🎉" : "Marked as adopted 🎉");
   };
 
   const appStatusLabel = (st) => ({
@@ -4452,45 +4479,36 @@ export default function App() {
                             <span className={`app-st app-${a.status || "pending"}`}>{appStatusLabel(a.status)}</span>
                           </div>
 
-                          <div className="me-acts" onClick={e => e.stopPropagation()}>
-                            {a.applicant_email && (
-                              <a className="me-act" href={`mailto:${a.applicant_email}`}>
-                                ✉️ {lang==="tr"?"Yaz":"Email"}
-                              </a>
-                            )}
-                            {a.phone && (
-                              <a className="me-act" href={`tel:${String(a.phone).replace(/[^\d+]/g, "")}`}>
-                                📞 {lang==="tr"?"Ara":"Call"}
-                              </a>
-                            )}
-                            {pending && (
-                              // Her başvuru hemen kabul edilmiyor. "Değerlendiriyorum",
-                              // başvurana "bakılıyor" diyebilmenin yolu.
-                              <button className="me-act" disabled={busyRow === a.id}
-                                onClick={() => answerApplication(a, "reviewing")}>
-                                {lang==="tr"?"Değerlendiriyorum":"Reviewing"}
-                              </button>
-                            )}
-                            {(pending || a.status === "reviewing") ? (
-                              <>
+                          {/* İletişim bilgisi karar değil: buton yerine satırın
+                              içinde duran bağlantılar. */}
+                          {(a.applicant_email || a.phone) && (
+                            <div className="app-contact" onClick={e => e.stopPropagation()}>
+                              {a.applicant_email && (
+                                <a href={`mailto:${a.applicant_email}`}>{a.applicant_email}</a>
+                              )}
+                              {a.applicant_email && a.phone ? <span> · </span> : null}
+                              {a.phone && (
+                                <a href={`tel:${String(a.phone).replace(/[^\d+]/g, "")}`}>{a.phone}</a>
+                              )}
+                            </div>
+                          )}
+
+                          {/* İki karar yeter: değerlendirmeye al ya da reddet.
+                              Her ikisi de başvurana e-postayla gidiyor. */}
+                          {(pending || a.status === "reviewing") && (
+                            <div className="me-acts" onClick={e => e.stopPropagation()}>
+                              {pending && (
                                 <button className="me-act on" disabled={busyRow === a.id}
-                                  onClick={() => answerApplication(a, "accepted")}>
-                                  {lang==="tr"?"Kabul et":"Accept"}
+                                  onClick={() => answerApplication(a, "reviewing")}>
+                                  {lang==="tr"?"Değerlendirmeye al":"Start review"}
                                 </button>
-                                <button className="me-act warn" disabled={busyRow === a.id}
-                                  onClick={() => answerApplication(a, "declined")}>
-                                  {lang==="tr"?"Reddet":"Decline"}
-                                </button>
-                              </>
-                            ) : a.status === "accepted" && a.mode === "adopt"
-                                && appAnimals[String(a.animal_id)]?.status === "active" ? (
-                              // Kabul edilen sahiplenme, ilanı kapatmanın doğal anı.
-                              <button className="me-act" disabled={busyRow === a.animal_id}
-                                onClick={() => markAdoptedFromApp(a)}>
-                                🏡 {lang==="tr"?"İlanı yuvalandı yap":"Mark listing adopted"}
+                              )}
+                              <button className="me-act warn" disabled={busyRow === a.id}
+                                onClick={() => answerApplication(a, "declined")}>
+                                {lang==="tr"?"Reddet":"Decline"}
                               </button>
-                            ) : null}
-                          </div>
+                            </div>
+                          )}
 
                         </div>
                       </div>
