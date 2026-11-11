@@ -1650,6 +1650,11 @@ const CSS = `
 
   /* ─ HOME QUICK LINKS ─ */
   .sec-label { font-size:11px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin:24px 0 12px; }
+  .sec-row  { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .sec-link { background:none; border:none; padding:4px 0; font-family:var(--font); font-size:11px;
+              font-weight:700; letter-spacing:0.6px; text-transform:none; color:var(--amber);
+              cursor:pointer; white-space:nowrap; }
+  .sec-link:hover { text-decoration:underline; }
   .ql-list { display:flex; flex-direction:column; gap:10px; }
   .ql-item { display:flex; align-items:center; gap:14px; padding:16px; cursor:pointer; transition:transform 0.12s, box-shadow 0.12s; background:var(--white); border-radius:var(--r); box-shadow:var(--shadow-sm); }
   .ql-item:active { transform:scale(0.98); }
@@ -3517,7 +3522,20 @@ export default function App() {
           )}
 
           <div className="wrap">
-            <div className="sec-label">{t.recentlyAdded}</div>
+            {/* Şerit her ülkeden ilan gösteriyor. Kendi bölgesindekileri görmek
+                isteyen, filtreyi kurcalamadan tek dokunuşla geçebilsin. */}
+            <div className="sec-label sec-row">
+              <span>{t.recentlyAdded}</span>
+              <button className="sec-link" onClick={() => { setASub("adopt"); goTab("animals"); }}>
+                {lang==="tr" ? "Bölgendekileri gör" : "See your region"}
+                {(() => {
+                  const where = fCity !== "All Cities" ? fCity
+                              : fProvince !== "All Provinces" ? fProvince
+                              : fCountry !== "All Countries" ? fCountry : "";
+                  return where ? ` · ${locLabel(where, lang)}` : "";
+                })()} →
+              </button>
+            </div>
             <div className="mini-row">
               {animals.map(a => <MiniCard key={a.id} a={a} lang={lang} onClick={() => setDetailA(a)} />)}
             </div>
