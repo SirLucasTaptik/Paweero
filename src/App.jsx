@@ -3715,6 +3715,7 @@ export default function App() {
                       gender: { en:"", tr:"" },
                       city: item.area,
                       province: item.city,
+                      country: item.country || "",
                       tags: { en:[], tr:[] },
                       desc: item.desc,
                       isLost: item.type === "lost" && item.status !== "reunited",
@@ -5161,6 +5162,18 @@ function MeThumb({ src, emoji, alt, dim = false }) {
   );
 }
 
+// Kartlardaki yer satırı: semt, il ve ÜLKE. Platform dokuz ülkede birden
+// çalışıyor; "Jumeirah" ya da "Merkez" gibi bir ad tek başına nereyi
+// gösterdiğini söylemiyor. Ülke ilandan okunuyor, yoksa ilin bağlı olduğu
+// ülkeden türetiliyor (kayıp & bulundu kayıtlarında ülke kolonu yok).
+function cardPlace(a, lang) {
+  const country = normCountry(a.country) || findCountryForProvince(a.province) || "";
+  return [a.city, a.province, country ? locLabel(country, lang) : ""]
+    .filter(Boolean)
+    .filter((v, i, arr) => arr.indexOf(v) === i)   // il ile ülke aynıysa ikinci kez yazma
+    .join(", ");
+}
+
 function MiniCard({ a, lang, onClick }) {
   return (
     <div className="mini-card" onClick={onClick}>
@@ -5170,7 +5183,7 @@ function MiniCard({ a, lang, onClick }) {
       <div style={{ padding:"8px 10px" }}>
         <div style={{ fontSize:12, fontWeight:600, color:"var(--dark)", marginBottom:1 }}>{a.name}</div>
         <div style={{ fontSize:10, color:"var(--muted)", marginBottom:2 }}>{a.species[lang]} · {a.age[lang]}</div>
-        <div style={{ fontSize:10, color:"var(--muted)" }}>📍 {a.city}</div>
+        <div style={{ fontSize:10, color:"var(--muted)" }}>📍 {cardPlace(a, lang)}</div>
       </div>
     </div>
   );
@@ -5199,7 +5212,7 @@ function ACard({ a, mode, lang, onClick }) {
         </div>
         {a.tags?.[lang]?.length > 0 && <div className="tags">{a.tags[lang].slice(0,2).map(tg => <span key={tg} className="tag">{tg}</span>)}</div>}
         <div className="acard-foot">
-          <span className="acard-loc">📍 {[a.city, a.province].filter(Boolean).join(", ")}</span>
+          <span className="acard-loc">📍 {cardPlace(a, lang)}</span>
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
             <ShareButtons lang={lang} compact photo={a.photo_url}
               caption={[a.name, a.city, a.province].filter(Boolean).join(" · ")} text={
