@@ -6574,7 +6574,7 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact, defaultCountry = FO
   const [f, setF] = useState({
     name:"", species:"Dog", breed:"", age:"", gender:"Female", colour:"",
     country:defaultCountry, province:defaultProvince, city:"",
-    canFoster:false, canAdopt:true, needsHelp:false, isLost:false, isFound:false,
+    canFoster:false, canAdopt:false, needsHelp:false, isLost:false, isFound:false,
     helpSituation:"", helpUrgency:"", desc:"",
     lostLastSeenLocation:"", lostLastSeenAt:"", lostCollarAccessories:"", lostIdentifyingCharacteristics:"",
     foundLocation:"", foundHow:"", foundIdentifyingCharacteristics:"",
@@ -6615,11 +6615,13 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact, defaultCountry = FO
         <div className="chiprow" role="group"
           aria-label={lang==="tr"?"Bu hayvan için ne geçerli?":"What applies to this animal?"}>
           {[
+            // Sıra uygulamanın gezinmesiyle aynı: önce yuva arayan ikisi,
+            // sonra kayıp & bulundu çifti, en sonda acil bildirim.
+            { k:"canAdopt",  cls:"chip-adopt",  icon:"🏡", tr:"Sahiplenme",    en:"Adopt"  },
+            { k:"canFoster", cls:"chip-foster", icon:"🤝", tr:"Geçici Bakım",  en:"Foster" },
             { k:"isLost",    cls:"chip-lost",   icon:"🔍", tr:"Kayıp",         en:"Lost"   },
             { k:"isFound",   cls:"chip-found",  icon:"📍", tr:"Bulunan",       en:"Found"  },
             { k:"needsHelp", cls:"chip-help",   icon:"🚨", tr:"Bildir",        en:"Report" },
-            { k:"canFoster", cls:"chip-foster", icon:"🤝", tr:"Geçici Bakım",  en:"Foster" },
-            { k:"canAdopt",  cls:"chip-adopt",  icon:"🏡", tr:"Sahiplenme",    en:"Adopt"  },
           ].map(o => (
             <label key={o.k} className={`pchip ${o.cls} ${f[o.k] ? "on" : ""}`}>
               <input type="checkbox" checked={!!f[o.k]}
@@ -6837,9 +6839,9 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact, defaultCountry = FO
         setFormError("");
         if (!f.name) { showError(lang==="tr"?"Hayvanın adını girin":"Please enter animal name"); return; }
         if (!f.city) { showError(lang==="tr"?"Şehir girin":"Please enter city"); return; }
+        if (!f.canAdopt && !f.canFoster && !f.needsHelp && !f.isLost && !f.isFound) { showError(lang==="tr"?"En az bir seçenek işaretle: Sahiplenme, Geçici Bakım, Kayıp, Bulunan ya da Bildir":"Please select at least one: Adopt, Foster, Lost, Found or Report"); return; }
         if (!f.desc) { showError(lang==="tr"?"Açıklama girin":"Please enter description"); return; }
         if (photos.length === 0) { showError(lang==="tr"?"Lütfen en az 1 fotoğraf yükleyin":"Please upload at least 1 photo"); return; }
-        if (!f.canAdopt && !f.canFoster && !f.needsHelp && !f.isLost && !f.isFound) { showError(lang==="tr"?"En az bir seçenek işaretle: Kayıp, Bulunan, Yardım, Geçici Bakım veya Sahiplenme":"Please select at least one: Lost, Found, Help, Foster, or Adopt"); return; }
         if (f.needsHelp && !f.helpSituation) { showError(lang==="tr"?"Lütfen yardım durumunu seçin":"Please select the help situation"); return; }
         if (!f.isNeutered || !f.vaccinatedParasite || !f.vaccinatedRabies) { showError(lang==="tr"?"Lütfen sağlık bilgilerinin tamamını doldurun":"Please fill in all health information"); return; }
         requireContact(async (contact) => {
@@ -6927,7 +6929,7 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact, defaultCountry = FO
             submitter_email: inserted.submitter_email || "",
           } : null;
           onSubmit(f.name, newAnimal);
-          setF({ name:"", species:"Dog", breed:"", age:"", gender:"Female", colour:"", country:defaultCountry, province:defaultProvince, city:"", address:"", canFoster:false, canAdopt:true, needsHelp:false, isLost:false, isFound:false, helpSituation:"", helpUrgency:"", lostLastSeenLocation:"", lostCollarAccessories:"", lostIdentifyingCharacteristics:"", foundHow:"", foundIdentifyingCharacteristics:"", desc:"", isNeutered:"", vaccinatedParasite:"", vaccinatedRabies:"" });
+          setF({ name:"", species:"Dog", breed:"", age:"", gender:"Female", colour:"", country:defaultCountry, province:defaultProvince, city:"", address:"", canFoster:false, canAdopt:false, needsHelp:false, isLost:false, isFound:false, helpSituation:"", helpUrgency:"", lostLastSeenLocation:"", lostCollarAccessories:"", lostIdentifyingCharacteristics:"", foundHow:"", foundIdentifyingCharacteristics:"", desc:"", isNeutered:"", vaccinatedParasite:"", vaccinatedRabies:"" });
           setPhotos([]);
           } catch (err) {
             console.error("[PostAnimalForm] Unexpected error during submit:", err);
