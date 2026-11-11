@@ -2005,8 +2005,37 @@ const CSS = `
   .me-act.on   { background:var(--dark); border-color:var(--dark); color:#fff; }
   .me-act.warn { color:var(--red); border-color:rgba(192,57,43,0.3); }
 
-  .me-sec   { font-size:11px; font-weight:700; letter-spacing:0.6px; text-transform:uppercase;
-              color:var(--muted); margin:20px 0 8px; }
+  /* Hesap bölümleri. Başlıklar alt alta dizildiğinde ekran uzuyordu ve dolu
+     olanı görmek için kaydırmak gerekiyordu; üstteki şerit hepsini sayılarıyla
+     birlikte tek bakışta gösteriyor. Şerit yapışkan: listeyi kaydırırken
+     bölümler arasında geçiş elden gitmiyor. */
+  /* top:-20px — yapışkan öğe kaydırma kutusunun dolgusu kadar aşağıda
+     sabitleniyor, o bantta içerik şeridin üstünden akıp görünüyordu. Şerit
+     20px yukarı sabitlenip aynı kadar iç dolgu alıyor: chip'ler yerinde
+     duruyor, beyaz zemin bandı kapatıyor. */
+  .me-chips { position:sticky; top:calc(-1 * var(--pad)); z-index:3; background:var(--white);
+              border-bottom:1px solid var(--border);
+              /* Üst dolgu yapışınca bandı kapatmak için; görünen boşluk aynı
+                 kalsın diye aynı kadar negatif üst boşlukla dengeleniyor. */
+              padding-top:calc(var(--pad) + 4px); margin-top:calc(10px - var(--pad));
+              /* Snap kapalı: sayılar sonradan gelip chip genişlikleri değişince
+                 tarayıcı şeridi kendi başına kaydırıyor ve seçili chip ekrandan
+                 çıkıyordu. Konumu aşağıdaki effect belirliyor. */
+              scroll-snap-type:none; }
+  .mechip   { position:relative; flex:0 0 auto; scroll-snap-align:start; display:inline-flex;
+              align-items:center; gap:7px; background:var(--off); border:1.5px solid transparent;
+              border-radius:999px; padding:9px 13px; cursor:pointer; white-space:nowrap;
+              font-size:13.5px; font-weight:600; color:var(--dark); letter-spacing:-0.1px;
+              transition:background 0.15s, color 0.15s, transform 0.12s; }
+  .mechip:active { transform:scale(0.97); }
+  .mechip-n { font-size:11px; font-weight:800; color:var(--muted); background:var(--white);
+              border-radius:999px; padding:1px 7px; min-width:19px; text-align:center; }
+  .mechip.on   { background:var(--dark); color:var(--white); }
+  .mechip.on .mechip-n { background:rgba(255,255,255,0.22); color:var(--white); }
+  /* Cevap bekleyen başvuru sayısı seçili olmasa da görünsün. */
+  .mechip-n.due { background:var(--amber); color:var(--white); }
+  .mechip.on .mechip-n.due { background:var(--amber); color:var(--white); }
+  .mechip:focus-visible { outline:2px solid var(--amber); outline-offset:2px; }
   .me-row   { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); cursor:pointer; }
   .me-thumb { width:44px; height:44px; flex-shrink:0; border-radius:10px; overflow:hidden; background:var(--off);
               display:flex; align-items:center; justify-content:center; font-size:22px; }
@@ -3032,6 +3061,7 @@ export default function App() {
   // da kaybolurdu.
   const [appAnimals, setAppAnimals] = useState({});   // id → ilan
   const [inbox, setInbox] = useState([]);            // ilanıma gelen başvurular
+  const [meTab, setMeTab] = useState(null);          // hesap ekranında açık bölüm
 
   // Başvuruyu yanıtlamak: değerlendirmeye alma ya da ret. Sorguya ilan sahibinin e-postası da
   // ekleniyor — RLS'in yanında ikinci bariyer. RLS reddettiğinde hata dönmez,
@@ -3132,6 +3162,32 @@ export default function App() {
     accepted:  lang==="tr" ? "Kabul edildi"      : "Accepted",
     declined:  lang==="tr" ? "Reddedildi"        : "Declined",
   }[st] || (lang==="tr" ? "Bekliyor" : "Pending"));
+
+  // Hesap ekranının bölümleri. Boş olan da şeritte duruyor (sayısı 0) —
+  // "buraya hiç ilan vermemişim" bilgisi de bir bilgi; bölümün büsbütün yok
+  // olması onu gizler. Gelen başvurular yalnızca varsa görünüyor: ilan vermemiş
+  // birine hiç gelmeyecek bir sekme göstermenin anlamı yok.
+  const meSections = [
+    { k:"inbox",   icon:"📨", tr:"Gelen başvurular", en:"Received",
+      n: inbox.length, due: inbox.filter(a => (a.status || "pending") === "pending").length,
+      skip: inbox.length === 0 },
+    { k:"animals", icon:"🐾", tr:"İlanlarım",        en:"My listings",      n: myAnimals.length },
+    { k:"reports", icon:"🚨", tr:"Bildirimlerim",    en:"My reports",       n: myReports.length },
+    { k:"lf",      icon:"🔍", tr:"Kayıp & bulundu",  en:"Lost & found",     n: myLF.length },
+    { k:"apps",    icon:"📋", tr:"Başvurularım",     en:"My applications",  n: myApps ? myApps.length : null },
+  ].filter(x => !x.skip);
+  // Seçili bölüm listeden düşerse (son gelen başvuru da yanıtlandı) ilk
+  // bölüme dönüyor; boş ekranda takılı kalmıyor.
+  const meActive = meSections.some(x => x.k === meTab) ? meTab : (meSections[0] && meSections[0].k);
+
+  // Seçili bölüm her zaman görünür olsun: şerit kayabildiği için seçili chip
+  // ekranın dışında kalabiliyor.
+  const meChipsRef = useRef(null);
+  useEffect(() => {
+    if (!showMe) return;
+    const el = meChipsRef.current && meChipsRef.current.querySelector(".mechip.on");
+    if (el) el.scrollIntoView({ block:"nearest", inline:"center" });
+  }, [showMe, meActive]);
 
   const appModeLabel = (mode) => ({
     adopt:      lang==="tr" ? "Sahiplenme"      : "Adoption",
@@ -4504,13 +4560,30 @@ export default function App() {
                 </div>
               )}
 
+              {/* Bölüm şeridi: başlıklar alt alta değil, üstte yan yana. */}
+              <div className="chiprow me-chips" ref={meChipsRef} role="tablist"
+                aria-label={lang==="tr"?"Hesap bölümleri":"Account sections"}>
+                {meSections.map(x => (
+                  <button key={x.k} type="button" role="tab" aria-selected={meActive === x.k}
+                    className={`mechip ${meActive === x.k ? "on" : ""}`}
+                    onClick={() => {
+                      setMeTab(x.k);
+                      const body = meChipsRef.current && meChipsRef.current.parentElement;
+                      if (body) body.scrollTop = 0;
+                    }}>
+                    <span aria-hidden="true">{x.icon}</span>
+                    <span>{x[lang] || x.en}</span>
+                    {x.n !== null && (
+                      <span className={`mechip-n ${x.due ? "due" : ""}`}>{x.due || x.n}</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+
               {/* İlanıma gelen başvurular. Bu ekran olmadan ilan sahibinin tek
                   kopyası e-postasındaydı; başvuran da cevap bekliyordu. */}
-              {inbox.length > 0 && (
+              {meActive === "inbox" && inbox.length > 0 && (
                 <>
-                  <div className="me-sec">
-                    {lang==="tr" ? `İlanıma gelen başvurular (${inbox.length})` : `Applications to my listings (${inbox.length})`}
-                  </div>
                   {inbox.map(a => {
                     const pending = (a.status || "pending") === "pending";
                     const name = [a.first_name, a.last_name].filter(Boolean).join(" ") || a.applicant_email || "—";
@@ -4580,7 +4653,7 @@ export default function App() {
               )}
 
               {/* Hayvan ilanları */}
-              <div className="me-sec">{lang==="tr"?`İlanlarım (${myAnimals.length})`:`My listings (${myAnimals.length})`}</div>
+              {meActive === "animals" && <>
               {myAnimals.length === 0
                 ? <div className="me-empty">{lang==="tr"?"Henüz ilan vermedin.":"You haven't posted a listing yet."}</div>
                 : myAnimals.map(a => (
@@ -4635,8 +4708,10 @@ export default function App() {
                     </div>
                   ))}
 
+              </>}
+
               {/* Acil bildirimler */}
-              <div className="me-sec">{lang==="tr"?`Bildirimlerim (${myReports.length})`:`My reports (${myReports.length})`}</div>
+              {meActive === "reports" && <>
               {myReports.length === 0
                 ? <div className="me-empty">{lang==="tr"?"Henüz bildirim oluşturmadın.":"You haven't reported anything yet."}</div>
                 : myReports.map(r => (
@@ -4688,8 +4763,10 @@ export default function App() {
                     </div>
                   ))}
 
+              </>}
+
               {/* Kayıp & bulundu */}
-              <div className="me-sec">{lang==="tr"?`Kayıp & bulundu ilanlarım (${myLF.length})`:`My lost & found posts (${myLF.length})`}</div>
+              {meActive === "lf" && <>
               {myLF.length === 0
                 ? <div className="me-empty">{lang==="tr"?"Henüz kayıp ya da bulundu ilanın yok.":"No lost or found posts yet."}</div>
                 : myLF.map(i => (
@@ -4739,10 +4816,10 @@ export default function App() {
                     </div>
                   ))}
 
+              </>}
+
               {/* Başvurular — ekran açılınca çekilir */}
-              <div className="me-sec">
-                {lang==="tr"?"Başvurularım":"My applications"}{myApps ? ` (${myApps.length})` : ""}
-              </div>
+              {meActive === "apps" && <>
               {myApps === null
                 ? <div className="me-empty">{lang==="tr"?"Yükleniyor…":"Loading…"}</div>
                 : myApps.length === 0
@@ -4782,6 +4859,7 @@ export default function App() {
                     : "The poster may also write to you by email; those replies arrive in your own inbox."}
                 </div>
               )}
+              </>}
 
               <button className="btn btn-full" style={{ marginTop:24, background:"none", color:"var(--red)", fontSize:13 }}
                 onClick={signOut}>
