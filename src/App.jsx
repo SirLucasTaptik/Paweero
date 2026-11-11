@@ -1883,6 +1883,35 @@ const CSS = `
                  color:var(--muted); cursor:pointer; padding:6px 10px; }
   .site-foot-l:hover { color:var(--dark); }
   ${ABOUT_STYLES}
+  /* Yatay kayan seçenek sırası. Kenarlardan taşan padding, kaydırmanın
+     ekranın kenarına kadar gittiğini gösteriyor — şeridin kesildiği izlenimi
+     vermiyor. */
+  .chiprow { display:flex; gap:8px; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch;
+             scroll-snap-type:x proximity; padding:4px var(--pad) 6px; margin:0 calc(-1 * var(--pad)); }
+  .chiprow::-webkit-scrollbar { display:none; }
+  .pchip { position:relative; flex:0 0 auto; scroll-snap-align:start; display:inline-flex; align-items:center; gap:8px;
+           background:var(--off); border:1.5px solid transparent; border-radius:999px; padding:10px 16px 10px 12px;
+           cursor:pointer; white-space:nowrap; transition:border-color 0.15s, background 0.15s, box-shadow 0.15s, transform 0.12s; }
+  .pchip:active { transform:scale(0.97); }
+  .pchip input { position:absolute; opacity:0; width:0; height:0; pointer-events:none; }
+  .pchip-i { font-size:17px; line-height:1; }
+  .pchip-l { font-size:13.5px; font-weight:600; color:var(--dark); letter-spacing:-0.1px; }
+  /* Onay işareti seçilene kadar yer kaplamıyor: chip seçilince açılıyor. */
+  .pchip-c { width:0; overflow:hidden; opacity:0; font-size:12px; font-weight:800; color:var(--white);
+             background:var(--dark); border-radius:50%; text-align:center; line-height:17px; height:17px;
+             transition:width 0.16s ease, opacity 0.16s ease; }
+  .pchip.on { background:var(--white); box-shadow:var(--shadow-sm); }
+  .pchip.on .pchip-c { width:17px; opacity:1; }
+  .pchip.on .pchip-l { font-weight:700; }
+  .pchip.chip-lost.on   { border-color:var(--red);   } .pchip.chip-lost.on   .pchip-c { background:var(--red);   }
+  .pchip.chip-found.on  { border-color:var(--green); } .pchip.chip-found.on  .pchip-c { background:var(--green); }
+  .pchip.chip-help.on   { border-color:var(--red);   } .pchip.chip-help.on   .pchip-c { background:var(--red);   }
+  .pchip.chip-foster.on { border-color:var(--blue);  } .pchip.chip-foster.on .pchip-c { background:var(--blue);  }
+  .pchip.chip-adopt.on  { border-color:var(--amber); } .pchip.chip-adopt.on  .pchip-c { background:var(--amber); }
+  /* Odak halkası yalnızca klavyeyle gezilirken: dokunarak seçince seçili
+     chip'in rengiyle üst üste binip çift çerçeve gibi görünüyordu. */
+  .pchip:has(input:focus-visible) { outline:2px solid var(--amber); outline-offset:2px; }
+
   .purpose-chip {
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
     background:var(--off); border:1.5px solid transparent; border-radius:var(--r-sm);
@@ -6581,32 +6610,25 @@ function PostAnimalForm({ lang, t, onSubmit, requireContact, defaultCountry = FO
         <div style={{ fontSize:12.5, color:"var(--muted)", marginBottom:10 }}>
           {lang==="tr" ? "Birden fazlasını seçebilirsin." : "You can select more than one."}
         </div>
-        <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-          <label className={`purpose-chip chip-lost ${f.isLost?"on":""}`}>
-            <input type="checkbox" checked={f.isLost} onChange={e => setF(x=>({...x, isLost:e.target.checked}))} />
-            <div className="pc-icon">🔍</div>
-            <div className="pc-label">{lang==="tr"?"Kayıp":"Lost"}</div>
-          </label>
-          <label className={`purpose-chip chip-found ${f.isFound?"on":""}`}>
-            <input type="checkbox" checked={f.isFound} onChange={e => setF(x=>({...x, isFound:e.target.checked}))} />
-            <div className="pc-icon">📍</div>
-            <div className="pc-label">{lang==="tr"?"Bulunan":"Found"}</div>
-          </label>
-          <label className={`purpose-chip chip-help ${f.needsHelp?"on":""}`}>
-            <input type="checkbox" checked={f.needsHelp} onChange={e => setF(x=>({...x, needsHelp:e.target.checked}))} />
-            <div className="pc-icon">🚨</div>
-            <div className="pc-label">{lang==="tr"?"Bildir":"Report"}</div>
-          </label>
-          <label className={`purpose-chip chip-foster ${f.canFoster?"on":""}`}>
-            <input type="checkbox" checked={f.canFoster} onChange={e => setF(x=>({...x, canFoster:e.target.checked}))} />
-            <div className="pc-icon">🤝</div>
-            <div className="pc-label">{lang==="tr"?"Geçici Bakım":"Foster"}</div>
-          </label>
-          <label className={`purpose-chip chip-adopt ${f.canAdopt?"on":""}`}>
-            <input type="checkbox" checked={f.canAdopt} onChange={e => setF(x=>({...x, canAdopt:e.target.checked}))} />
-            <div className="pc-icon">🏡</div>
-            <div className="pc-label">{lang==="tr"?"Sahiplenme":"Adopt"}</div>
-          </label>
+        {/* Beş seçenek kutu kutu dizilince formun yarısını yiyordu. Yatay kayan
+            tek sıra: hepsi bir bakışta, seçilen renklenip işaretleniyor. */}
+        <div className="chiprow" role="group"
+          aria-label={lang==="tr"?"Bu hayvan için ne geçerli?":"What applies to this animal?"}>
+          {[
+            { k:"isLost",    cls:"chip-lost",   icon:"🔍", tr:"Kayıp",         en:"Lost"   },
+            { k:"isFound",   cls:"chip-found",  icon:"📍", tr:"Bulunan",       en:"Found"  },
+            { k:"needsHelp", cls:"chip-help",   icon:"🚨", tr:"Bildir",        en:"Report" },
+            { k:"canFoster", cls:"chip-foster", icon:"🤝", tr:"Geçici Bakım",  en:"Foster" },
+            { k:"canAdopt",  cls:"chip-adopt",  icon:"🏡", tr:"Sahiplenme",    en:"Adopt"  },
+          ].map(o => (
+            <label key={o.k} className={`pchip ${o.cls} ${f[o.k] ? "on" : ""}`}>
+              <input type="checkbox" checked={!!f[o.k]}
+                onChange={e => setF(x => ({ ...x, [o.k]: e.target.checked }))} />
+              <span className="pchip-i" aria-hidden="true">{o.icon}</span>
+              <span className="pchip-l">{o[lang] || o.en}</span>
+              <span className="pchip-c" aria-hidden="true">✓</span>
+            </label>
+          ))}
         </div>
       </div>
 
