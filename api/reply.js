@@ -18,7 +18,7 @@ const RESEND_KEY = process.env.RESEND_API_KEY || "";
 const MAIL_FROM  = process.env.MAIL_FROM || "Paweero <bildirim@paweero.com>";
 const SITE = "https://paweero.com";
 
-const STATUSES = ["reviewing", "declined"];
+const STATUSES = ["reviewing", "declined", "adopted"];
 const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(v || ""));
 const clip = (v, n) => String(v == null ? "" : v).slice(0, n);
 const same = (a, b) => String(a || "").trim().toLowerCase() === String(b || "").trim().toLowerCase();
@@ -76,7 +76,15 @@ export default async function handler(req, res) {
     ? `Paweero — "${listing}" başvurun hakkında`
     : `Paweero — about your application for "${listing}"`;
 
-  const middle = status === "reviewing"
+  const middle = status === "adopted"
+    ? (tr
+        ? [`Müjde: "${listing}" için yaptığın başvuru kabul edildi — ilan yuvalandı olarak kapandı! 🎉`,
+           "İlan sahibi ayrıntılar için seninle doğrudan iletişime geçecek.",
+           "Bir cana yuva olduğun için teşekkür ederiz."]
+        : [`Good news: your application for "${listing}" was accepted — the listing is now closed as adopted! 🎉`,
+           "The person who posted the listing will contact you directly with the details.",
+           "Thank you for giving an animal a home."])
+    : status === "reviewing"
     ? (tr
         ? [`"${listing}" için yaptığın başvuru değerlendirmeye alındı.`,
            "İlan sahibi başvurunu inceliyor; gerekirse seninle doğrudan iletişime geçecek.",

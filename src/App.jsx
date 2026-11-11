@@ -3090,6 +3090,43 @@ export default function App() {
     setBusyRow(null);
   };
 
+  // Değerlendirilen başvuru yuvayla sonuçlandığında üç şey birden olmalı: ilan
+  // kapanır, başvuru kabul edilmiş sayılır ve başvuran müjdeyi alır. İlan
+  // sahibinin bunları tek tek hatırlaması gereken bir şey değil.
+  const markAdoptedFromApp = async (app) => {
+    setBusyRow(app.id);
+    try {
+      const client = await getDb();
+      const send = (body) => client.from("animals").update(body)
+        .eq("id", app.animal_id).eq("submitter_email", contactInfo.email).select("id");
+      // removed_reason / under_review kolonları henüz eklenmemiş olabilir;
+      // ilanın kapanması buna takılmamalı.
+      let { data, error } = await send({ status:"adopted", removed_reason:"adopted", under_review:false });
+      if (error) ({ data, error } = await send({ status:"adopted" }));
+      if (error) throw error;
+      if (!data || data.length === 0) throw new Error("kayıt bulunamadı ya da yetki yok");
+
+      await client.from("applications").update({ status:"accepted" })
+        .eq("id", app.id).eq("listing_owner_email", contactInfo.email);
+      setInbox(list => list.map(x => (x.id === app.id ? { ...x, status:"accepted" } : x)));
+
+      const { data: sess } = await client.auth.getSession();
+      const mailed = await replyToApplicant({
+        applicationId: app.id, status: "adopted", lang,
+        token: sess?.session?.access_token || "",
+      });
+
+      say(mailed
+        ? (lang==="tr" ? "Yuvalandı 🎉 Başvurana haber verildi" : "Adopted 🎉 The applicant has been notified")
+        : (lang==="tr" ? "Yuvalandı 🎉 (e-posta gönderilemedi)" : "Adopted 🎉 (email could not be sent)"));
+      await Promise.all([loadFromDB(), loadMyRemoved(contactInfo.email)]);
+    } catch (e) {
+      console.error("markAdoptedFromApp:", e);
+      say(lang==="tr" ? "İşlem başarısız, tekrar dene" : "Action failed, please try again");
+    }
+    setBusyRow(null);
+  };
+
   const appStatusLabel = (st) => ({
     reviewing: lang==="tr" ? "Değerlendiriliyor" : "Under review",
     accepted:  lang==="tr" ? "Kabul edildi"      : "Accepted",
@@ -3115,25 +3152,29 @@ export default function App() {
           .order("created_at", { ascending: false });
         const apps = error ? [] : (data || []);
 
-        // İlanlar setMyApps'ten ÖNCE çekiliyor: myApps bu effect'in bağımlılığı,
-        // erken yazınca effect yeniden kurulur, temizlik fonksiyonu cancelled'ı
-        // true yapar ve yolda olan ilan sorgusunun sonucu çöpe giderdi.
-        const ids = [...new Set(apps.map(a => a.animal_id).filter(Boolean))];
-        let byId = {};
-        if (ids.length) {
-          const { data: aData } = await client.from("animals").select("*").in("id", ids);
-          byId = Object.fromEntries((aData || []).map(r => [String(r.id), mapAnimalRow(r)]));
-        }
         // İlanıma gelen başvurular: alıcı tarafı. Politika e-postayı oturum
         // token'ından okuyor, yani yalnızca kendi ilanlarıma gelenler dönüyor.
         const { data: inData } = await client
           .from("applications").select("*")
           .eq("listing_owner_email", contactInfo.email)
           .order("created_at", { ascending: false });
+        const inbound = inData || [];
+
+        // İlanlar setMyApps'ten ÖNCE çekiliyor: myApps bu effect'in bağımlılığı,
+        // erken yazınca effect yeniden kurulur, temizlik fonksiyonu cancelled'ı
+        // true yapar ve yolda olan ilan sorgusunun sonucu çöpe giderdi.
+        // Her iki tarafın ilanları birlikte: gelen kutusundaki satır da fotoğrafını
+        // ve ilanın güncel durumunu buradan okuyor.
+        const ids = [...new Set([...apps, ...inbound].map(a => a.animal_id).filter(Boolean))];
+        let byId = {};
+        if (ids.length) {
+          const { data: aData } = await client.from("animals").select("*").in("id", ids);
+          byId = Object.fromEntries((aData || []).map(r => [String(r.id), mapAnimalRow(r)]));
+        }
 
         if (cancelled) return;
         setAppAnimals(byId);
-        setInbox(inData || []);
+        setInbox(inbound);
         setMyApps(apps);
       } catch (e) { if (!cancelled) { setMyApps([]); setInbox([]); } }
     })();
@@ -3408,7 +3449,14 @@ export default function App() {
   // (lfFileRef removed — MultiPhotoUpload manages its own file input ref)
   const helpProofRef = useRef();
 
-  const say   = (msg) => { setToast({ show:true, msg }); setTimeout(() => setToast({ show:false, msg:"" }), 2800); };
+  // Zamanlayıcı saklanıyor: art arda iki mesajda ilkinin sayacı ikincisini
+  // erkenden siliyordu.
+  const sayTimer = useRef(null);
+  const say = (msg) => {
+    setToast({ show:true, msg });
+    if (sayTimer.current) clearTimeout(sayTimer.current);
+    sayTimer.current = setTimeout(() => setToast({ show:false, msg:"" }), 2800);
+  };
   const goTab = (t)   => { deepLinkDone.current = true; setPendingSeg(""); setTab(t); setSearch(""); setSpecies("All"); setDetailA(null); setDetailLF(null); setDetailReport(null); };
 
 
@@ -4501,6 +4549,15 @@ export default function App() {
                                 <button className="me-act on" disabled={busyRow === a.id}
                                   onClick={() => answerApplication(a, "reviewing")}>
                                   {lang==="tr"?"Değerlendirmeye al":"Start review"}
+                                </button>
+                              )}
+                              {/* Değerlendirme yuvayla bitebilir: ilanı kapatmanın
+                                  doğal yeri bu satır. */}
+                              {a.status === "reviewing" && a.animal_id && a.mode === "adopt"
+                                && (appAnimals[String(a.animal_id)]?.status || "active") === "active" && (
+                                <button className="me-act on" disabled={busyRow === a.id}
+                                  onClick={() => markAdoptedFromApp(a)}>
+                                  🏡 {lang==="tr"?"Yuvalandı":"Adopted"}
                                 </button>
                               )}
                               <button className="me-act warn" disabled={busyRow === a.id}
