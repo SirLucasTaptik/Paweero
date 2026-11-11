@@ -1754,6 +1754,7 @@ const CSS = `
   .ab-grn  { top:12px; right:12px; background:rgba(45,122,79,0.92); color:#fff; }
   .ab-sp   { top:12px; left:12px;  background:rgba(0,0,0,0.5); color:#fff; }
   .ab-fo   { bottom:12px; left:12px; background:rgba(45,122,79,0.9); color:#fff; }
+  .ab-rev  { bottom:12px; right:12px; background:rgba(37,99,235,0.92); color:#fff; max-width:calc(100% - 24px); }
 
   /* home mini card */
   .adopted-badge { position:absolute; left:8px; top:8px; background:var(--green); color:#fff; font-size:10px;
@@ -1999,8 +2000,8 @@ const CSS = `
               padding:2px 9px; border-radius:999px; margin-top:3px; }
   .app-pending  { background:var(--off); color:var(--muted); }
   .app-reviewing{ background:rgba(37,99,235,0.10); color:var(--blue); }
-  .app-note     { margin-top:8px; }
-  .app-note-v   { display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:12.5px; color:var(--dark); }
+  .d-review { background:rgba(37,99,235,0.08); border:1px solid rgba(37,99,235,0.25); border-radius:var(--r-sm);
+              padding:10px 12px; font-size:13px; font-weight:600; color:var(--blue); margin:4px 0 12px; }
   .app-accepted { background:rgba(45,122,79,0.12); color:var(--green); }
   .app-declined { background:rgba(192,57,43,0.10); color:var(--red); }
   .me-why   { margin-top:8px; padding:10px; background:var(--off); border-radius:var(--r-sm); }
@@ -2225,6 +2226,7 @@ function mapAnimalRow(a) {
     canFoster: a.can_foster || false,
     canAdopt:  a.can_adopt  !== false,
     needsHelp: a.needs_help || false,
+    underReview: a.under_review === true,
     helpSituation: a.help_situation || "",
     helpUrgency: a.help_urgency || "",
     isLost: a.is_lost || false,
@@ -3009,6 +3011,16 @@ export default function App() {
   // Başvuruyu yanıtlamak: kabul ya da ret. Sorguya ilan sahibinin e-postası da
   // ekleniyor — RLS'in yanında ikinci bariyer. RLS reddettiğinde hata dönmez,
   // hiçbir satır güncellenmez; o yüzden dönen satırı sayıyoruz.
+  // İlandaki "değerlendiriliyor" işareti. Kolon henüz eklenmemişse (SQL
+  // çalıştırılmadıysa) sessizce geçiyoruz: başvurunun durumu yine de değişiyor.
+  const setAnimalReview = async (animalId, on) => {
+    const { error } = await (await getDb())
+      .from("animals").update({ under_review: !!on })
+      .eq("id", animalId).eq("submitter_email", contactInfo.email);
+    if (error) console.warn("[under_review] işaretlenemedi:", error.message);
+    else setAnimals(list => list.map(a => (String(a.id) === String(animalId) ? { ...a, underReview: !!on } : a)));
+  };
+
   const answerApplication = async (app, status) => {
     setBusyRow(app.id);
     try {
@@ -3017,10 +3029,24 @@ export default function App() {
         .eq("id", app.id).eq("listing_owner_email", contactInfo.email).select("id");
       if (error) throw error;
       if (!data || data.length === 0) throw new Error("yetki yok ya da kayıt bulunamadı");
-      setInbox(list => list.map(x => (x.id === app.id ? { ...x, status } : x)));
-      say(status === "accepted"
-        ? (lang==="tr" ? "Başvuru kabul edildi" : "Application accepted")
-        : (lang==="tr" ? "Başvuru reddedildi" : "Application declined"));
+      const next = inbox.map(x => (x.id === app.id ? { ...x, status } : x));
+      setInbox(next);
+
+      // İlanın kendisi de durumu göstersin: başvurusu değerlendirilen bir hayvan
+      // listede "Başvuru değerlendiriliyor" rozetiyle görünüyor, böylece ilana
+      // bakan başka biri süreçte olduğunu görüyor. Aynı ilana birden çok başvuru
+      // gelebildiği için rozet tek tek karara değil, kalan başvurulara bakıyor.
+      if (app.animal_id) {
+        const stillReviewing = next.some(x => String(x.animal_id) === String(app.animal_id)
+                                           && x.status === "reviewing");
+        await setAnimalReview(app.animal_id, stillReviewing);
+      }
+
+      say({
+        reviewing: lang==="tr" ? "İlan 'başvuru değerlendiriliyor' olarak işaretlendi" : "Listing marked as under review",
+        accepted:  lang==="tr" ? "Başvuru kabul edildi" : "Application accepted",
+        declined:  lang==="tr" ? "Başvuru reddedildi"   : "Application declined",
+      }[status] || "");
     } catch (e) {
       console.error("answerApplication:", e);
       say(lang==="tr" ? "İşlem başarısız, tekrar dene" : "Action failed, please try again");
@@ -3042,29 +3068,6 @@ export default function App() {
     accepted:  lang==="tr" ? "Kabul edildi"      : "Accepted",
     declined:  lang==="tr" ? "Reddedildi"        : "Declined",
   }[st] || (lang==="tr" ? "Bekliyor" : "Pending"));
-
-  // Karara iliştirilen kısa not. Uygulamada mesajlaşma yok; e-postayla yazışma
-  // iki tarafın kendi posta kutusunda kalıyor ve uygulamadan görünmüyor. Bu
-  // alan en azından kararın gerekçesini başvurana uygulama içinde ulaştırıyor.
-  const [noteDraft, setNoteDraft] = useState({});   // başvuru id → yazılan not
-  const saveOwnerNote = async (app) => {
-    const note = (noteDraft[app.id] || "").trim().slice(0, 500);
-    setBusyRow(app.id);
-    try {
-      const { data, error } = await (await getDb())
-        .from("applications").update({ owner_note: note || null })
-        .eq("id", app.id).eq("listing_owner_email", contactInfo.email).select("id");
-      if (error) throw error;
-      if (!data || data.length === 0) throw new Error("yetki yok ya da kayıt bulunamadı");
-      setInbox(list => list.map(x => (x.id === app.id ? { ...x, owner_note: note } : x)));
-      setNoteDraft(d => { const n = { ...d }; delete n[app.id]; return n; });
-      say(lang==="tr" ? "Not başvurana iletildi" : "Note sent to the applicant");
-    } catch (e) {
-      console.error("saveOwnerNote:", e);
-      say(lang==="tr" ? "Not kaydedilemedi" : "Could not save the note");
-    }
-    setBusyRow(null);
-  };
 
   const appModeLabel = (mode) => ({
     adopt:      lang==="tr" ? "Sahiplenme"      : "Adoption",
@@ -4489,35 +4492,6 @@ export default function App() {
                             ) : null}
                           </div>
 
-                          {/* Başvurana görünen kısa not — kararın yanına bir cümle. */}
-                          {(a.status || "pending") !== "pending" && (
-                            <div className="app-note" onClick={e => e.stopPropagation()}>
-                              {a.owner_note && !(a.id in noteDraft) ? (
-                                <div className="app-note-v">
-                                  <span>“{a.owner_note}”</span>
-                                  <button className="me-act" onClick={() => setNoteDraft(d => ({ ...d, [a.id]: a.owner_note }))}>
-                                    {lang==="tr"?"Düzenle":"Edit"}
-                                  </button>
-                                </div>
-                              ) : (
-                                <>
-                                  <input className="fi" style={{ fontSize:13, padding:"9px 11px" }} maxLength={500}
-                                    placeholder={lang==="tr"
-                                      ? "Başvurana not (opsiyonel) — örn. bu hafta tanışalım"
-                                      : "Note to the applicant (optional) — e.g. let's meet this week"}
-                                    value={noteDraft[a.id] ?? ""}
-                                    onChange={e => setNoteDraft(d => ({ ...d, [a.id]: e.target.value }))}
-                                    onKeyDown={e => { if (e.key === "Enter") saveOwnerNote(a); }} />
-                                  {(noteDraft[a.id] ?? "").trim() && (
-                                    <button className="me-act on" disabled={busyRow === a.id}
-                                      style={{ marginTop:8 }} onClick={() => saveOwnerNote(a)}>
-                                      {lang==="tr"?"Notu gönder":"Send note"}
-                                    </button>
-                                  )}
-                                </>
-                              )}
-                            </div>
-                          )}
                         </div>
                       </div>
                     );
@@ -4543,6 +4517,11 @@ export default function App() {
                       <div style={{ flex:1, minWidth:0 }}>
                         <div className="me-row-t">{a.name}</div>
                         <div className="me-row-s">{[a.breed?.[lang], a.city].filter(Boolean).join(" · ")}</div>
+                        {a.underReview && !isOffline(a.status) && (
+                          <div className="me-row-s" style={{ color:"var(--blue)", fontWeight:600 }}>
+                            ⏳ {lang==="tr"?"Başvuru değerlendiriliyor":"Application under review"}
+                          </div>
+                        )}
                         {isOffline(a.status)
                           ? <div className="me-row-s" style={{ color: a.status === "adopted" ? "var(--green)" : "var(--red)" }}>
                               {offlineNote(a.status)}
@@ -4712,11 +4691,6 @@ export default function App() {
                           <div className="me-row-s">
                             <span className={`app-st app-${a.status || "pending"}`}>{appStatusLabel(a.status)}</span>
                           </div>
-                          {a.owner_note && (
-                            <div className="me-row-s" style={{ color:"var(--dark)", marginTop:4 }}>
-                              💬 “{a.owner_note}”
-                            </div>
-                          )}
                           {ani && !live && (
                             <div className="me-row-s" style={{ color:"var(--muted)" }}>
                               {lang==="tr"?"İlan artık yayında değil":"This listing is no longer live"}
@@ -4948,6 +4922,13 @@ export default function App() {
               <ImageCarousel photos={detailAnimal.photo_urls} emoji={detailAnimal.emoji} alt={[detailAnimal.name, detailAnimal.breed?.[lang], detailAnimal.city].filter(Boolean).join(", ")} height={detailAHeight >= 85 ? "42vh" : "30vh"} fit={detailAHeight >= 85 ? "contain" : "cover"} />
               <div className="d-name">{detailAnimal.name}</div>
               <div className="d-sub">{detailAnimal.breed[lang]} · {detailAnimal.species[lang]}</div>
+              {detailAnimal.underReview && (
+                <div className="d-review">
+                  ⏳ {lang==="tr"
+                    ? "Bu hayvan için gelen bir başvuru değerlendiriliyor."
+                    : "An application for this animal is under review."}
+                </div>
+              )}
               <div className="d-pills">
                 <span className="d-pill">🎂 {detailAnimal.age[lang]}</span>
                 <span className="d-pill">{detailAnimal.gender.en === "Male" ? "♂" : "♀"} {detailAnimal.gender[lang]}</span>
@@ -5449,6 +5430,13 @@ function ACard({ a, mode, lang, onClick }) {
         <ListingPhoto src={a.photo_url} alt={[a.name, a.breed?.[lang], a.city].filter(Boolean).join(", ")} />
         {a.species?.[lang] && <span className="abadge ab-sp">{a.species[lang]}</span>}
         {mode === "foster"  && <span className="abadge ab-fo">{lang==="tr"?"Geçici":"Foster"}</span>}
+        {/* Bu ilana gelen bir başvuru değerlendiriliyor. İlana bakan başka biri
+            de görsün: süreç işliyor, ilan boşta değil. */}
+        {a.underReview && (
+          <span className="abadge ab-rev">
+            ⏳ {lang==="tr"?"Başvuru değerlendiriliyor":"Application under review"}
+          </span>
+        )}
       </div>
       <div className="acard-body">
         <div className="acard-name">{a.name}</div>
