@@ -121,6 +121,9 @@ create policy "applications_update_for_owner" on public.applications for update 
   using      (listing_owner_email = auth.jwt() ->> 'email')
   with check (listing_owner_email = auth.jwt() ->> 'email');
 
+-- Karara iliştirilen kısa not (uygulamada mesajlaşma yok).
+alter table public.applications add column if not exists owner_note text;
+
 drop policy if exists "adoption_profiles_insert" on public.adoption_profiles;
 create policy "adoption_profiles_insert" on public.adoption_profiles for insert to anon, authenticated with check (true);
 drop policy if exists "rehome_insert" on public.rehome_listings;

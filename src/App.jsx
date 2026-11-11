@@ -1998,6 +1998,9 @@ const CSS = `
   .app-st   { display:inline-block; font-size:11px; font-weight:700; letter-spacing:0.2px;
               padding:2px 9px; border-radius:999px; margin-top:3px; }
   .app-pending  { background:var(--off); color:var(--muted); }
+  .app-reviewing{ background:rgba(37,99,235,0.10); color:var(--blue); }
+  .app-note     { margin-top:8px; }
+  .app-note-v   { display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:12.5px; color:var(--dark); }
   .app-accepted { background:rgba(45,122,79,0.12); color:var(--green); }
   .app-declined { background:rgba(192,57,43,0.10); color:var(--red); }
   .me-why   { margin-top:8px; padding:10px; background:var(--off); border-radius:var(--r-sm); }
@@ -3035,9 +3038,33 @@ export default function App() {
   };
 
   const appStatusLabel = (st) => ({
-    accepted: lang==="tr" ? "Kabul edildi" : "Accepted",
-    declined: lang==="tr" ? "Reddedildi"   : "Declined",
+    reviewing: lang==="tr" ? "Değerlendiriliyor" : "Under review",
+    accepted:  lang==="tr" ? "Kabul edildi"      : "Accepted",
+    declined:  lang==="tr" ? "Reddedildi"        : "Declined",
   }[st] || (lang==="tr" ? "Bekliyor" : "Pending"));
+
+  // Karara iliştirilen kısa not. Uygulamada mesajlaşma yok; e-postayla yazışma
+  // iki tarafın kendi posta kutusunda kalıyor ve uygulamadan görünmüyor. Bu
+  // alan en azından kararın gerekçesini başvurana uygulama içinde ulaştırıyor.
+  const [noteDraft, setNoteDraft] = useState({});   // başvuru id → yazılan not
+  const saveOwnerNote = async (app) => {
+    const note = (noteDraft[app.id] || "").trim().slice(0, 500);
+    setBusyRow(app.id);
+    try {
+      const { data, error } = await (await getDb())
+        .from("applications").update({ owner_note: note || null })
+        .eq("id", app.id).eq("listing_owner_email", contactInfo.email).select("id");
+      if (error) throw error;
+      if (!data || data.length === 0) throw new Error("yetki yok ya da kayıt bulunamadı");
+      setInbox(list => list.map(x => (x.id === app.id ? { ...x, owner_note: note } : x)));
+      setNoteDraft(d => { const n = { ...d }; delete n[app.id]; return n; });
+      say(lang==="tr" ? "Not başvurana iletildi" : "Note sent to the applicant");
+    } catch (e) {
+      console.error("saveOwnerNote:", e);
+      say(lang==="tr" ? "Not kaydedilemedi" : "Could not save the note");
+    }
+    setBusyRow(null);
+  };
 
   const appModeLabel = (mode) => ({
     adopt:      lang==="tr" ? "Sahiplenme"      : "Adoption",
@@ -4433,7 +4460,15 @@ export default function App() {
                                 📞 {lang==="tr"?"Ara":"Call"}
                               </a>
                             )}
-                            {pending ? (
+                            {pending && (
+                              // Her başvuru hemen kabul edilmiyor. "Değerlendiriyorum",
+                              // başvurana "bakılıyor" diyebilmenin yolu.
+                              <button className="me-act" disabled={busyRow === a.id}
+                                onClick={() => answerApplication(a, "reviewing")}>
+                                {lang==="tr"?"Değerlendiriyorum":"Reviewing"}
+                              </button>
+                            )}
+                            {(pending || a.status === "reviewing") ? (
                               <>
                                 <button className="me-act on" disabled={busyRow === a.id}
                                   onClick={() => answerApplication(a, "accepted")}>
@@ -4453,10 +4488,45 @@ export default function App() {
                               </button>
                             ) : null}
                           </div>
+
+                          {/* Başvurana görünen kısa not — kararın yanına bir cümle. */}
+                          {(a.status || "pending") !== "pending" && (
+                            <div className="app-note" onClick={e => e.stopPropagation()}>
+                              {a.owner_note && !(a.id in noteDraft) ? (
+                                <div className="app-note-v">
+                                  <span>“{a.owner_note}”</span>
+                                  <button className="me-act" onClick={() => setNoteDraft(d => ({ ...d, [a.id]: a.owner_note }))}>
+                                    {lang==="tr"?"Düzenle":"Edit"}
+                                  </button>
+                                </div>
+                              ) : (
+                                <>
+                                  <input className="fi" style={{ fontSize:13, padding:"9px 11px" }} maxLength={500}
+                                    placeholder={lang==="tr"
+                                      ? "Başvurana not (opsiyonel) — örn. bu hafta tanışalım"
+                                      : "Note to the applicant (optional) — e.g. let's meet this week"}
+                                    value={noteDraft[a.id] ?? ""}
+                                    onChange={e => setNoteDraft(d => ({ ...d, [a.id]: e.target.value }))}
+                                    onKeyDown={e => { if (e.key === "Enter") saveOwnerNote(a); }} />
+                                  {(noteDraft[a.id] ?? "").trim() && (
+                                    <button className="me-act on" disabled={busyRow === a.id}
+                                      style={{ marginTop:8 }} onClick={() => saveOwnerNote(a)}>
+                                      {lang==="tr"?"Notu gönder":"Send note"}
+                                    </button>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
                   })}
+                  <div className="me-empty" style={{ paddingTop:2 }}>
+                    {lang==="tr"
+                      ? "E-postayla gelen yazışmalar kendi posta kutunda kalır; Paweero onları göremez."
+                      : "Email replies stay in your own inbox — Paweero cannot see them."}
+                  </div>
                 </>
               )}
 
@@ -4642,6 +4712,11 @@ export default function App() {
                           <div className="me-row-s">
                             <span className={`app-st app-${a.status || "pending"}`}>{appStatusLabel(a.status)}</span>
                           </div>
+                          {a.owner_note && (
+                            <div className="me-row-s" style={{ color:"var(--dark)", marginTop:4 }}>
+                              💬 “{a.owner_note}”
+                            </div>
+                          )}
                           {ani && !live && (
                             <div className="me-row-s" style={{ color:"var(--muted)" }}>
                               {lang==="tr"?"İlan artık yayında değil":"This listing is no longer live"}
@@ -4651,6 +4726,13 @@ export default function App() {
                       </div>
                     );
                   })}
+              {myApps && myApps.length > 0 && (
+                <div className="me-empty" style={{ paddingTop:2 }}>
+                  {lang==="tr"
+                    ? "İlan sahibi sana e-postayla da yazabilir; o yazışmalar kendi posta kutunda olur."
+                    : "The poster may also write to you by email; those replies arrive in your own inbox."}
+                </div>
+              )}
 
               <button className="btn btn-full" style={{ marginTop:24, background:"none", color:"var(--red)", fontSize:13 }}
                 onClick={signOut}>

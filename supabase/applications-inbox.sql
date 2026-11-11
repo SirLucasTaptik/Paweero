@@ -21,9 +21,15 @@ create policy "applications_update_for_owner" on public.applications for update 
   using      (listing_owner_email = auth.jwt() ->> 'email')
   with check (listing_owner_email = auth.jwt() ->> 'email');
 
--- Başvuru durumu: pending | accepted | declined. Kolon zaten var (kayıtlar
--- "pending" ile açılıyor); eski satırlarda boş kalmışsa dolduruyoruz.
+-- Başvuru durumu: pending | reviewing | accepted | declined. Kolon zaten var
+-- (kayıtlar "pending" ile açılıyor); eski satırlarda boş kalmışsa dolduruyoruz.
 update public.applications set status = 'pending' where status is null or status = '';
+
+-- İlan sahibinin başvurana bırakabileceği kısa not. Uygulamada mesajlaşma yok;
+-- e-postayla yazışma iki tarafın kendi posta kutusunda kalıyor. Bu alan, kararın
+-- yanına tek satırlık bir açıklama iliştirip başvuranın uygulamada görmesini
+-- sağlıyor ("evini görmek isteriz", "bu hafta müsait değilim" gibi).
+alter table public.applications add column if not exists owner_note text;
 
 -- Kontrol
 select policyname, cmd from pg_policies
