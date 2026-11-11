@@ -1995,6 +1995,11 @@ const CSS = `
   .install-x  { background:none; border:none; color:var(--muted); font-size:14px; cursor:pointer; padding:4px 2px; line-height:1; }
   .stale    { margin-top:8px; padding:10px; background:rgba(212,134,43,0.08); border-radius:var(--r-sm); }
   .stale-q  { font-size:12px; font-weight:600; color:var(--amber); margin-bottom:8px; }
+  .app-st   { display:inline-block; font-size:11px; font-weight:700; letter-spacing:0.2px;
+              padding:2px 9px; border-radius:999px; margin-top:3px; }
+  .app-pending  { background:var(--off); color:var(--muted); }
+  .app-accepted { background:rgba(45,122,79,0.12); color:var(--green); }
+  .app-declined { background:rgba(192,57,43,0.10); color:var(--red); }
   .me-why   { margin-top:8px; padding:10px; background:var(--off); border-radius:var(--r-sm); }
   .me-why-q { font-size:12px; font-weight:600; color:var(--dark); margin-bottom:8px; }
   .me-name-btn { display:flex; align-items:center; gap:6px; background:none; border:none; padding:0; cursor:pointer;
@@ -2996,6 +3001,51 @@ export default function App() {
   // yetmez: başvurduğun ilan bu arada kaldırılmış olabilir, o zaman fotoğrafı
   // da kaybolurdu.
   const [appAnimals, setAppAnimals] = useState({});   // id → ilan
+  const [inbox, setInbox] = useState([]);            // ilanıma gelen başvurular
+
+  // Başvuruyu yanıtlamak: kabul ya da ret. Sorguya ilan sahibinin e-postası da
+  // ekleniyor — RLS'in yanında ikinci bariyer. RLS reddettiğinde hata dönmez,
+  // hiçbir satır güncellenmez; o yüzden dönen satırı sayıyoruz.
+  const answerApplication = async (app, status) => {
+    setBusyRow(app.id);
+    try {
+      const { data, error } = await (await getDb())
+        .from("applications").update({ status })
+        .eq("id", app.id).eq("listing_owner_email", contactInfo.email).select("id");
+      if (error) throw error;
+      if (!data || data.length === 0) throw new Error("yetki yok ya da kayıt bulunamadı");
+      setInbox(list => list.map(x => (x.id === app.id ? { ...x, status } : x)));
+      say(status === "accepted"
+        ? (lang==="tr" ? "Başvuru kabul edildi" : "Application accepted")
+        : (lang==="tr" ? "Başvuru reddedildi" : "Application declined"));
+    } catch (e) {
+      console.error("answerApplication:", e);
+      say(lang==="tr" ? "İşlem başarısız, tekrar dene" : "Action failed, please try again");
+    }
+    setBusyRow(null);
+  };
+
+  // Kabul edilen bir sahiplenme başvurusundan sonra ilanı yuvalandı yapmak tek
+  // dokunuş olsun: "Yuvalandı" sayacını dolduran asıl an burası.
+  const markAdoptedFromApp = async (app) => {
+    const animal = appAnimals[String(app.animal_id)] || { id: app.animal_id };
+    await ownerPatch("animals", animal.id, "submitter_email",
+      { status:"adopted", removed_reason:"adopted" },
+      lang==="tr" ? "Yuvalandı olarak işaretlendi 🎉" : "Marked as adopted 🎉");
+  };
+
+  const appStatusLabel = (st) => ({
+    accepted: lang==="tr" ? "Kabul edildi" : "Accepted",
+    declined: lang==="tr" ? "Reddedildi"   : "Declined",
+  }[st] || (lang==="tr" ? "Bekliyor" : "Pending"));
+
+  const appModeLabel = (mode) => ({
+    adopt:      lang==="tr" ? "Sahiplenme"      : "Adoption",
+    foster:     lang==="tr" ? "Geçici bakım"    : "Foster",
+    help_offer: lang==="tr" ? "Yardım teklifi"  : "Offer of help",
+    sighting:   lang==="tr" ? "Gördüm bildirimi": "Sighting",
+    claim:      lang==="tr" ? "Sahiplik iddiası": "Ownership claim",
+  }[mode] || mode || "—");
   useEffect(() => {
     if (!showMe || myApps !== null || !myEmail) return;
     let cancelled = false;
@@ -3017,10 +3067,18 @@ export default function App() {
           const { data: aData } = await client.from("animals").select("*").in("id", ids);
           byId = Object.fromEntries((aData || []).map(r => [String(r.id), mapAnimalRow(r)]));
         }
+        // İlanıma gelen başvurular: alıcı tarafı. Politika e-postayı oturum
+        // token'ından okuyor, yani yalnızca kendi ilanlarıma gelenler dönüyor.
+        const { data: inData } = await client
+          .from("applications").select("*")
+          .eq("listing_owner_email", contactInfo.email)
+          .order("created_at", { ascending: false });
+
         if (cancelled) return;
         setAppAnimals(byId);
+        setInbox(inData || []);
         setMyApps(apps);
-      } catch (e) { if (!cancelled) setMyApps([]); }
+      } catch (e) { if (!cancelled) { setMyApps([]); setInbox([]); } }
     })();
     return () => { cancelled = true; };
   }, [showMe, myApps, myEmail]);
@@ -4341,6 +4399,67 @@ export default function App() {
                 </div>
               )}
 
+              {/* İlanıma gelen başvurular. Bu ekran olmadan ilan sahibinin tek
+                  kopyası e-postasındaydı; başvuran da cevap bekliyordu. */}
+              {inbox.length > 0 && (
+                <>
+                  <div className="me-sec">
+                    {lang==="tr" ? `İlanıma gelen başvurular (${inbox.length})` : `Applications to my listings (${inbox.length})`}
+                  </div>
+                  {inbox.map(a => {
+                    const pending = (a.status || "pending") === "pending";
+                    const name = [a.first_name, a.last_name].filter(Boolean).join(" ") || a.applicant_email || "—";
+                    return (
+                      <div key={a.id || a.ref_code} className="me-row" style={{ alignItems:"flex-start", cursor:"default" }}>
+                        <MeThumb emoji="📨" alt={name} src={appAnimals[String(a.animal_id)]?.photo_url} />
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div className="me-row-t">{name}</div>
+                          <div className="me-row-s">
+                            {appModeLabel(a.mode)} · {a.animal_name || "—"}
+                            {a.created_at ? ` · ${new Date(a.created_at).toLocaleDateString(lang)}` : ""}
+                          </div>
+                          <div className="me-row-s">
+                            <span className={`app-st app-${a.status || "pending"}`}>{appStatusLabel(a.status)}</span>
+                          </div>
+
+                          <div className="me-acts" onClick={e => e.stopPropagation()}>
+                            {a.applicant_email && (
+                              <a className="me-act" href={`mailto:${a.applicant_email}`}>
+                                ✉️ {lang==="tr"?"Yaz":"Email"}
+                              </a>
+                            )}
+                            {a.phone && (
+                              <a className="me-act" href={`tel:${String(a.phone).replace(/[^\d+]/g, "")}`}>
+                                📞 {lang==="tr"?"Ara":"Call"}
+                              </a>
+                            )}
+                            {pending ? (
+                              <>
+                                <button className="me-act on" disabled={busyRow === a.id}
+                                  onClick={() => answerApplication(a, "accepted")}>
+                                  {lang==="tr"?"Kabul et":"Accept"}
+                                </button>
+                                <button className="me-act warn" disabled={busyRow === a.id}
+                                  onClick={() => answerApplication(a, "declined")}>
+                                  {lang==="tr"?"Reddet":"Decline"}
+                                </button>
+                              </>
+                            ) : a.status === "accepted" && a.mode === "adopt"
+                                && appAnimals[String(a.animal_id)]?.status === "active" ? (
+                              // Kabul edilen sahiplenme, ilanı kapatmanın doğal anı.
+                              <button className="me-act" disabled={busyRow === a.animal_id}
+                                onClick={() => markAdoptedFromApp(a)}>
+                                🏡 {lang==="tr"?"İlanı yuvalandı yap":"Mark listing adopted"}
+                              </button>
+                            ) : null}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
+
               {/* Hayvan ilanları */}
               <div className="me-sec">{lang==="tr"?`İlanlarım (${myAnimals.length})`:`My listings (${myAnimals.length})`}</div>
               {myAnimals.length === 0
@@ -4515,9 +4634,13 @@ export default function App() {
                         <div style={{ flex:1, minWidth:0 }}>
                           <div className="me-row-t">{a.animal_name || "—"}</div>
                           <div className="me-row-s">
-                            {a.mode === "foster" ? (lang==="tr"?"Geçici bakım":"Foster") : (lang==="tr"?"Sahiplenme":"Adoption")}
+                            {appModeLabel(a.mode)}
                             {a.ref_code ? ` · ${a.ref_code}` : ""}
                             {a.created_at ? ` · ${new Date(a.created_at).toLocaleDateString(lang)}` : ""}
+                          </div>
+                          {/* Başvuranın en çok merak ettiği şey: cevap geldi mi? */}
+                          <div className="me-row-s">
+                            <span className={`app-st app-${a.status || "pending"}`}>{appStatusLabel(a.status)}</span>
                           </div>
                           {ani && !live && (
                             <div className="me-row-s" style={{ color:"var(--muted)" }}>

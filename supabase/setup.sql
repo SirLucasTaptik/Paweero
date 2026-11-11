@@ -109,6 +109,18 @@ create policy "applications_insert"      on public.applications      for insert 
 drop policy if exists "applications_read_own" on public.applications;
 create policy "applications_read_own" on public.applications for select to authenticated
   using (applicant_email = auth.jwt() ->> 'email');
+-- İlan sahibi, KENDİ ilanına gelen başvuruları görebilsin ve yanıtlayabilsin.
+-- Aksi hâlde başvurunun tek kopyası e-postasında kalıyor, başvuran da cevapsız
+-- bekliyor. E-posta oturum token'ından okunuyor, istemciye güvenilmiyor.
+drop policy if exists "applications_read_for_owner" on public.applications;
+create policy "applications_read_for_owner" on public.applications for select to authenticated
+  using (listing_owner_email = auth.jwt() ->> 'email');
+
+drop policy if exists "applications_update_for_owner" on public.applications;
+create policy "applications_update_for_owner" on public.applications for update to authenticated
+  using      (listing_owner_email = auth.jwt() ->> 'email')
+  with check (listing_owner_email = auth.jwt() ->> 'email');
+
 drop policy if exists "adoption_profiles_insert" on public.adoption_profiles;
 create policy "adoption_profiles_insert" on public.adoption_profiles for insert to anon, authenticated with check (true);
 drop policy if exists "rehome_insert" on public.rehome_listings;
