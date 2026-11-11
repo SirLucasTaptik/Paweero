@@ -1,8 +1,16 @@
-# İlan sahibine e-posta — kurulum
+# E-posta — kurulum
 
-`api/notify.js` mesajı paweero.com adına gönderiyor. Çalışması için tek eksik bir
-API anahtarı. Anahtar yokken uygulama bozulmuyor: uç `503` dönüyor ve kullanıcı,
-kendi mail uygulamasında hazır gelen taslakla mesajı yolluyor.
+Paweero iki yönde e-posta gönderiyor, ikisi de paweero.com adına:
+
+| Uç | Ne zaman | Kime |
+|---|---|---|
+| `api/notify.js` | biri bir ilana başvurduğunda / yardım teklif ettiğinde | ilan sahibine |
+| `api/reply.js` | ilan sahibi "Değerlendirmeye al", "Reddet" ya da "🏡 Yuvalandı" dediğinde | başvurana |
+
+İkisi de aynı anahtarı kullanıyor. Anahtar yokken uygulama bozulmuyor: uçlar
+`503` dönüyor, işlem yine tamamlanıyor ve ekranda açıkça yazıyor (*"Reddedildi
+(e-posta gönderilemedi)"*). Başvuru sahibine giden mesajda yedek yol yok —
+anahtar olmadan o bildirim hiç gitmez.
 
 ## 1. Resend hesabı (ücretsiz)
 
@@ -37,13 +45,23 @@ oluyor.
 
 ## 4. Dene
 
-Bir ilana gir → "Take Action" → formu doldur → Gönder.
+**İlan sahibine giden mail:** bir ilana gir → "Take Action" → formu doldur → Gönder.
 
 - **"Yanıtın ilan sahibine iletildi"** → mail gitti.
 - **"Mesajın hazır — mail uygulamanda Gönder'e basman yeterli"** → uç mail
-  gönderemedi, yedek yola düşüldü. Vercel → proje → **Logs**'ta `[notify]` ile
-  başlayan satır sebebini yazar (`mailer_not_configured`, `send_failed`,
-  `owner_has_no_email`).
+  gönderemedi, yedek yola düşüldü.
+
+**Başvurana giden mail:** Hesabım → *İlanıma gelen başvurular* → bir satırda
+**Değerlendirmeye al**.
+
+- **"Değerlendirmeye alındı, başvurana haber verildi"** → mail gitti.
+- **"Değerlendirmeye alındı (e-posta gönderilemedi)"** → gitmedi.
+
+Sebebi Vercel → proje → **Logs**'ta `[notify]` ya da `[reply]` ile başlayan
+satırda yazar: `mailer_not_configured` (anahtar yok), `send_failed` (Resend
+reddetti, genelde alan adı doğrulanmamış), `owner_has_no_email`,
+`applicant_has_no_email`, `not_owner` (başka birinin ilanı), `bad_session`
+(oturum düşmüş, çıkıp tekrar gir).
 
 ## Tasarım notları
 
@@ -51,7 +69,12 @@ Bir ilana gir → "Take Action" → formu doldur → Gönder.
   sahibin adresini veritabanından okuyor. Böylece hem ilan sahibinin adresi
   tarayıcıya geçmiyor hem de bu uç "istediğim adrese mail yolla" aracına
   dönüşmüyor.
-- **Yanıtla doğrudan çalışıyor:** mailin `reply_to` alanı başvuran kişinin
-  adresi. İlan sahibi Yanıtla'ya bastığında mesaj ona gidiyor.
+- **Yanıtla doğrudan çalışıyor:** ilan sahibine giden mailin `reply_to` alanı
+  başvuran kişinin adresi. İlan sahibi Yanıtla'ya bastığında mesaj ona gidiyor.
+- **Ters yönde adres paylaşılmıyor.** Başvurana giden mailde `reply_to` yok ve
+  ilan sahibinin adresi metinde geçmiyor: başvuran onu ancak ilan sahibi
+  kendisi yazarsa öğreniyor. Yetki iki kez doğrulanıyor — başvuru satırı
+  kullanıcının kendi oturum anahtarıyla okunuyor (RLS) ve satırdaki ilan
+  sahibi oturumun sahibiyle karşılaştırılıyor.
 - `SUPABASE_SERVICE_KEY` tanımlarsan uç onu kullanır; tanımlı değilse herkese
   açık anon anahtarla okur (bugünkü RLS'te ilanlar zaten herkese açık).
