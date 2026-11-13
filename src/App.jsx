@@ -2051,6 +2051,10 @@ const CSS = `
   .app-st   { display:inline-block; font-size:11px; font-weight:700; letter-spacing:0.2px;
               padding:2px 9px; border-radius:999px; margin-top:3px; }
   .app-pending  { background:var(--off); color:var(--muted); }
+  /* Durum kartın ilk satırı: adı okumadan önce bakılan şey "cevap geldi mi".
+     Rozetin kendi üst boşluğu burada gereksiz. */
+  .app-st-first { margin-bottom:3px; }
+  .app-st-first .app-st { margin-top:0; }
   .app-contact { font-size:12px; color:var(--muted); margin-top:4px; word-break:break-word; }
   /* Başvuru kartı: karar düğmeleri metnin yanında değil, kartın altında tek
      sıra. İki karar yan yana ve eşit genişlikte — hangisinin seçileceği
@@ -4601,13 +4605,13 @@ export default function App() {
                         <div className="app-main">
                         <MeThumb emoji="📨" alt={name} src={appAnimals[String(a.animal_id)]?.photo_url} />
                         <div style={{ flex:1, minWidth:0 }}>
+                          <div className="me-row-s app-st-first">
+                            <span className={`app-st app-${a.status || "pending"}`}>{appStatusLabel(a.status)}</span>
+                          </div>
                           <div className="me-row-t">{name}</div>
                           <div className="me-row-s">
                             {appModeLabel(a.mode)} · {a.animal_name || "—"}
                             {a.created_at ? ` · ${new Date(a.created_at).toLocaleDateString(lang)}` : ""}
-                          </div>
-                          <div className="me-row-s">
-                            <span className={`app-st app-${a.status || "pending"}`}>{appStatusLabel(a.status)}</span>
                           </div>
 
                           {/* İletişim bilgisi karar değil: buton yerine satırın
@@ -4845,15 +4849,16 @@ export default function App() {
                         style={{ cursor: live ? "pointer" : "default" }} onClick={open}>
                         <MeThumb emoji="📋" alt={a.animal_name || ""} src={ani?.photo_url} dim={!!ani && !live} />
                         <div style={{ flex:1, minWidth:0 }}>
+                          {/* Başvuranın en çok merak ettiği şey: cevap geldi mi?
+                              O yüzden kartın ilk satırı. */}
+                          <div className="me-row-s app-st-first">
+                            <span className={`app-st app-${a.status || "pending"}`}>{appStatusLabel(a.status)}</span>
+                          </div>
                           <div className="me-row-t">{a.animal_name || "—"}</div>
                           <div className="me-row-s">
                             {appModeLabel(a.mode)}
                             {a.ref_code ? ` · ${a.ref_code}` : ""}
                             {a.created_at ? ` · ${new Date(a.created_at).toLocaleDateString(lang)}` : ""}
-                          </div>
-                          {/* Başvuranın en çok merak ettiği şey: cevap geldi mi? */}
-                          <div className="me-row-s">
-                            <span className={`app-st app-${a.status || "pending"}`}>{appStatusLabel(a.status)}</span>
                           </div>
                           {ani && !live && (
                             <div className="me-row-s" style={{ color:"var(--muted)" }}>
