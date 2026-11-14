@@ -1692,6 +1692,17 @@ const CSS = `
   .filter-bar { background:var(--white); border-bottom:1px solid var(--border); padding:10px var(--pad); display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
   .loc-select { background:var(--off); border:1px solid var(--border); border-radius:7px; padding:7px 24px 7px 10px; font-family:var(--font); font-size:12px; font-weight:500; color:var(--dark); outline:none; cursor:pointer; -webkit-appearance:none; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 8px center; min-height:34px; transition:border-color 0.12s; }
   .loc-select:focus { border-color:var(--dark); }
+  /* <select> kendini EN UZUN seçeneğine göre genişletiyor: "Türkiye" seçiliyken
+     kutu "Suudi Arabistan" kadar, "Tüm İller" seçiliyken "Afyonkarahisar"
+     kadar yer kaplıyordu. Görünmez bir kopya yalnızca SEÇİLİ metni ölçüyor,
+     select de mutlak konumla onun üstüne oturuyor — mutlak konumlu öğe kapsayan
+     kutunun genişliğine karışmadığı için ölçüyü sadece o kopya belirliyor. */
+  .selfit     { position:relative; display:inline-block; flex-shrink:0; }
+  .selfit-m   { display:inline-block; visibility:hidden; white-space:pre;
+                font-family:var(--font); font-size:12px; font-weight:600;
+                padding:7px 24px 7px 10px; border:1px solid transparent;
+                min-height:34px; box-sizing:border-box; }
+  .selfit .loc-select { position:absolute; inset:0; width:100%; }
   .loc-select.on { border-color:var(--dark); background-color:var(--white); font-weight:600; }
 
   /* ─ CHIPS ─ */
@@ -3628,6 +3639,17 @@ export default function App() {
     );
   };
 
+  // Kutu içindeki yazı kadar olsun diye select'i ölçen bir kopyayla sarıyoruz.
+  const LocSelect = ({ value, options, onChange, offValue }) => (
+    <span className="selfit">
+      <span className="selfit-m" aria-hidden="true">{locLabel(value, lang)}</span>
+      <select className={`loc-select ${value !== offValue ? "on" : ""}`}
+        value={value} onChange={onChange}>
+        {options.map(o => <option key={o} value={o}>{locLabel(o, lang)}</option>)}
+      </select>
+    </span>
+  );
+
   const LocFilters = () => (
     <div className="filter-bar">
       <button
@@ -3643,15 +3665,12 @@ export default function App() {
       >
         {locating ? "…" : "📍"}
       </button>
-      <select className={`loc-select ${fCountry !== "All Countries" ? "on" : ""}`} value={fCountry} onChange={e => { markManualLoc(); setFC(e.target.value); setFP("All Provinces"); setFCi("All Cities"); }}>
-        {COUNTRIES.map(c => <option key={c} value={c}>{locLabel(c, lang)}</option>)}
-      </select>
-      <select className={`loc-select ${fProvince !== "All Provinces" ? "on" : ""}`} value={fProvince} onChange={e => { markManualLoc(); setFP(e.target.value); setFCi("All Cities"); }}>
-        {(PROVINCES[fCountry] || ["All Provinces"]).map(p => <option key={p} value={p}>{locLabel(p, lang)}</option>)}
-      </select>
-      <select className={`loc-select ${fCity !== "All Cities" ? "on" : ""}`} value={fCity} onChange={e => { markManualLoc(); setFCi(e.target.value); }}>
-        {(CITIES[fProvince] || ["All Cities"]).map(c => <option key={c} value={c}>{locLabel(c, lang)}</option>)}
-      </select>
+      <LocSelect value={fCountry} offValue="All Countries" options={COUNTRIES}
+        onChange={e => { markManualLoc(); setFC(e.target.value); setFP("All Provinces"); setFCi("All Cities"); }} />
+      <LocSelect value={fProvince} offValue="All Provinces" options={PROVINCES[fCountry] || ["All Provinces"]}
+        onChange={e => { markManualLoc(); setFP(e.target.value); setFCi("All Cities"); }} />
+      <LocSelect value={fCity} offValue="All Cities" options={CITIES[fProvince] || ["All Cities"]}
+        onChange={e => { markManualLoc(); setFCi(e.target.value); }} />
     </div>
   );
 
